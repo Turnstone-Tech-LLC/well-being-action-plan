@@ -32,8 +32,8 @@ Well-Being Action Plan (WBAP) is a privacy-first Progressive Web App designed to
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js 22+ (LTS)
+- pnpm 9+ (recommended) or npm/yarn
 
 ### Installation
 
@@ -42,11 +42,14 @@ Well-Being Action Plan (WBAP) is a privacy-first Progressive Web App designed to
 git clone https://github.com/Turnstone-Tech-LLC/well-being-action-plan.git
 cd well-being-action-plan
 
+# Install pnpm (if not already installed)
+npm install -g pnpm
+
 # Install dependencies
-npm install
+pnpm install
 
 # Run development server
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
@@ -55,10 +58,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ```bash
 # Create optimized production build
-npm run build
+pnpm build
 
 # Start production server
-npm start
+pnpm start
 ```
 
 ## Documentation

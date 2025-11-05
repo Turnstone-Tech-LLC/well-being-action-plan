@@ -21,23 +21,26 @@ Before you begin, ensure you have the following installed on your system:
 
 ### Required
 
-- **Node.js**: Version 18.0.0 or higher
+- **Node.js**: Version 22.0.0 or higher (LTS)
   - Check your version: `node --version`
   - Download from: [nodejs.org](https://nodejs.org/)
   - Recommended: Use [nvm](https://github.com/nvm-sh/nvm) (Node Version Manager) for easy version management
 
-### Package Manager (choose one)
+### Package Manager
 
-- **npm**: Version 9.0.0 or higher (comes with Node.js)
-  - Check your version: `npm --version`
-
-- **yarn**: Version 1.22.0 or higher (optional)
-  - Install: `npm install -g yarn`
-  - Check your version: `yarn --version`
-
-- **pnpm**: Version 8.0.0 or higher (optional)
+- **pnpm**: Version 9.0.0 or higher (recommended)
   - Install: `npm install -g pnpm`
   - Check your version: `pnpm --version`
+  - Why pnpm? Faster installs, better disk space efficiency, and stricter dependency management
+
+### Alternative Package Managers
+
+- **npm**: Version 10.0.0 or higher (comes with Node.js)
+  - Check your version: `npm --version`
+
+- **yarn**: Version 1.22.0 or higher
+  - Install: `npm install -g yarn`
+  - Check your version: `yarn --version`
 
 ### Recommended Tools
 
@@ -49,6 +52,26 @@ Before you begin, ensure you have the following installed on your system:
   - TypeScript Vue Plugin (Volar)
 
 ## Installation
+
+### Using pnpm (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/Turnstone-Tech-LLC/well-being-action-plan.git
+cd well-being-action-plan
+
+# Install pnpm globally if not already installed
+npm install -g pnpm
+
+# Install dependencies
+pnpm install
+
+# Copy environment variables
+cp .env.example .env.local
+
+# Start development server
+pnpm dev
+```
 
 ### Using npm
 
@@ -82,23 +105,6 @@ cp .env.example .env.local
 
 # Start development server
 yarn dev
-```
-
-### Using pnpm
-
-```bash
-# Clone the repository
-git clone https://github.com/Turnstone-Tech-LLC/well-being-action-plan.git
-cd well-being-action-plan
-
-# Install dependencies
-pnpm install
-
-# Copy environment variables
-cp .env.example .env.local
-
-# Start development server
-pnpm dev
 ```
 
 After starting the development server, open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
@@ -142,7 +148,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 1. **Start the development server:**
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 2. **Make your changes** in the `src/` directory
@@ -150,42 +156,42 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 3. **Check for errors:**
    ```bash
    # Type checking
-   npm run type-check
+   pnpm type-check
 
    # Linting
-   npm run lint
+   pnpm lint
 
    # Format checking
-   npm run format:check
+   pnpm format:check
    ```
 
 4. **Fix formatting issues:**
    ```bash
    # Auto-fix linting issues
-   npm run lint:fix
+   pnpm lint:fix
 
    # Auto-format code
-   npm run format
+   pnpm format
    ```
 
 5. **Build for production** to test:
    ```bash
-   npm run build
-   npm start
+   pnpm build
+   pnpm start
    ```
 
 ## Available Scripts
 
-| Script | npm | yarn | pnpm | Description |
-|--------|-----|------|------|-------------|
-| Development Server | `npm run dev` | `yarn dev` | `pnpm dev` | Start Next.js development server on port 3000 |
-| Build | `npm run build` | `yarn build` | `pnpm build` | Create optimized production build |
-| Start | `npm start` | `yarn start` | `pnpm start` | Start production server |
-| Lint | `npm run lint` | `yarn lint` | `pnpm lint` | Run ESLint (fails on warnings) |
-| Lint Fix | `npm run lint:fix` | `yarn lint:fix` | `pnpm lint:fix` | Auto-fix ESLint issues |
-| Type Check | `npm run type-check` | `yarn type-check` | `pnpm type-check` | Run TypeScript type checking |
-| Format | `npm run format` | `yarn format` | `pnpm format` | Format code with Prettier |
-| Format Check | `npm run format:check` | `yarn format:check` | `pnpm format:check` | Check code formatting |
+| Script | pnpm (Recommended) | npm | yarn | Description |
+|--------|-------|-----|------|-------------|
+| Development Server | `pnpm dev` | `npm run dev` | `yarn dev` | Start Next.js development server on port 3000 |
+| Build | `pnpm build` | `npm run build` | `yarn build` | Create optimized production build |
+| Start | `pnpm start` | `npm start` | `yarn start` | Start production server |
+| Lint | `pnpm lint` | `npm run lint` | `yarn lint` | Run ESLint (fails on warnings) |
+| Lint Fix | `pnpm lint:fix` | `npm run lint:fix` | `yarn lint:fix` | Auto-fix ESLint issues |
+| Type Check | `pnpm type-check` | `npm run type-check` | `yarn type-check` | Run TypeScript type checking |
+| Format | `pnpm format` | `npm run format` | `yarn format` | Format code with Prettier |
+| Format Check | `pnpm format:check` | `npm run format:check` | `yarn format:check` | Check code formatting |
 
 ## Troubleshooting
 
@@ -208,7 +214,7 @@ lsof -ti:3000 | xargs kill -9
 Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process
 
 # Or use a different port:
-PORT=3001 npm run dev
+PORT=3001 pnpm dev
 ```
 
 #### 2. Node Version Mismatch
@@ -224,8 +230,8 @@ error: The engine "node" is incompatible with this module
 node --version
 
 # If using nvm, install and use the correct version:
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
 
 # Or download the latest LTS from nodejs.org
 ```
@@ -241,10 +247,10 @@ Module not found: Can't resolve 'xyz'
 ```bash
 # Delete node_modules and lock file, then reinstall
 rm -rf node_modules
-rm package-lock.json  # or yarn.lock or pnpm-lock.yaml
+rm pnpm-lock.yaml  # or package-lock.json or yarn.lock
 
 # Reinstall dependencies
-npm install  # or yarn/pnpm install
+pnpm install  # or npm install or yarn install
 ```
 
 #### 4. TypeScript Errors After Pull
@@ -257,13 +263,13 @@ Type error: Cannot find module...
 **Solution:**
 ```bash
 # Reinstall dependencies
-npm install
+pnpm install
 
 # Clear Next.js cache
 rm -rf .next
 
 # Restart development server
-npm run dev
+pnpm dev
 ```
 
 #### 5. ESLint Configuration Errors
@@ -279,7 +285,7 @@ ESLint configuration error
 rm -rf node_modules/.cache
 
 # Reinstall dependencies
-npm install
+pnpm install
 ```
 
 #### 6. Build Fails in CI/CD
@@ -287,9 +293,9 @@ npm install
 **Issue:** Build passes locally but fails in CI
 
 **Solution:**
-- Ensure all linting issues are fixed: `npm run lint`
-- Check TypeScript errors: `npm run type-check`
-- Verify formatting: `npm run format:check`
+- Ensure all linting issues are fixed: `pnpm lint`
+- Check TypeScript errors: `pnpm type-check`
+- Verify formatting: `pnpm format:check`
 - Our CI requires zero warnings and errors
 
 #### 7. PWA Not Working Locally
@@ -301,8 +307,8 @@ npm install
 **Solution:**
 ```bash
 # Build and test production version locally
-npm run build
-npm start
+pnpm build
+pnpm start
 ```
 
 #### 8. Database/IndexedDB Issues
@@ -326,32 +332,33 @@ EACCES: permission denied
 
 **Solution:**
 ```bash
-# Never use sudo with npm
-# Fix npm permissions:
+# Never use sudo with package managers
+# Fix permissions (for npm):
 mkdir ~/.npm-global
 npm config set prefix '~/.npm-global'
 echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.profile
 source ~/.profile
 
 # Then reinstall
-npm install
+pnpm install
 ```
 
 #### 10. Slow Installation
 
-**Issue:** `npm install` takes too long
+**Issue:** Package installation takes too long
 
 **Solutions:**
 ```bash
-# Try pnpm (fastest)
+# pnpm is the fastest (recommended)
 npm install -g pnpm
 pnpm install
 
 # Or use npm with cache
 npm install --prefer-offline
 
-# Clear npm cache if corrupted
-npm cache clean --force
+# Clear cache if corrupted
+pnpm store prune  # for pnpm
+npm cache clean --force  # for npm
 ```
 
 ## Platform-Specific Notes
@@ -366,12 +373,15 @@ npm cache clean --force
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Install Node.js via Homebrew
-brew install node@18
+brew install node@22
 
 # Or use nvm (recommended)
 brew install nvm
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
+
+# Install pnpm
+npm install -g pnpm
 ```
 
 **Notes:**
@@ -389,15 +399,18 @@ nvm use 18
 # Option 2: Use Chocolatey
 choco install nodejs-lts
 
-# Option 3: Use nvm-windows
+# Option 3: Use nvm-windows (recommended)
 # Download from: https://github.com/coreybutler/nvm-windows
-nvm install 18.0.0
-nvm use 18.0.0
+nvm install 22.0.0
+nvm use 22.0.0
+
+# Install pnpm
+npm install -g pnpm
 ```
 
 **Notes:**
-- Use PowerShell or Command Prompt (not Git Bash for npm commands)
-- Windows Defender may slow down `npm install` - add project folder to exclusions
+- Use PowerShell or Command Prompt (not Git Bash for package manager commands)
+- Windows Defender may slow down `pnpm install` - add project folder to exclusions
 - If using WSL2, follow Linux instructions instead
 
 **Common Windows Issues:**
@@ -414,14 +427,17 @@ nvm use 18.0.0
 **Setup (Ubuntu/Debian):**
 ```bash
 # Using NodeSource repository
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Or use nvm (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 source ~/.bashrc
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
+
+# Install pnpm
+npm install -g pnpm
 ```
 
 **Setup (Fedora):**
@@ -432,8 +448,11 @@ sudo dnf install nodejs
 # Or use nvm (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 source ~/.bashrc
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
+
+# Install pnpm
+npm install -g pnpm
 ```
 
 **Notes:**
