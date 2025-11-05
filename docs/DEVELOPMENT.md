@@ -6,9 +6,6 @@ This guide will help you set up your local development environment for the Well-
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
-  - [Using npm](#using-npm)
-  - [Using yarn](#using-yarn)
-  - [Using pnpm](#using-pnpm)
 - [Environment Variables](#environment-variables)
 - [Development Workflow](#development-workflow)
 - [Available Scripts](#available-scripts)
@@ -28,19 +25,10 @@ Before you begin, ensure you have the following installed on your system:
 
 ### Package Manager
 
-- **pnpm**: Version 9.0.0 or higher (recommended)
+- **pnpm**: Version 9.0.0 or higher
   - Install: `npm install -g pnpm`
   - Check your version: `pnpm --version`
   - Why pnpm? Faster installs, better disk space efficiency, and stricter dependency management
-
-### Alternative Package Managers
-
-- **npm**: Version 10.0.0 or higher (comes with Node.js)
-  - Check your version: `npm --version`
-
-- **yarn**: Version 1.22.0 or higher
-  - Install: `npm install -g yarn`
-  - Check your version: `yarn --version`
 
 ### Recommended Tools
 
@@ -52,8 +40,6 @@ Before you begin, ensure you have the following installed on your system:
   - TypeScript Vue Plugin (Volar)
 
 ## Installation
-
-### Using pnpm (Recommended)
 
 ```bash
 # Clone the repository
@@ -71,40 +57,6 @@ cp .env.example .env.local
 
 # Start development server
 pnpm dev
-```
-
-### Using npm
-
-```bash
-# Clone the repository
-git clone https://github.com/Turnstone-Tech-LLC/well-being-action-plan.git
-cd well-being-action-plan
-
-# Install dependencies
-npm install
-
-# Copy environment variables
-cp .env.example .env.local
-
-# Start development server
-npm run dev
-```
-
-### Using yarn
-
-```bash
-# Clone the repository
-git clone https://github.com/Turnstone-Tech-LLC/well-being-action-plan.git
-cd well-being-action-plan
-
-# Install dependencies
-yarn install
-
-# Copy environment variables
-cp .env.example .env.local
-
-# Start development server
-yarn dev
 ```
 
 After starting the development server, open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
@@ -182,16 +134,16 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ## Available Scripts
 
-| Script | pnpm (Recommended) | npm | yarn | Description |
-|--------|-------|-----|------|-------------|
-| Development Server | `pnpm dev` | `npm run dev` | `yarn dev` | Start Next.js development server on port 3000 |
-| Build | `pnpm build` | `npm run build` | `yarn build` | Create optimized production build |
-| Start | `pnpm start` | `npm start` | `yarn start` | Start production server |
-| Lint | `pnpm lint` | `npm run lint` | `yarn lint` | Run ESLint (fails on warnings) |
-| Lint Fix | `pnpm lint:fix` | `npm run lint:fix` | `yarn lint:fix` | Auto-fix ESLint issues |
-| Type Check | `pnpm type-check` | `npm run type-check` | `yarn type-check` | Run TypeScript type checking |
-| Format | `pnpm format` | `npm run format` | `yarn format` | Format code with Prettier |
-| Format Check | `pnpm format:check` | `npm run format:check` | `yarn format:check` | Check code formatting |
+| Script | Command | Description |
+|--------|---------|-------------|
+| Development Server | `pnpm dev` | Start Next.js development server on port 3000 |
+| Build | `pnpm build` | Create optimized production build |
+| Start | `pnpm start` | Start production server |
+| Lint | `pnpm lint` | Run ESLint (fails on warnings) |
+| Lint Fix | `pnpm lint:fix` | Auto-fix ESLint issues |
+| Type Check | `pnpm type-check` | Run TypeScript type checking |
+| Format | `pnpm format` | Format code with Prettier |
+| Format Check | `pnpm format:check` | Check code formatting |
 
 ## Troubleshooting
 
@@ -247,10 +199,10 @@ Module not found: Can't resolve 'xyz'
 ```bash
 # Delete node_modules and lock file, then reinstall
 rm -rf node_modules
-rm pnpm-lock.yaml  # or package-lock.json or yarn.lock
+rm pnpm-lock.yaml
 
 # Reinstall dependencies
-pnpm install  # or npm install or yarn install
+pnpm install
 ```
 
 #### 4. TypeScript Errors After Pull
@@ -332,33 +284,26 @@ EACCES: permission denied
 
 **Solution:**
 ```bash
-# Never use sudo with package managers
-# Fix permissions (for npm):
-mkdir ~/.npm-global
-npm config set prefix '~/.npm-global'
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.profile
-source ~/.profile
+# Never use sudo with pnpm
+# If you get permission errors, reinstall pnpm with proper permissions:
+curl -fsSL https://get.pnpm.io/install.sh | sh -
 
-# Then reinstall
+# Then reinstall dependencies
 pnpm install
 ```
 
-#### 10. Slow Installation
+#### 10. Slow Installation or Cache Issues
 
-**Issue:** Package installation takes too long
+**Issue:** Package installation takes too long or cache is corrupted
 
-**Solutions:**
+**Solution:**
 ```bash
-# pnpm is the fastest (recommended)
-npm install -g pnpm
+# Clear pnpm cache
+pnpm store prune
+
+# Reinstall dependencies
+rm -rf node_modules pnpm-lock.yaml
 pnpm install
-
-# Or use npm with cache
-npm install --prefer-offline
-
-# Clear cache if corrupted
-pnpm store prune  # for pnpm
-npm cache clean --force  # for npm
 ```
 
 ## Platform-Specific Notes
@@ -468,7 +413,7 @@ If you encounter issues not covered here:
 2. **Create a new issue:** Include:
    - Operating system and version
    - Node.js version (`node --version`)
-   - Package manager and version
+   - pnpm version (`pnpm --version`)
    - Complete error message
    - Steps to reproduce
 

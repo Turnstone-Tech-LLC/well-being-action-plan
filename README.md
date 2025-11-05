@@ -33,7 +33,7 @@ Well-Being Action Plan (WBAP) is a privacy-first Progressive Web App designed to
 ### Prerequisites
 
 - Node.js 22+ (LTS)
-- pnpm 9+ (recommended) or npm/yarn
+- pnpm 9+
 
 ### Installation
 
