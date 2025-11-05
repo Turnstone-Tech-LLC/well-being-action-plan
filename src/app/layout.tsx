@@ -3,7 +3,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Well-Being Action Plan',
-  description: 'Open-source Progressive Web App for youth mental health support through digital Well-Being Action Plans',
+  description:
+    'Open-source Progressive Web App for youth mental health support through digital Well-Being Action Plans',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
