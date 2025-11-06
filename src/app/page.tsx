@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseProviderUrl } from '@/lib/utils';
@@ -18,6 +19,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
  * - Responsive design for mobile compatibility
  */
 export default function Home() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<ProviderLinkConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,12 +41,13 @@ export default function Home() {
   }, []);
 
   const handleGetStarted = () => {
-    // TODO: Navigate to onboarding flow
-    // This will be implemented when the onboarding pages are created
-    // For now, we store the config to localStorage for persistence
+    // Store provider config to localStorage for persistence across onboarding
     if (config) {
       localStorage.setItem('providerConfig', JSON.stringify(config));
     }
+
+    // Navigate to onboarding flow
+    router.push('/onboarding');
   };
 
   // Loading state
