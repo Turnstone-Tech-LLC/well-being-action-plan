@@ -92,9 +92,7 @@ export type ShareablePlanConfig = z.infer<typeof ShareablePlanConfigSchema>;
 /**
  * Result type for decode operations
  */
-export type DecodeResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type DecodeResult<T> = { success: true; data: T } | { success: false; error: string };
 
 /**
  * Query parameter name used for encoded plan configuration
@@ -242,10 +240,7 @@ export function decodePlanConfig(encoded: string): DecodeResult<ShareablePlanCon
  * // Returns: "https://myapp.com?plan=eJyLjgUAARUAuQ..."
  * ```
  */
-export function generateShareableUrl(
-  config: ShareablePlanConfig,
-  baseUrl?: string
-): string {
+export function generateShareableUrl(config: ShareablePlanConfig, baseUrl?: string): string {
   const encoded = encodePlanConfig(config);
 
   // Use provided baseUrl or current location
@@ -288,9 +283,7 @@ export function generateShareableUrl(
  * }
  * ```
  */
-export function extractConfigFromUrl(
-  url: string | URL
-): DecodeResult<ShareablePlanConfig> {
+export function extractConfigFromUrl(url: string | URL): DecodeResult<ShareablePlanConfig> {
   try {
     const urlObj = typeof url === 'string' ? new URL(url) : url;
     const encoded = urlObj.searchParams.get(PLAN_PARAM_NAME);
@@ -536,9 +529,7 @@ export function generateProviderUrl(baseUrl: string, config: ProviderLinkConfig)
  * @param searchParams - URLSearchParams or search string (e.g., '?config=...')
  * @returns Parse result with success status and config or error
  */
-export function parseProviderUrl(
-  searchParams: URLSearchParams | string
-): ProviderLinkParseResult {
+export function parseProviderUrl(searchParams: URLSearchParams | string): ProviderLinkParseResult {
   try {
     // Handle string input
     const params =

@@ -26,7 +26,8 @@ export default function ComponentsDemo() {
     {
       id: '1',
       title: 'Deep Breathing',
-      description: 'Take slow, deep breaths for 5 minutes. Inhale for 4 counts, hold for 4, exhale for 6.',
+      description:
+        'Take slow, deep breaths for 5 minutes. Inhale for 4 counts, hold for 4, exhale for 6.',
       category: CopingStrategyCategory.Physical,
       isFavorite: favoriteStrategies.has('1'),
     },
@@ -80,7 +81,7 @@ export default function ComponentsDemo() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl space-y-8">
+    <div className="container mx-auto max-w-6xl space-y-8 p-6">
       <div className="space-y-2">
         <h1 className="text-4xl font-bold">Component Library Demo</h1>
         <p className="text-muted-foreground">
@@ -93,7 +94,7 @@ export default function ComponentsDemo() {
       {/* Zone Cards */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Zone Cards</h2>
+          <h2 className="mb-2 text-2xl font-semibold">Zone Cards</h2>
           <p className="text-sm text-muted-foreground">
             Display emotional regulation zones with visual indicators
           </p>
@@ -125,7 +126,7 @@ export default function ComponentsDemo() {
       {/* Coping Strategy Cards */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Coping Strategy Cards</h2>
+          <h2 className="mb-2 text-2xl font-semibold">Coping Strategy Cards</h2>
           <p className="text-sm text-muted-foreground">
             Display coping strategies with category icons and favorite functionality
           </p>
@@ -151,7 +152,7 @@ export default function ComponentsDemo() {
       {/* Buttons */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Buttons</h2>
+          <h2 className="mb-2 text-2xl font-semibold">Buttons</h2>
           <p className="text-sm text-muted-foreground">Various button styles and sizes</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -174,7 +175,7 @@ export default function ComponentsDemo() {
       {/* Badges */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Badges</h2>
+          <h2 className="mb-2 text-2xl font-semibold">Badges</h2>
           <p className="text-sm text-muted-foreground">Labels and tags for categorization</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -190,7 +191,7 @@ export default function ComponentsDemo() {
       {/* Input */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Input</h2>
+          <h2 className="mb-2 text-2xl font-semibold">Input</h2>
           <p className="text-sm text-muted-foreground">Text input fields</p>
         </div>
         <div className="max-w-sm space-y-3">
@@ -205,7 +206,7 @@ export default function ComponentsDemo() {
       {/* Dialog */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Dialog</h2>
+          <h2 className="mb-2 text-2xl font-semibold">Dialog</h2>
           <p className="text-sm text-muted-foreground">Modal dialogs for interactions</p>
         </div>
         <Dialog>
