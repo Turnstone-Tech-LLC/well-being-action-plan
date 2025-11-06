@@ -184,79 +184,83 @@ export default function YellowZoneCheckIn() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {loading ? (
+            {loading && (
               <div className="flex items-center justify-center py-8">
                 <span className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent" />
               </div>
-            ) : strategies.length > 0 ? (
-              strategies.map((strategy) => {
-                const isExpanded = expandedStrategyId === strategy.id;
-                const hasTried = triedStrategies.has(strategy.id);
+            )}
+            {!loading && strategies.length > 0 && (
+              <>
+                {strategies.map((strategy) => {
+                  const isExpanded = expandedStrategyId === strategy.id;
+                  const hasTried = triedStrategies.has(strategy.id);
 
-                return (
-                  <Card
-                    key={strategy.id}
-                    className={cn(
-                      'transition-all duration-200',
-                      isExpanded && 'ring-2 ring-yellow-500',
-                      hasTried && 'border-green-500 bg-green-50/50 dark:bg-green-950/20'
-                    )}
-                  >
-                    <CardHeader className="pb-3">
-                      <button
-                        onClick={() => toggleStrategyExpansion(strategy.id)}
-                        className="flex w-full items-start justify-between gap-2 text-left"
-                        aria-expanded={isExpanded}
-                      >
-                        <div className="flex-1">
-                          <CardTitle className="flex items-center gap-2 text-base">
-                            {strategy.title}
-                            {hasTried && (
-                              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  return (
+                    <Card
+                      key={strategy.id}
+                      className={cn(
+                        'transition-all duration-200',
+                        isExpanded && 'ring-2 ring-yellow-500',
+                        hasTried && 'border-green-500 bg-green-50/50 dark:bg-green-950/20'
+                      )}
+                    >
+                      <CardHeader className="pb-3">
+                        <button
+                          onClick={() => toggleStrategyExpansion(strategy.id)}
+                          className="flex w-full items-start justify-between gap-2 text-left"
+                          aria-expanded={isExpanded}
+                        >
+                          <div className="flex-1">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                              {strategy.title}
+                              {hasTried && (
+                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              )}
+                            </CardTitle>
+                            <div className="mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {strategy.category}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {isExpanded ? (
+                              <ChevronUp className="h-5 w-5" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5" />
                             )}
-                          </CardTitle>
-                          <div className="mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {strategy.category}
-                            </Badge>
                           </div>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {isExpanded ? (
-                            <ChevronUp className="h-5 w-5" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5" />
+                        </button>
+                      </CardHeader>
+                      {isExpanded && (
+                        <CardContent className="space-y-3 pt-0">
+                          <CardDescription className="leading-relaxed">
+                            {strategy.description}
+                          </CardDescription>
+                          {!hasTried && (
+                            <Button
+                              onClick={() => handleTryStrategy(strategy.id)}
+                              variant="outline"
+                              className="w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-300 dark:hover:bg-yellow-950"
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Try This Strategy
+                            </Button>
                           )}
-                        </div>
-                      </button>
-                    </CardHeader>
-                    {isExpanded && (
-                      <CardContent className="space-y-3 pt-0">
-                        <CardDescription className="leading-relaxed">
-                          {strategy.description}
-                        </CardDescription>
-                        {!hasTried && (
-                          <Button
-                            onClick={() => handleTryStrategy(strategy.id)}
-                            variant="outline"
-                            className="w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-300 dark:hover:bg-yellow-950"
-                          >
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Try This Strategy
-                          </Button>
-                        )}
-                        {hasTried && (
-                          <div className="flex items-center justify-center gap-2 rounded-lg bg-green-50 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
-                            <Check className="h-4 w-4" />
-                            <span>Great job trying this strategy!</span>
-                          </div>
-                        )}
-                      </CardContent>
-                    )}
-                  </Card>
-                );
-              })
-            ) : (
+                          {hasTried && (
+                            <div className="flex items-center justify-center gap-2 rounded-lg bg-green-50 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
+                              <Check className="h-4 w-4" />
+                              <span>Great job trying this strategy!</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })}
+              </>
+            )}
+            {!loading && strategies.length === 0 && (
               <div className="rounded-lg bg-muted p-6 text-center">
                 <p className="text-sm text-muted-foreground">
                   No coping strategies found. Complete the onboarding process to add strategies to
