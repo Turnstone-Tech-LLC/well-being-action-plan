@@ -3,6 +3,7 @@
  */
 
 import { WellBeingPlanConfig } from './well-being-plan';
+import { CopingStrategy } from './coping-strategy';
 
 /**
  * Provider information embedded in shareable links
@@ -26,6 +27,7 @@ export interface ProviderInfo {
 export interface ProviderLinkConfig {
   provider: ProviderInfo;
   planConfig?: Partial<WellBeingPlanConfig>;
+  copingStrategies?: CopingStrategy[];
   customMessage?: string;
   redirectUrl?: string;
 }
