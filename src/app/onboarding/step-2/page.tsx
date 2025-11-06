@@ -199,7 +199,7 @@ export default function OnboardingStep2Page() {
       }
 
       setLoading(false);
-    } catch (err) {
+    } catch {
       setError('Failed to load coping strategies. Please try again.');
       setLoading(false);
     }
@@ -258,7 +258,7 @@ export default function OnboardingStep2Page() {
             category: strategy.category,
             isFavorite: false,
           });
-        } catch (err) {
+        } catch {
           // Strategy might already exist, which is fine
           console.warn('Strategy might already exist:', strategy.title);
         }
@@ -266,7 +266,7 @@ export default function OnboardingStep2Page() {
 
       // Navigate to Step 3
       router.push('/onboarding/step-3');
-    } catch (err) {
+    } catch {
       setError('Failed to save your selections. Please try again.');
       setSaving(false);
     }
