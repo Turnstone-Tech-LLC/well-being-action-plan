@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable no-console */
+
 /**
  * PlanUrlLoader Component
  *
@@ -29,10 +31,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import {
-  extractConfigFromCurrentUrl,
-  type ShareablePlanConfig,
-} from '@/lib/utils/urlConfig';
+import { extractConfigFromCurrentUrl, type ShareablePlanConfig } from '@/lib/utils/urlConfig';
 
 export interface PlanUrlLoaderProps {
   /**
@@ -70,9 +69,7 @@ export function PlanUrlLoader({
   clearUrlAfterLoad = true,
   debug = false,
 }: PlanUrlLoaderProps) {
-  const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>(
-    'idle'
-  );
+  const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
   useEffect(() => {
     // Only run once on mount
@@ -115,8 +112,7 @@ export function PlanUrlLoader({
       // Only treat as error if there was actually a plan parameter that failed to decode
       // If there's no plan parameter, this is normal and not an error
       const urlHasPlanParam =
-        typeof window !== 'undefined' &&
-        new URL(window.location.href).searchParams.has('plan');
+        typeof window !== 'undefined' && new URL(window.location.href).searchParams.has('plan');
 
       if (urlHasPlanParam) {
         if (debug) {
@@ -154,10 +150,7 @@ export function PlanUrlLoader({
  * }
  * ```
  */
-export function usePlanFromUrl(options?: {
-  clearUrlAfterLoad?: boolean;
-  autoLoad?: boolean;
-}) {
+export function usePlanFromUrl(options?: { clearUrlAfterLoad?: boolean; autoLoad?: boolean }) {
   const { clearUrlAfterLoad = true, autoLoad = true } = options || {};
 
   const [loadedPlan, setLoadedPlan] = useState<ShareablePlanConfig | null>(null);
@@ -186,8 +179,7 @@ export function usePlanFromUrl(options?: {
     } else {
       // Only set error if there was actually a plan parameter
       const urlHasPlanParam =
-        typeof window !== 'undefined' &&
-        new URL(window.location.href).searchParams.has('plan');
+        typeof window !== 'undefined' && new URL(window.location.href).searchParams.has('plan');
 
       if (urlHasPlanParam) {
         setError(result.error);
