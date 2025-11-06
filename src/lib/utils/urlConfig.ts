@@ -1,41 +1,25 @@
 /**
- * URL Configuration Utility
+ * URL Configuration Utilities
  *
- * This module provides functionality for encoding and decoding well-being plan
- * configurations into URL-safe strings, enabling sharing of plan configurations
- * through URLs.
+ * This module provides functionality for encoding and decoding configurations into
+ * URL-safe strings, supporting two distinct use cases:
  *
- * ## URL Structure
+ * 1. **Plan Sharing**: Share well-being plan configurations between users
+ *    - Uses `plan` URL parameter
+ *    - Employs gzip compression via pako
+ *    - Validates with Zod schemas
+ *    - URL structure: `https://example.com/?plan={encoded_plan}`
  *
- * Plans are shared using the following URL structure:
- * ```
- * https://example.com/?plan={encoded_config}
- * ```
- *
- * Where `{encoded_config}` is a URL-safe base64-encoded, compressed JSON string
- * containing the shareable plan configuration.
- *
- * ## Encoding Process
- *
- * 1. Extract shareable fields from WellBeingPlan
- * 2. Convert to JSON string
- * 3. Compress using pako (gzip compression)
- * 4. Encode to base64 (URL-safe)
- * 5. Add as query parameter
- *
- * ## Decoding Process
- *
- * 1. Extract query parameter from URL
- * 2. Decode from base64
- * 3. Decompress using pako
- * 4. Parse JSON
- * 5. Validate against Zod schema
- * 6. Return validated configuration
+ * 2. **Provider Links**: Provider-generated onboarding links for patients
+ *    - Uses `config` URL parameter
+ *    - Simple base64 encoding
+ *    - Contains provider information and preferences
+ *    - URL structure: `https://example.com/?config={encoded_config}`
  *
  * ## Size Limitations
  *
  * - Target: Under 2000 characters for broad browser compatibility
- * - Compression helps keep URLs manageable
+ * - Plan sharing uses compression to keep URLs manageable
  * - Large plans may need to be simplified for sharing
  *
  * @module urlConfig
@@ -44,6 +28,11 @@
 import { z } from 'zod';
 import pako from 'pako';
 import { ZoneType } from '../types/zone';
+import { ProviderLinkConfig, ProviderLinkParseResult } from '@/lib/types';
+
+// ============================================================================
+// PLAN SHARING - For sharing well-being plans between users
+// ============================================================================
 
 /**
  * Zod schema for ZoneType enum
@@ -103,9 +92,7 @@ export type ShareablePlanConfig = z.infer<typeof ShareablePlanConfigSchema>;
 /**
  * Result type for decode operations
  */
-export type DecodeResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type DecodeResult<T> = { success: true; data: T } | { success: false; error: string };
 
 /**
  * Query parameter name used for encoded plan configuration
@@ -131,11 +118,11 @@ export const MAX_URL_LENGTH = 2000;
  *   zoneStrategies: [...],
  *   config: { enableNotifications: true, ... }
  * };
- * const encoded = encodeConfig(config);
+ * const encoded = encodePlanConfig(config);
  * // Returns: "eJyLjgUAARUAuQ..."
  * ```
  */
-export function encodeConfig(config: ShareablePlanConfig): string {
+export function encodePlanConfig(config: ShareablePlanConfig): string {
   try {
     // Validate the input against schema
     ShareablePlanConfigSchema.parse(config);
@@ -175,7 +162,7 @@ export function encodeConfig(config: ShareablePlanConfig): string {
  *
  * @example
  * ```typescript
- * const result = decodeConfig("eJyLjgUAARUAuQ...");
+ * const result = decodePlanConfig("eJyLjgUAARUAuQ...");
  * if (result.success) {
  *   console.log(result.data.title);
  * } else {
@@ -183,7 +170,7 @@ export function encodeConfig(config: ShareablePlanConfig): string {
  * }
  * ```
  */
-export function decodeConfig(encoded: string): DecodeResult<ShareablePlanConfig> {
+export function decodePlanConfig(encoded: string): DecodeResult<ShareablePlanConfig> {
   try {
     // Validate input
     if (!encoded || typeof encoded !== 'string') {
@@ -253,11 +240,8 @@ export function decodeConfig(encoded: string): DecodeResult<ShareablePlanConfig>
  * // Returns: "https://myapp.com?plan=eJyLjgUAARUAuQ..."
  * ```
  */
-export function generateShareableUrl(
-  config: ShareablePlanConfig,
-  baseUrl?: string
-): string {
-  const encoded = encodeConfig(config);
+export function generateShareableUrl(config: ShareablePlanConfig, baseUrl?: string): string {
+  const encoded = encodePlanConfig(config);
 
   // Use provided baseUrl or current location
   const base = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -299,9 +283,7 @@ export function generateShareableUrl(
  * }
  * ```
  */
-export function extractConfigFromUrl(
-  url: string | URL
-): DecodeResult<ShareablePlanConfig> {
+export function extractConfigFromUrl(url: string | URL): DecodeResult<ShareablePlanConfig> {
   try {
     const urlObj = typeof url === 'string' ? new URL(url) : url;
     const encoded = urlObj.searchParams.get(PLAN_PARAM_NAME);
@@ -313,7 +295,7 @@ export function extractConfigFromUrl(
       };
     }
 
-    return decodeConfig(encoded);
+    return decodePlanConfig(encoded);
   } catch (error) {
     return {
       success: false,
@@ -435,3 +417,188 @@ export function canShareViaUrl(
     };
   }
 }
+
+// ============================================================================
+// PROVIDER LINKS - For provider-generated patient onboarding links
+// ============================================================================
+
+/**
+ * URL parameter name for provider configuration
+ */
+export const PROVIDER_CONFIG_PARAM = 'config';
+
+/**
+ * Converts a string to URL-safe base64
+ */
+function toUrlSafeBase64(str: string): string {
+  return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+/**
+ * Converts URL-safe base64 back to regular base64
+ */
+function fromUrlSafeBase64(str: string): string {
+  // Add back padding
+  const padding = '='.repeat((4 - (str.length % 4)) % 4);
+  return str.replace(/-/g, '+').replace(/_/g, '/') + padding;
+}
+
+/**
+ * Encodes a provider link configuration into a URL-safe string
+ *
+ * @param config - The provider link configuration to encode
+ * @returns URL-safe base64 encoded string
+ * @throws Error if the encoded string exceeds MAX_URL_LENGTH
+ */
+export function encodeProviderConfig(config: ProviderLinkConfig): string {
+  try {
+    // Serialize to JSON
+    const json = JSON.stringify(config);
+
+    // Convert to base64
+    const base64 = btoa(json);
+
+    // Make URL-safe
+    const urlSafe = toUrlSafeBase64(base64);
+
+    // Check length
+    if (urlSafe.length > MAX_URL_LENGTH) {
+      throw new Error(
+        `Encoded configuration exceeds maximum URL length (${urlSafe.length} > ${MAX_URL_LENGTH})`
+      );
+    }
+
+    return urlSafe;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to encode configuration: ${error.message}`);
+    }
+    throw new Error('Failed to encode configuration: Unknown error');
+  }
+}
+
+/**
+ * Decodes a URL-safe base64 string into a provider link configuration
+ *
+ * @param encoded - The URL-safe base64 encoded string
+ * @returns Parsed provider link configuration
+ * @throws Error if decoding or parsing fails
+ */
+export function decodeProviderConfig(encoded: string): ProviderLinkConfig {
+  try {
+    // Convert from URL-safe base64
+    const base64 = fromUrlSafeBase64(encoded);
+
+    // Decode from base64
+    const json = atob(base64);
+
+    // Parse JSON
+    const config = JSON.parse(json) as ProviderLinkConfig;
+
+    // Validate required fields
+    if (!config.provider || !config.provider.id || !config.provider.name) {
+      throw new Error('Invalid configuration: missing required provider fields');
+    }
+
+    return config;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to decode configuration: ${error.message}`);
+    }
+    throw new Error('Failed to decode configuration: Unknown error');
+  }
+}
+
+/**
+ * Generates a complete URL with encoded provider configuration
+ *
+ * @param baseUrl - The base URL (e.g., 'https://example.com')
+ * @param config - The provider link configuration
+ * @returns Complete URL with encoded configuration parameter
+ */
+export function generateProviderUrl(baseUrl: string, config: ProviderLinkConfig): string {
+  const encoded = encodeProviderConfig(config);
+  const url = new URL(baseUrl);
+  url.searchParams.set(PROVIDER_CONFIG_PARAM, encoded);
+  return url.toString();
+}
+
+/**
+ * Parses provider configuration from URL search parameters
+ *
+ * @param searchParams - URLSearchParams or search string (e.g., '?config=...')
+ * @returns Parse result with success status and config or error
+ */
+export function parseProviderUrl(searchParams: URLSearchParams | string): ProviderLinkParseResult {
+  try {
+    // Handle string input
+    const params =
+      typeof searchParams === 'string' ? new URLSearchParams(searchParams) : searchParams;
+
+    // Get config parameter
+    const encoded = params.get(PROVIDER_CONFIG_PARAM);
+
+    if (!encoded) {
+      return {
+        success: false,
+        error: 'No configuration parameter found in URL',
+      };
+    }
+
+    // Decode configuration
+    const config = decodeProviderConfig(encoded);
+
+    return {
+      success: true,
+      config,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to parse provider URL',
+    };
+  }
+}
+
+/**
+ * Validates a provider link configuration
+ *
+ * @param config - The configuration to validate
+ * @returns true if valid, false otherwise
+ */
+export function validateProviderConfig(config: unknown): config is ProviderLinkConfig {
+  if (!config || typeof config !== 'object') {
+    return false;
+  }
+
+  const c = config as Partial<ProviderLinkConfig>;
+
+  // Validate provider info
+  if (!c.provider || typeof c.provider !== 'object') {
+    return false;
+  }
+
+  if (!c.provider.id || typeof c.provider.id !== 'string') {
+    return false;
+  }
+
+  if (!c.provider.name || typeof c.provider.name !== 'string') {
+    return false;
+  }
+
+  return true;
+}
+
+// ============================================================================
+// LEGACY EXPORTS - For backward compatibility
+// ============================================================================
+
+/**
+ * @deprecated Use `encodePlanConfig` instead
+ */
+export const encodeConfig = encodePlanConfig;
+
+/**
+ * @deprecated Use `decodePlanConfig` instead
+ */
+export const decodeConfig = decodePlanConfig;

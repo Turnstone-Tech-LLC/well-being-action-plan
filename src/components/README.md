@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 ### Quick Examples
 
 **ZoneCard:**
+
 ```tsx
 import { ZoneCard } from '@/components';
 import { ZoneType } from '@/lib/types/zone';
@@ -45,10 +46,11 @@ import { ZoneType } from '@/lib/types/zone';
   triggerCount={2}
   strategyCount={8}
   onClick={() => console.log('Zone clicked')}
-/>
+/>;
 ```
 
 **CopingStrategyCard:**
+
 ```tsx
 import { CopingStrategyCard } from '@/components';
 
@@ -56,21 +58,23 @@ import { CopingStrategyCard } from '@/components';
   strategy={strategyData}
   onFavoriteClick={(id) => toggleFavorite(id)}
   onClick={() => viewStrategy(strategyData.id)}
-/>
+/>;
 ```
 
 **Button:**
+
 ```tsx
 import { Button } from '@/components';
 
 <Button variant="primary" size="lg">
   Click Me
-</Button>
+</Button>;
 ```
 
 ## Documentation
 
 For complete documentation, examples, and design system guidelines, see:
+
 - [Component Documentation](../../docs/COMPONENTS.md)
 - [Demo Page](/components-demo) - Live interactive component showcase
 

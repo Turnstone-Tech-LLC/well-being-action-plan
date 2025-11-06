@@ -125,7 +125,7 @@ const ZoneCard = React.forwardRef<React.ElementRef<'div'>, ZoneCardProps>(
           )}
         </CardHeader>
         {(triggerCount !== undefined || strategyCount !== undefined) && (
-          <CardContent className={compact ? 'pt-0 pb-3' : 'pt-0'}>
+          <CardContent className={compact ? 'pb-3 pt-0' : 'pt-0'}>
             <div className="flex gap-4 text-sm">
               {triggerCount !== undefined && (
                 <div className={cn('flex flex-col', config.colors.text)}>

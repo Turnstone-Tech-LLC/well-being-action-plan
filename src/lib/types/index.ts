@@ -41,3 +41,10 @@ export {
   type UpdateWellBeingPlan,
   DEFAULT_PLAN_CONFIG,
 } from './well-being-plan';
+
+// Provider types
+export {
+  type ProviderInfo,
+  type ProviderLinkConfig,
+  type ProviderLinkParseResult,
+} from './provider';

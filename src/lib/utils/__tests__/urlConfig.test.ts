@@ -2,7 +2,7 @@
  * Unit tests for URL configuration encoding/decoding
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   encodeConfig,
   decodeConfig,
@@ -212,7 +212,7 @@ describe('URL Config - Validation and Error Handling', () => {
     const encoded = encodeConfig(validConfig);
 
     // Manually corrupt the data by decoding, modifying, and re-encoding
-    const corrupted = encoded + 'corrupt';
+    const corrupted = `${encoded}corrupt`;
 
     const result = decodeConfig(corrupted);
     expect(result.success).toBe(false);

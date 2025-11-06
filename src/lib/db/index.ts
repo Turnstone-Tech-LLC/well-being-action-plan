@@ -183,12 +183,7 @@ export async function getCheckInsByUser(
   if (options?.startDate || options?.endDate) {
     query = db.checkIns
       .where('timestamp')
-      .between(
-        options.startDate || new Date(0),
-        options.endDate || new Date(),
-        true,
-        true
-      )
+      .between(options.startDate || new Date(0), options.endDate || new Date(), true, true)
       .and((checkIn) => checkIn.userId === userId);
   }
 
@@ -274,9 +269,7 @@ export async function createCopingStrategy(
  * @param id - Coping strategy ID
  * @returns The coping strategy or undefined if not found
  */
-export async function getCopingStrategy(
-  id: string
-): Promise<CopingStrategy | undefined> {
+export async function getCopingStrategy(id: string): Promise<CopingStrategy | undefined> {
   return await db.copingStrategies.get(id);
 }
 
@@ -354,9 +347,7 @@ export async function deleteCopingStrategy(id: string): Promise<void> {
  * @param id - Coping strategy ID
  * @returns The updated favorite status
  */
-export async function toggleCopingStrategyFavorite(
-  id: string
-): Promise<boolean> {
+export async function toggleCopingStrategyFavorite(id: string): Promise<boolean> {
   const strategy = await db.copingStrategies.get(id);
   if (!strategy) {
     throw new Error(`Coping strategy with id ${id} not found`);
@@ -389,10 +380,7 @@ export async function setUserConfig(
   value: string | number | boolean | object
 ): Promise<UserConfig> {
   // Check if config already exists
-  const existing = await db.userConfig
-    .where('[userId+key]')
-    .equals([userId, key])
-    .first();
+  const existing = await db.userConfig.where('[userId+key]').equals([userId, key]).first();
 
   const config: UserConfig = {
     id: existing?.id || generateId(),
@@ -413,10 +401,7 @@ export async function setUserConfig(
  * @param key - Configuration key
  * @returns The configuration value or undefined if not found
  */
-export async function getUserConfig(
-  userId: string,
-  key: string
-): Promise<UserConfig | undefined> {
+export async function getUserConfig(userId: string, key: string): Promise<UserConfig | undefined> {
   return await db.userConfig.where('[userId+key]').equals([userId, key]).first();
 }
 
@@ -437,10 +422,7 @@ export async function getAllUserConfig(userId: string): Promise<UserConfig[]> {
  * @param key - Configuration key
  * @returns The number of deleted records
  */
-export async function deleteUserConfig(
-  userId: string,
-  key: string
-): Promise<number> {
+export async function deleteUserConfig(userId: string, key: string): Promise<number> {
   return await db.userConfig.where('[userId+key]').equals([userId, key]).delete();
 }
 
