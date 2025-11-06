@@ -2,7 +2,7 @@
  * Unit tests for IndexedDB database operations
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   db,
   createCheckIn,
@@ -35,11 +35,7 @@ describe('Database Initialization', () => {
   it('should initialize the database with correct tables', () => {
     expect(db.name).toBe('WellBeingActionPlanDB');
     expect(db.tables).toHaveLength(3);
-    expect(db.tables.map((t) => t.name)).toEqual([
-      'checkIns',
-      'copingStrategies',
-      'userConfig',
-    ]);
+    expect(db.tables.map((t) => t.name)).toEqual(['checkIns', 'copingStrategies', 'userConfig']);
   });
 
   it('should generate unique IDs', () => {
@@ -324,9 +320,7 @@ describe('CopingStrategy CRUD Operations', () => {
     const updated = await getCopingStrategy(strategy.id);
     expect(updated?.title).toBe('Updated Title');
     expect(updated?.description).toBe('Updated Description');
-    expect(updated?.updatedAt?.getTime()).toBeGreaterThan(
-      originalUpdatedAt?.getTime() ?? 0
-    );
+    expect(updated?.updatedAt?.getTime()).toBeGreaterThan(originalUpdatedAt?.getTime() ?? 0);
   });
 
   it('should delete a coping strategy', async () => {
@@ -492,7 +486,7 @@ describe('Database Utility Functions', () => {
       description: 'Description',
       category: CopingStrategyCategory.Physical,
     });
-    const config = await setUserConfig('user1', 'theme', 'dark');
+    const _config = await setUserConfig('user1', 'theme', 'dark');
 
     // Export data
     const exported = await exportData();
