@@ -7,7 +7,7 @@
 
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, AuthError } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import type { ProviderProfile } from '@/lib/types/provider';
@@ -17,10 +17,14 @@ interface AuthContextType {
   profile: ProviderProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string, metadata: {
-    name: string;
-    organization?: string;
-  }) => Promise<{ error: AuthError | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata: {
+      name: string;
+      organization?: string;
+    }
+  ) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   updateProfile: (profile: Partial<ProviderProfile>) => Promise<void>;
 }
@@ -32,6 +36,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+
+  const loadProfile = useCallback(
+    async (userId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('provider_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error('Error loading profile:', error);
+        } else {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [supabase]
+  );
 
   // Load user and profile on mount
   useEffect(() => {
@@ -59,27 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
-
-  const loadProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('provider_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error loading profile:', error);
-      } else {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [supabase, loadProfile]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -113,10 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('provider_profiles')
-        .update(updates)
-        .eq('id', user.id);
+      const { error } = await supabase.from('provider_profiles').update(updates).eq('id', user.id);
 
       if (error) throw error;
 

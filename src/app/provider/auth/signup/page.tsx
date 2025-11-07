@@ -12,6 +12,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
+export const dynamic = 'force-dynamic';
+
 export default function SignupPage() {
   const router = useRouter();
   const { signUp, user } = useAuth();
@@ -60,14 +62,10 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { error: signUpError } = await signUp(
-        formData.email,
-        formData.password,
-        {
-          name: formData.name,
-          organization: formData.organization || undefined,
-        }
-      );
+      const { error: signUpError } = await signUp(formData.email, formData.password, {
+        name: formData.name,
+        organization: formData.organization || undefined,
+      });
 
       if (signUpError) {
         setError(signUpError.message);
@@ -78,7 +76,7 @@ export default function SignupPage() {
           router.push('/provider/auth/login');
         }, 3000);
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -104,7 +102,8 @@ export default function SignupPage() {
                 </h3>
                 <div className="mt-2 text-sm text-green-700">
                   <p>
-                    Your provider account has been created. You will be redirected to the login page shortly.
+                    Your provider account has been created. You will be redirected to the login page
+                    shortly.
                   </p>
                   {/* Note: If email confirmation is required, update this message */}
                 </div>
@@ -123,9 +122,7 @@ export default function SignupPage() {
           <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">
             Provider Portal
           </h1>
-          <h2 className="mt-2 text-center text-xl text-gray-600">
-            Create your provider account
-          </h2>
+          <h2 className="mt-2 text-center text-xl text-gray-600">Create your provider account</h2>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -133,9 +130,7 @@ export default function SignupPage() {
             <div className="rounded-md bg-red-50 p-4">
               <div className="flex">
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    Registration Error
-                  </h3>
+                  <h3 className="text-sm font-medium text-red-800">Registration Error</h3>
                   <div className="mt-2 text-sm text-red-700">{error}</div>
                 </div>
               </div>
@@ -206,9 +201,7 @@ export default function SignupPage() {
                 className="mt-1 block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
                 placeholder="••••••••"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Must be at least 8 characters long
-              </p>
+              <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters long</p>
             </div>
 
             <div>
@@ -233,7 +226,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? 'Creating account...' : 'Create account'}
             </button>
@@ -253,10 +246,7 @@ export default function SignupPage() {
         </form>
 
         <div className="text-center">
-          <Link
-            href="/"
-            className="text-sm font-medium text-gray-600 hover:text-gray-500"
-          >
+          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-500">
             ← Back to home
           </Link>
         </div>
