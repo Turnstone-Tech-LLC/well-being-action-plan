@@ -14,27 +14,49 @@ import {
   ExternalLink,
   Sparkles,
 } from 'lucide-react';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { providerService } from '@/lib/services/providerService';
 
 /**
  * Provider Dashboard
  *
  * Main landing page for providers after login.
- * Provides quick access to key features and overview of activity.
- *
- * Future enhancements:
- * - Display actual provider profile information from auth
- * - Show real statistics from database
- * - List recent/active patient plans
- * - Add logout functionality
+ * Displays authenticated provider information and real-time statistics
+ * from the database including active links and patient counts.
  */
 export default function ProviderDashboardPage() {
   const router = useRouter();
+  const { user, profile, loading } = useAuth();
+  const [linkStats, setLinkStats] = React.useState({
+    activeLinks: 0,
+    totalPatients: 0,
+    totalLinks: 0,
+  });
+  const [statsLoading, setStatsLoading] = React.useState(true);
 
-  // Placeholder stats - will be replaced with real data when backend is integrated
+  // Load link statistics
+  React.useEffect(() => {
+    const loadStats = async () => {
+      if (!user) return;
+
+      try {
+        const stats = await providerService.getLinkStats(user.id);
+        setLinkStats(stats);
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [user]);
+
+  // Statistics cards with real data
   const stats = [
     {
       title: 'Active Links',
-      value: '0',
+      value: statsLoading ? '...' : linkStats.activeLinks.toString(),
       description: 'Patient onboarding links',
       icon: Link2,
       color: 'text-blue-600',
@@ -42,7 +64,7 @@ export default function ProviderDashboardPage() {
     },
     {
       title: 'Patients',
-      value: '0',
+      value: statsLoading ? '...' : linkStats.totalPatients.toString(),
       description: 'Using your plans',
       icon: Users,
       color: 'text-green-600',
@@ -119,13 +141,30 @@ export default function ProviderDashboardPage() {
     },
   ];
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 text-lg font-medium text-muted-foreground">
+            Loading your dashboard...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       {/* Welcome Section */}
       <div>
-        <h1 className="text-4xl font-bold">Welcome to Your Provider Dashboard</h1>
+        <h1 className="text-4xl font-bold">
+          Welcome back{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}!
+        </h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Create personalized well-being action plans for your patients
+          {profile?.organization
+            ? `${profile.organization} - Provider Portal`
+            : 'Create personalized well-being action plans for your patients'}
         </p>
       </div>
 
@@ -289,21 +328,29 @@ export default function ProviderDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Placeholder for Future Features */}
+      {/* Recent Activity */}
       <Card className="border-dashed">
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>View and manage your patient plans</CardDescription>
+          <CardTitle>Recent Links</CardTitle>
+          <CardDescription>Your recently created patient onboarding links</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">
-              This section will display your recent patient plans and activity.
+              {linkStats.totalLinks > 0
+                ? `You have ${linkStats.totalLinks} link${linkStats.totalLinks !== 1 ? 's' : ''} created.`
+                : 'No links created yet. Get started by creating your first patient link!'}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Available after authentication is implemented.
-            </p>
+            <Button
+              onClick={() => router.push('/provider/link-generator')}
+              className="mt-4"
+              variant="outline"
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Your First Link
+            </Button>
           </div>
         </CardContent>
       </Card>
