@@ -111,6 +111,7 @@ export default function OnboardingStep3Page() {
         enableCheckInReminders: enableNotifications && enableCheckInReminders,
         checkInFrequencyHours,
         permissionStatus,
+        scheduledTime: '09:00', // Default notification time: 9:00 AM
       };
 
       await setUserConfig('patient', 'notificationPreferences', notificationPreferences);

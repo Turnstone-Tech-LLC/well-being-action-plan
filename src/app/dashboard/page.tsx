@@ -24,6 +24,7 @@ import type { ProviderLinkConfig } from '@/lib/types';
 import type { CheckIn } from '@/lib/types/check-in';
 import type { CopingStrategy } from '@/lib/types/coping-strategy';
 import { ZoneType } from '@/lib/types/zone';
+import { initializeNotificationScheduling } from '@/lib/services/notificationService';
 
 /**
  * Patient Dashboard / Home Screen
@@ -86,6 +87,9 @@ export default function DashboardPage() {
       const strategies = await getAllCopingStrategies({ limit: 6 });
       setCopingStrategies(strategies);
 
+      // Initialize notification scheduling
+      await initializeNotificationScheduling('patient');
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -137,8 +141,7 @@ export default function DashboardPage() {
   };
 
   const handleViewSettings = () => {
-    // TODO: Navigate to settings page when implemented
-    // Placeholder - settings not yet implemented
+    router.push('/settings');
   };
 
   const getZoneColor = (zone: ZoneType) => {
