@@ -7,11 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { parseProviderUrl } from '@/lib/utils';
 import { ProviderLinkConfig } from '@/lib/types';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { getUserConfig } from '@/lib/db';
 
 /**
  * Landing page component with provider link detection
  *
  * This component handles:
+ * - Redirecting returning patients to their dashboard
  * - URL parameter parsing for provider-generated links
  * - Customized welcome messages with provider-specific content
  * - Loading states during configuration parsing
@@ -25,20 +27,42 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Parse URL parameters on mount
-    const searchParams = new URLSearchParams(window.location.search);
-    const result = parseProviderUrl(searchParams);
-
-    if (result.success && result.config) {
-      setConfig(result.config);
-      setError(null);
-    } else {
-      setError(result.error || 'No provider link detected');
-      setConfig(null);
-    }
-
-    setLoading(false);
+    checkOnboardingAndRedirect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const checkOnboardingAndRedirect = async () => {
+    try {
+      // Check if user has completed onboarding
+      const onboardingConfig = await getUserConfig('patient', 'onboardingCompleted');
+
+      // If onboarding is complete and there's no provider link, redirect to dashboard
+      const searchParams = new URLSearchParams(window.location.search);
+      const hasProviderLink = searchParams.has('config');
+
+      if (onboardingConfig && onboardingConfig.value === true && !hasProviderLink) {
+        // User has completed onboarding and is just visiting the home page
+        router.push('/dashboard');
+        return;
+      }
+
+      // Parse URL parameters for provider link
+      const result = parseProviderUrl(searchParams);
+
+      if (result.success && result.config) {
+        setConfig(result.config);
+        setError(null);
+      } else {
+        setError(result.error || 'No provider link detected');
+        setConfig(null);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setLoading(false);
+    }
+  };
 
   const handleGetStarted = () => {
     // Store provider config to localStorage for persistence across onboarding
