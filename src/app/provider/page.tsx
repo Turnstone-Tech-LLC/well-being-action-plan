@@ -98,11 +98,10 @@ export default function ProviderDashboardPage() {
     },
     {
       title: 'Plan Builder',
-      description: 'Create comprehensive well-being plans',
+      description: 'Create comprehensive well-being action plans',
       icon: FileText,
-      href: '#',
-      disabled: true,
-      comingSoon: true,
+      href: '/provider/plan/new',
+      primary: false,
     },
   ];
 

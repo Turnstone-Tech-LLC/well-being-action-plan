@@ -48,3 +48,14 @@ export {
   type ProviderLinkConfig,
   type ProviderLinkParseResult,
 } from './provider';
+
+// Action Plan types
+export {
+  type ActionPlan,
+  type ActionPlanStatus,
+  type AgeRange,
+  type CreateActionPlan,
+  type UpdateActionPlan,
+  type ActionPlanBasicInfo,
+  AGE_RANGES,
+} from './action-plan';
