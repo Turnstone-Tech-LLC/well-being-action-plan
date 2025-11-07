@@ -133,9 +133,7 @@ export default function DashboardPage() {
   };
 
   const handleViewHistory = () => {
-    // TODO: Navigate to mood history page when implemented (#47)
-    // Placeholder until mood history is implemented
-    router.push('/check-in');
+    router.push('/history');
   };
 
   const handleViewSettings = () => {
