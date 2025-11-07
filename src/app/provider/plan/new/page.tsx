@@ -60,10 +60,11 @@ export default function NewPlanPage() {
         copingStrategyIds: [],
       });
 
-      // Navigate to the next step (coping strategies selection)
-      // For now, we'll redirect to the provider dashboard
-      // TODO: Replace with multi-step form navigation when coping strategy step is implemented
-      router.push(`/provider?planCreated=${actionPlan.id}`);
+      // Store plan ID in sessionStorage for multi-step form persistence
+      sessionStorage.setItem('currentPlanId', actionPlan.id);
+
+      // Navigate to step 2 (coping strategies selection)
+      router.push(`/provider/plan/new/step-2?planId=${actionPlan.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create action plan');
     } finally {
@@ -124,9 +125,7 @@ export default function NewPlanPage() {
                 })}
                 className={errors.name ? 'border-destructive' : ''}
               />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               <p className="text-xs text-muted-foreground">
                 Choose a descriptive name for internal reference
               </p>
@@ -169,9 +168,7 @@ export default function NewPlanPage() {
                   errors.notes ? 'border-destructive' : ''
                 }`}
               />
-              {errors.notes && (
-                <p className="text-sm text-destructive">{errors.notes.message}</p>
-              )}
+              {errors.notes && <p className="text-sm text-destructive">{errors.notes.message}</p>}
               <p className="text-xs text-muted-foreground">Optional supplementary information</p>
             </div>
 
