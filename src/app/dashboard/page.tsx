@@ -256,7 +256,9 @@ export default function DashboardPage() {
                     <Badge className={getZoneColor(checkIn.zone)} variant="secondary">
                       {getZoneLabel(checkIn.zone)}
                     </Badge>
-                    {checkIn.notes && <p className="text-sm text-muted-foreground">{checkIn.notes}</p>}
+                    {checkIn.notes && (
+                      <p className="text-sm text-muted-foreground">{checkIn.notes}</p>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {new Date(checkIn.timestamp).toLocaleTimeString('en-US', {
@@ -342,7 +344,10 @@ export default function DashboardPage() {
 
         {/* Quick Links */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="cursor-pointer transition-all hover:shadow-lg" onClick={handleViewHistory}>
+          <Card
+            className="cursor-pointer transition-all hover:shadow-lg"
+            onClick={handleViewHistory}
+          >
             <CardContent className="flex items-center justify-between py-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-primary/10 p-2">
@@ -357,7 +362,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-all hover:shadow-lg" onClick={() => router.push('/check-in')}>
+          <Card
+            className="cursor-pointer transition-all hover:shadow-lg"
+            onClick={() => router.push('/check-in')}
+          >
             <CardContent className="flex items-center justify-between py-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">

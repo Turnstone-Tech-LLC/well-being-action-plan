@@ -428,26 +428,17 @@ export function canShareViaUrl(
 export const PROVIDER_CONFIG_PARAM = 'config';
 
 /**
- * Converts a string to URL-safe base64
+ * Maximum URL length for QR codes (alphanumeric at level H)
+ * QR codes can hold ~2953 bytes but we use a conservative limit
  */
-function toUrlSafeBase64(str: string): string {
-  return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-
-/**
- * Converts URL-safe base64 back to regular base64
- */
-function fromUrlSafeBase64(str: string): string {
-  // Add back padding
-  const padding = '='.repeat((4 - (str.length % 4)) % 4);
-  return str.replace(/-/g, '+').replace(/_/g, '/') + padding;
-}
+export const MAX_QR_CODE_URL_LENGTH = 800;
 
 /**
  * Encodes a provider link configuration into a URL-safe string
+ * Uses gzip compression to keep URLs short for QR codes
  *
  * @param config - The provider link configuration to encode
- * @returns URL-safe base64 encoded string
+ * @returns URL-safe base64 encoded compressed string
  * @throws Error if the encoded string exceeds MAX_URL_LENGTH
  */
 export function encodeProviderConfig(config: ProviderLinkConfig): string {
@@ -455,20 +446,26 @@ export function encodeProviderConfig(config: ProviderLinkConfig): string {
     // Serialize to JSON
     const json = JSON.stringify(config);
 
-    // Convert to base64
-    const base64 = btoa(json);
+    // Convert string to Uint8Array for compression
+    const uint8Array = new TextEncoder().encode(json);
 
-    // Make URL-safe
-    const urlSafe = toUrlSafeBase64(base64);
+    // Compress using gzip
+    const compressed = pako.gzip(uint8Array);
+
+    // Convert to base64 (URL-safe)
+    const base64 = btoa(String.fromCharCode(...compressed))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
 
     // Check length
-    if (urlSafe.length > MAX_URL_LENGTH) {
+    if (base64.length > MAX_URL_LENGTH) {
       throw new Error(
-        `Encoded configuration exceeds maximum URL length (${urlSafe.length} > ${MAX_URL_LENGTH})`
+        `Encoded configuration exceeds maximum URL length (${base64.length} > ${MAX_URL_LENGTH})`
       );
     }
 
-    return urlSafe;
+    return base64;
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Failed to encode configuration: ${error.message}`);
@@ -479,6 +476,7 @@ export function encodeProviderConfig(config: ProviderLinkConfig): string {
 
 /**
  * Decodes a URL-safe base64 string into a provider link configuration
+ * Supports both compressed (new) and uncompressed (legacy) formats
  *
  * @param encoded - The URL-safe base64 encoded string
  * @returns Parsed provider link configuration
@@ -486,11 +484,28 @@ export function encodeProviderConfig(config: ProviderLinkConfig): string {
  */
 export function decodeProviderConfig(encoded: string): ProviderLinkConfig {
   try {
-    // Convert from URL-safe base64
-    const base64 = fromUrlSafeBase64(encoded);
+    // Restore base64 padding if needed
+    let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
 
     // Decode from base64
-    const json = atob(base64);
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    let json: string;
+    try {
+      // Try to decompress (new format)
+      const decompressed = pako.ungzip(bytes);
+      json = new TextDecoder().decode(decompressed);
+    } catch {
+      // Fall back to uncompressed format (legacy)
+      json = binaryString;
+    }
 
     // Parse JSON
     const config = JSON.parse(json) as ProviderLinkConfig;

@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ProviderLinkConfig, ProviderInfo } from '@/lib/types';
 import { CopingStrategy, CopingStrategyCategory } from '@/lib/types/coping-strategy';
-import { generateProviderUrl } from '@/lib/utils';
+import { generateProviderUrl, MAX_QR_CODE_URL_LENGTH } from '@/lib/utils';
 import {
   Link2,
   Copy,
@@ -226,6 +226,7 @@ export default function ProviderLinkGeneratorPage() {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [qrCodeWarning, setQrCodeWarning] = useState<string | null>(null);
 
   // Generate provider ID on mount
   useEffect(() => {
@@ -256,6 +257,7 @@ export default function ProviderLinkGeneratorPage() {
   const handleGenerateUrl = () => {
     try {
       setUrlError(null);
+      setQrCodeWarning(null);
 
       // Validation
       if (!providerInfo.name.trim()) {
@@ -289,6 +291,14 @@ export default function ProviderLinkGeneratorPage() {
       // Generate URL
       const url = generateProviderUrl(baseUrl, config);
       setGeneratedUrl(url);
+
+      // Check if URL is too long for QR codes
+      if (url.length > MAX_QR_CODE_URL_LENGTH) {
+        setQrCodeWarning(
+          `The URL is ${url.length} characters long, which may be too large for reliable QR code scanning. ` +
+            `Consider selecting fewer coping strategies or shortening your custom message.`
+        );
+      }
     } catch (error) {
       console.error('Error generating URL:', error);
       setUrlError(
@@ -368,8 +378,8 @@ export default function ProviderLinkGeneratorPage() {
       <div>
         <h1 className="text-3xl font-bold">Generate Provider Link</h1>
         <p className="mt-2 text-muted-foreground">
-          Create a personalized onboarding link for your patients. They&apos;ll see your
-          information and recommended coping strategies when they visit the link.
+          Create a personalized onboarding link for your patients. They&apos;ll see your information
+          and recommended coping strategies when they visit the link.
         </p>
       </div>
 
@@ -397,9 +407,7 @@ export default function ProviderLinkGeneratorPage() {
                   id="name"
                   placeholder="Dr. Sarah Johnson"
                   value={providerInfo.name}
-                  onChange={(e) =>
-                    setProviderInfo((prev) => ({ ...prev, name: e.target.value }))
-                  }
+                  onChange={(e) => setProviderInfo((prev) => ({ ...prev, name: e.target.value }))}
                 />
               </div>
 
@@ -652,7 +660,7 @@ export default function ProviderLinkGeneratorPage() {
               <CardContent className="space-y-4">
                 {/* URL Display */}
                 <div className="rounded-lg bg-muted p-3">
-                  <p className="break-all text-sm font-mono">{generatedUrl}</p>
+                  <p className="break-all font-mono text-sm">{generatedUrl}</p>
                 </div>
 
                 {/* Copy Button */}
@@ -696,9 +704,17 @@ export default function ProviderLinkGeneratorPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Warning if URL is too long */}
+                {qrCodeWarning && (
+                  <div className="flex items-start gap-2 rounded-lg border border-yellow-600 bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <span>{qrCodeWarning}</span>
+                  </div>
+                )}
+
                 {/* QR Code Display */}
                 <div className="flex justify-center rounded-lg bg-white p-6">
-                  <QRCodeSVG id="qr-code-svg" value={generatedUrl} size={200} level="H" />
+                  <QRCodeSVG id="qr-code-svg" value={generatedUrl} size={200} level="M" />
                 </div>
 
                 {/* Download Button */}
@@ -719,7 +735,9 @@ export default function ProviderLinkGeneratorPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Patient Preview</CardTitle>
-                <CardDescription>This is what patients will see when they open the link.</CardDescription>
+                <CardDescription>
+                  This is what patients will see when they open the link.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border-2 border-dashed p-4">
