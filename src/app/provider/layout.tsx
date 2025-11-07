@@ -1,18 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Building2, LayoutDashboard, Link2 } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Building2, LayoutDashboard, Link2, User, LogOut, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AuthProvider, useAuth } from '@/lib/contexts/AuthContext';
+import { useState } from 'react';
 
 /**
  * Provider Portal Layout
  *
  * Root layout for all provider portal pages.
- * Future: Will include authentication checks and provider navigation.
+ * Includes authentication context and provider navigation.
  */
-export default function ProviderLayout({ children }: { children: React.ReactNode }) {
+function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, profile, signOut } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Don't show nav on auth pages
+  const isAuthPage = pathname?.startsWith('/provider/auth');
 
   const navItems = [
     {
@@ -45,32 +53,91 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
               </div>
             </Link>
 
-            {/* Future: Add provider profile menu here */}
+            {/* User Menu */}
+            {user && profile && (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <User className="h-5 w-5" />
+                  <div className="text-left">
+                    <div className="font-semibold">{profile.name}</div>
+                    {profile.organization && (
+                      <div className="text-xs text-muted-foreground">{profile.organization}</div>
+                    )}
+                  </div>
+                </button>
+
+                {/* Dropdown Menu */}
+                {userMenuOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setUserMenuOpen(false)}
+                    />
+
+                    {/* Menu */}
+                    <div className="absolute right-0 z-20 mt-2 w-56 rounded-md border bg-white shadow-lg dark:bg-gray-800">
+                      <div className="border-b px-4 py-3">
+                        <div className="font-medium">{profile.name}</div>
+                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                      </div>
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            router.push('/provider/settings');
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          <Settings className="h-4 w-4" />
+                          Settings
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await signOut();
+                            router.push('/provider/auth/login');
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Navigation */}
-          <nav className="flex gap-1 border-t pt-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
+          {/* Navigation - Only show on authenticated pages */}
+          {!isAuthPage && (
+            <nav className="flex gap-1 border-t pt-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-2 rounded-t-md px-4 py-2 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-white text-primary dark:bg-gray-800'
-                      : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-gray-800/50'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-2 rounded-t-md px-4 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-white text-primary dark:bg-gray-800'
+                        : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-gray-800/50'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
         </div>
       </header>
 
@@ -85,5 +152,13 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         </p>
       </footer>
     </div>
+  );
+}
+
+export default function ProviderLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <ProviderLayoutInner>{children}</ProviderLayoutInner>
+    </AuthProvider>
   );
 }

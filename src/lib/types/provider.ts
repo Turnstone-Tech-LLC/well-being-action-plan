@@ -40,3 +40,47 @@ export interface ProviderLinkParseResult {
   config?: ProviderLinkConfig;
   error?: string;
 }
+
+/**
+ * Provider profile stored in Supabase database
+ * This represents the authenticated provider's account information
+ */
+export interface ProviderProfile {
+  id: string; // Matches Supabase auth.users.id
+  email: string;
+  name: string;
+  organization?: string;
+  logoUrl?: string;
+  contactInfo?: {
+    phone?: string;
+    email?: string;
+    website?: string;
+  };
+  settings?: {
+    defaultMessage?: string;
+    defaultStrategies?: string[];
+    theme?: 'light' | 'dark' | 'auto';
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Provider link tracking for analytics and management
+ * Stores information about generated links and their usage
+ */
+export interface ProviderLink {
+  id: string;
+  providerId: string;
+  linkConfig: ProviderLinkConfig;
+  encodedUrl: string;
+  qrCodeUrl?: string;
+  createdAt: Date;
+  expiresAt?: Date;
+  isActive: boolean;
+  metadata?: {
+    patientCount?: number;
+    lastAccessedAt?: Date;
+    notes?: string;
+  };
+}
