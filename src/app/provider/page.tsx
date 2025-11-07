@@ -278,9 +278,9 @@ export default function ProviderDashboardPage() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p>
-            <strong>Patient data stays private on their devices.</strong> The Well-Being Action
-            Plan uses a local-first architecture where all patient information is stored only on
-            their device using IndexedDB.
+            <strong>Patient data stays private on their devices.</strong> The Well-Being Action Plan
+            uses a local-first architecture where all patient information is stored only on their
+            device using IndexedDB.
           </p>
           <p className="text-xs text-muted-foreground">
             Provider links contain only your contact information and recommended strategies — no

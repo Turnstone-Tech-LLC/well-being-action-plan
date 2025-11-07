@@ -62,7 +62,7 @@ export default function CheckInPage() {
           {/* Green Zone */}
           <div
             onClick={() => handleZoneSelect(ZoneType.Green)}
-            className="cursor-pointer transition-transform hover:scale-105 focus-within:scale-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+            className="cursor-pointer transition-transform focus-within:scale-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:scale-105"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -83,7 +83,7 @@ export default function CheckInPage() {
           {/* Yellow Zone */}
           <div
             onClick={() => handleZoneSelect(ZoneType.Yellow)}
-            className="cursor-pointer transition-transform hover:scale-105 focus-within:scale-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+            className="cursor-pointer transition-transform focus-within:scale-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:scale-105"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -104,7 +104,7 @@ export default function CheckInPage() {
           {/* Red Zone */}
           <div
             onClick={() => handleZoneSelect(ZoneType.Red)}
-            className="cursor-pointer transition-transform hover:scale-105 focus-within:scale-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+            className="cursor-pointer transition-transform focus-within:scale-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:scale-105"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {

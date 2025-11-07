@@ -125,8 +125,8 @@ export default function RedZoneCheckIn() {
               You Matter, and Help is Available
             </CardTitle>
             <CardDescription className="text-base leading-relaxed text-rose-600 dark:text-rose-400">
-              If you&apos;re in crisis or having thoughts of self-harm, please reach out to a
-              crisis support service immediately. You don&apos;t have to face this alone.
+              If you&apos;re in crisis or having thoughts of self-harm, please reach out to a crisis
+              support service immediately. You don&apos;t have to face this alone.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -152,9 +152,7 @@ export default function RedZoneCheckIn() {
               <Phone className="mr-3 h-6 w-6" />
               <div className="flex flex-col items-start">
                 <span className="font-bold">Call 988</span>
-                <span className="text-xs font-normal opacity-90">
-                  Suicide & Crisis Lifeline
-                </span>
+                <span className="text-xs font-normal opacity-90">Suicide & Crisis Lifeline</span>
               </div>
             </Button>
 
@@ -182,11 +180,7 @@ export default function RedZoneCheckIn() {
           </CardHeader>
           <CardContent>
             {!showBreathing ? (
-              <Button
-                onClick={() => setShowBreathing(true)}
-                variant="outline"
-                className="w-full"
-              >
+              <Button onClick={() => setShowBreathing(true)} variant="outline" className="w-full">
                 Start Breathing Exercise
               </Button>
             ) : (
@@ -255,8 +249,8 @@ export default function RedZoneCheckIn() {
         <Card className="bg-muted/50">
           <CardContent className="py-4">
             <p className="text-center text-xs text-muted-foreground">
-              If you&apos;re experiencing a medical emergency, please call 911 or go to your
-              nearest emergency room immediately.
+              If you&apos;re experiencing a medical emergency, please call 911 or go to your nearest
+              emergency room immediately.
             </p>
           </CardContent>
         </Card>

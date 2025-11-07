@@ -34,7 +34,10 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-4">
             {/* Logo */}
-            <Link href="/provider" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            <Link
+              href="/provider"
+              className="flex items-center gap-2 transition-opacity hover:opacity-80"
+            >
               <Building2 className="h-6 w-6 text-primary" />
               <div>
                 <h1 className="text-lg font-semibold">Provider Portal</h1>

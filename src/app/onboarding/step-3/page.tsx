@@ -140,8 +140,8 @@ export default function OnboardingStep3Page() {
               Notification Preferences
             </CardTitle>
             <CardDescription>
-              Choose how you&apos;d like to be reminded to check in and manage your well-being.
-              You can change these settings anytime.
+              Choose how you&apos;d like to be reminded to check in and manage your well-being. You
+              can change these settings anytime.
             </CardDescription>
           </CardHeader>
 
