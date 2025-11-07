@@ -7,12 +7,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
-export default function LoginPage() {
+export const dynamic = 'force-dynamic';
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn, user } = useAuth();
@@ -43,7 +45,7 @@ export default function LoginPage() {
       } else {
         router.push(redirectPath);
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -57,9 +59,7 @@ export default function LoginPage() {
           <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">
             Provider Portal
           </h1>
-          <h2 className="mt-2 text-center text-xl text-gray-600">
-            Sign in to your account
-          </h2>
+          <h2 className="mt-2 text-center text-xl text-gray-600">Sign in to your account</h2>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -67,9 +67,7 @@ export default function LoginPage() {
             <div className="rounded-md bg-red-50 p-4">
               <div className="flex">
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    Authentication Error
-                  </h3>
+                  <h3 className="text-sm font-medium text-red-800">Authentication Error</h3>
                   <div className="mt-2 text-sm text-red-700">{error}</div>
                 </div>
               </div>
@@ -116,7 +114,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -136,14 +134,19 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center">
-          <Link
-            href="/"
-            className="text-sm font-medium text-gray-600 hover:text-gray-500"
-          >
+          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-500">
             ← Back to home
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -64,6 +64,8 @@ export default [
         clearInterval: 'readonly',
         TextEncoder: 'readonly',
         TextDecoder: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLElement: 'readonly',
       },
     },
     settings: {

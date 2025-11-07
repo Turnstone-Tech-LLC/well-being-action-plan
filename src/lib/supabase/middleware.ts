@@ -9,12 +9,14 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
+  const supabaseResponse = NextResponse.next({
     request,
   });
 
   const supabase = createServerClient(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
@@ -37,8 +39,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protect provider routes
-  if (request.nextUrl.pathname.startsWith('/provider') &&
-      !request.nextUrl.pathname.startsWith('/provider/auth')) {
+  if (
+    request.nextUrl.pathname.startsWith('/provider') &&
+    !request.nextUrl.pathname.startsWith('/provider/auth')
+  ) {
     if (!user) {
       // Redirect to login if not authenticated
       const url = request.nextUrl.clone();
