@@ -119,9 +119,8 @@ export default function OnboardingStep3Page() {
       await setUserConfig('patient', 'onboardingCompleted', true);
       await setUserConfig('patient', 'onboardingCompletedAt', new Date().toISOString());
 
-      // Navigate to main app
-      // TODO: Update this to navigate to the main dashboard when implemented
-      router.push('/');
+      // Navigate to patient dashboard
+      router.push('/dashboard');
     } catch (err) {
       console.error('Failed to save notification preferences:', err);
       setError('Failed to save your preferences. Please try again.');
