@@ -33,6 +33,8 @@ import {
   Palette,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { providerService } from '@/lib/services/providerService';
 
 /**
  * Category configuration for visual styling
@@ -208,6 +210,9 @@ const DEFAULT_STRATEGIES: CopingStrategy[] = [
  * - Preview what patients will see
  */
 export default function ProviderLinkGeneratorPage() {
+  // Auth context
+  const { user } = useAuth();
+
   // Provider information state
   const [providerInfo, setProviderInfo] = useState<ProviderInfo>({
     id: '',
@@ -227,6 +232,8 @@ export default function ProviderLinkGeneratorPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [qrCodeWarning, setQrCodeWarning] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Generate provider ID on mount
   useEffect(() => {
@@ -254,14 +261,17 @@ export default function ProviderLinkGeneratorPage() {
   /**
    * Generate the shareable URL
    */
-  const handleGenerateUrl = () => {
+  const handleGenerateUrl = async () => {
     try {
       setUrlError(null);
       setQrCodeWarning(null);
+      setSaveSuccess(false);
+      setIsSaving(true);
 
       // Validation
       if (!providerInfo.name.trim()) {
         setUrlError('Provider name is required');
+        setIsSaving(false);
         return;
       }
 
@@ -299,11 +309,26 @@ export default function ProviderLinkGeneratorPage() {
             `Consider selecting fewer coping strategies or shortening your custom message.`
         );
       }
+
+      // Save to database if user is authenticated
+      if (user) {
+        try {
+          await providerService.createLink(user.id, config, url);
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (dbError) {
+          console.error('Error saving link to database:', dbError);
+          // Don't show error to user as the link was still generated successfully
+          // The link can still be used even if it wasn't saved to the database
+        }
+      }
     } catch (error) {
       console.error('Error generating URL:', error);
       setUrlError(
         error instanceof Error ? error.message : 'Failed to generate URL. Please try again.'
       );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -629,10 +654,18 @@ export default function ProviderLinkGeneratorPage() {
           </Card>
 
           {/* Generate Button */}
-          <Button onClick={handleGenerateUrl} size="lg" className="w-full">
+          <Button onClick={handleGenerateUrl} size="lg" className="w-full" disabled={isSaving}>
             <Link2 className="mr-2 h-4 w-4" />
-            Generate Link
+            {isSaving ? 'Generating...' : 'Generate Link'}
           </Button>
+
+          {/* Success message */}
+          {saveSuccess && (
+            <div className="flex items-center gap-2 rounded-lg border border-green-600 bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
+              <Check className="h-4 w-4 flex-shrink-0" />
+              <span>Link saved to database successfully!</span>
+            </div>
+          )}
 
           {/* Error message */}
           {urlError && (

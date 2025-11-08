@@ -8,6 +8,42 @@
 import { createClient } from '@/lib/supabase/client';
 import type { ProviderProfile, ProviderLink, ProviderLinkConfig } from '@/lib/types/provider';
 
+/**
+ * Database row type with snake_case columns
+ */
+interface ProviderLinkRow {
+  id: string;
+  provider_id: string;
+  link_config: ProviderLinkConfig;
+  encoded_url: string;
+  qr_code_url?: string;
+  created_at: string;
+  expires_at?: string;
+  is_active: boolean;
+  metadata?: {
+    patientCount?: number;
+    lastAccessedAt?: string;
+    notes?: string;
+  };
+}
+
+/**
+ * Convert database row to ProviderLink object
+ */
+function mapRowToProviderLink(row: ProviderLinkRow): ProviderLink {
+  return {
+    id: row.id,
+    providerId: row.provider_id,
+    linkConfig: row.link_config,
+    encodedUrl: row.encoded_url,
+    qrCodeUrl: row.qr_code_url,
+    createdAt: new Date(row.created_at),
+    expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
+    isActive: row.is_active,
+    metadata: row.metadata,
+  };
+}
+
 export class ProviderService {
   private supabase = createClient();
 
@@ -19,7 +55,7 @@ export class ProviderService {
       .from('provider_profiles')
       .upsert({
         ...profile,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -61,20 +97,19 @@ export class ProviderService {
     const { data, error } = await this.supabase
       .from('provider_links')
       .insert({
-        providerId,
-        linkConfig,
-        encodedUrl,
-        qrCodeUrl: options?.qrCodeUrl,
-        expiresAt: options?.expiresAt?.toISOString(),
-        isActive: true,
+        provider_id: providerId,
+        link_config: linkConfig,
+        encoded_url: encodedUrl,
+        qr_code_url: options?.qrCodeUrl,
+        expires_at: options?.expiresAt?.toISOString(),
+        is_active: true,
         metadata: options?.metadata || {},
-        createdAt: new Date().toISOString(),
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return mapRowToProviderLink(data as ProviderLinkRow);
   }
 
   /**
@@ -84,12 +119,12 @@ export class ProviderService {
     const { data, error } = await this.supabase
       .from('provider_links')
       .select('*')
-      .eq('providerId', providerId)
-      .eq('isActive', true)
-      .order('createdAt', { ascending: false });
+      .eq('provider_id', providerId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as ProviderLinkRow[] || []).map(mapRowToProviderLink);
   }
 
   /**
@@ -99,11 +134,11 @@ export class ProviderService {
     const { data, error } = await this.supabase
       .from('provider_links')
       .select('*')
-      .eq('providerId', providerId)
-      .order('createdAt', { ascending: false });
+      .eq('provider_id', providerId)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as ProviderLinkRow[] || []).map(mapRowToProviderLink);
   }
 
   /**
@@ -112,7 +147,7 @@ export class ProviderService {
   async updateLinkStatus(linkId: string, isActive: boolean): Promise<void> {
     const { error } = await this.supabase
       .from('provider_links')
-      .update({ isActive })
+      .update({ is_active: isActive })
       .eq('id', linkId);
 
     if (error) throw error;
@@ -177,7 +212,7 @@ export class ProviderService {
       .from('provider_profiles')
       .update({
         settings,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', providerId);
 
