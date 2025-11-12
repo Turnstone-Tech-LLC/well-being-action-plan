@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,7 +92,7 @@ interface CustomStrategy {
  * - Preview selected strategies
  * - Validate minimum 3 strategies before proceeding
  */
-export default function PlanBuilderStep2Page() {
+function PlanBuilderStep2Content() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -592,5 +592,24 @@ export default function PlanBuilderStep2Page() {
         </Card>
       </div>
     </main>
+  );
+}
+
+export default function PlanBuilderStep2Page() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8">
+          <Card className="w-full max-w-3xl">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="mb-4 h-12 w-12 animate-spin text-primary" />
+              <p className="text-lg text-muted-foreground">Loading...</p>
+            </CardContent>
+          </Card>
+        </main>
+      }
+    >
+      <PlanBuilderStep2Content />
+    </Suspense>
   );
 }
