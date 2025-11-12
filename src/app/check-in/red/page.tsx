@@ -74,16 +74,16 @@ export default function RedZoneCheckIn() {
 
   if (saved) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-rose-50 to-white p-6 dark:from-rose-950 dark:to-background">
-        <Card className="w-full max-w-2xl border-rose-300 bg-white/80 backdrop-blur dark:border-rose-700 dark:bg-background/80">
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#DC582A]/10 to-white p-6 dark:from-[#DC582A]/20 dark:to-background">
+        <Card className="w-full max-w-2xl border-red-zone bg-white/80 backdrop-blur dark:border-[#DC582A]/50 dark:bg-background/80">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900">
-              <Check className="h-10 w-10 text-rose-600 dark:text-rose-400" />
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#DC582A]/10 dark:bg-[#DC582A]/30">
+              <Check className="h-10 w-10 text-red-zone dark:text-[#FF9B7F]" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-rose-700 dark:text-rose-300">
+            <h2 className="mb-2 text-2xl font-bold text-red-zone dark:text-[#FF9B7F]">
               Thank You for Checking In
             </h2>
-            <p className="text-rose-600 dark:text-rose-400">
+            <p className="text-red-zone dark:text-[#FF9B7F]">
               We&apos;re glad you&apos;re here. Remember, help is always available if you need it.
             </p>
           </CardContent>
@@ -93,7 +93,7 @@ export default function RedZoneCheckIn() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-rose-50 to-white p-6 py-12 dark:from-rose-950 dark:to-background">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#DC582A]/10 to-white p-6 py-12 dark:from-[#DC582A]/20 dark:to-background">
       <div className="w-full max-w-2xl space-y-6">
         {/* Header with Back Button */}
         <div className="flex items-center gap-3">
@@ -109,22 +109,22 @@ export default function RedZoneCheckIn() {
         </div>
 
         {/* Red Zone Indicator */}
-        <Card className="border-2 border-rose-300 bg-white/80 backdrop-blur dark:border-rose-700 dark:bg-background/80">
+        <Card className="border-2 border-red-zone bg-white/80 backdrop-blur dark:border-[#DC582A]/50 dark:bg-background/80">
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900">
-                <Heart className="h-12 w-12 text-rose-500 dark:text-rose-400" />
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#DC582A]/10 dark:bg-[#DC582A]/30">
+                <Heart className="h-12 w-12 text-red-zone dark:text-[#FF9B7F]" />
               </div>
             </div>
             <div className="mb-2 flex justify-center">
-              <Badge className="bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200">
+              <Badge className="bg-[#DC582A]/10 text-red-zone dark:bg-[#DC582A]/30 dark:text-[#FF9B7F]">
                 Red Zone
               </Badge>
             </div>
-            <CardTitle className="text-2xl text-rose-700 dark:text-rose-300">
+            <CardTitle className="text-2xl text-red-zone dark:text-[#FF9B7F]">
               You Matter, and Help is Available
             </CardTitle>
-            <CardDescription className="text-base leading-relaxed text-rose-600 dark:text-rose-400">
+            <CardDescription className="text-base leading-relaxed text-red-zone dark:text-[#FF9B7F]">
               If you&apos;re in crisis or having thoughts of self-harm, please reach out to a crisis
               support service immediately. You don&apos;t have to face this alone.
             </CardDescription>
@@ -132,9 +132,9 @@ export default function RedZoneCheckIn() {
         </Card>
 
         {/* Crisis Hotlines - Most Important */}
-        <Card className="border-2 border-rose-300 dark:border-rose-700">
+        <Card className="border-2 border-red-zone dark:border-[#DC582A]/50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl text-rose-700 dark:text-rose-300">
+            <CardTitle className="flex items-center gap-2 text-xl text-red-zone dark:text-[#FF9B7F]">
               <AlertCircle className="h-6 w-6" />
               Immediate Support
             </CardTitle>
@@ -147,7 +147,7 @@ export default function RedZoneCheckIn() {
             <Button
               onClick={handleCallCrisisLine}
               size="lg"
-              className="w-full bg-rose-600 text-lg hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
+              className="w-full bg-red-zone text-lg hover:bg-[#B84620] dark:bg-[#FF9B7F] dark:hover:bg-[#FF7F5C]"
             >
               <Phone className="mr-3 h-6 w-6" />
               <div className="flex flex-col items-start">
@@ -161,7 +161,7 @@ export default function RedZoneCheckIn() {
               onClick={handleTextCrisisLine}
               size="lg"
               variant="outline"
-              className="w-full border-2 border-rose-500 text-lg hover:bg-rose-50 dark:border-rose-600 dark:hover:bg-rose-950"
+              className="w-full border-2 border-red-zone text-lg hover:bg-[#DC582A]/10 dark:border-[#FF9B7F] dark:hover:bg-[#FF9B7F]/10"
             >
               <MessageSquare className="mr-3 h-6 w-6" />
               <div className="flex flex-col items-start">

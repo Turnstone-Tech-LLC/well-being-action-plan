@@ -92,15 +92,15 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex min-h-screen items-center justify-center bg-morning-fog px-4 py-12 dark:bg-gray-900 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
-          <div className="rounded-md bg-green-50 p-4">
+          <div className="rounded-md bg-[#154734]/10 p-4 dark:bg-[#154734]/20">
             <div className="flex">
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
+                <h3 className="text-sm font-medium text-green-zone dark:text-[#7FD4B8]">
                   Account Created Successfully!
                 </h3>
-                <div className="mt-2 text-sm text-green-700">
+                <div className="mt-2 text-sm text-green-zone dark:text-[#7FD4B8]">
                   <p>
                     Your provider account has been created. You will be redirected to the login page
                     shortly.
@@ -116,22 +116,26 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-morning-fog px-4 py-12 dark:bg-gray-900 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div>
-          <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-center text-3xl font-bold tracking-tight text-catamount-green dark:text-[#7FD4B8]">
             Provider Portal
           </h1>
-          <h2 className="mt-2 text-center text-xl text-gray-600">Create your provider account</h2>
+          <h2 className="mt-2 text-center text-xl text-vermont-slate dark:text-[#A8D5FF]">
+            Create your provider account
+          </h2>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-md bg-[#DC582A]/10 p-4 dark:bg-[#DC582A]/20">
               <div className="flex">
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Registration Error</h3>
-                  <div className="mt-2 text-sm text-red-700">{error}</div>
+                  <h3 className="text-sm font-medium text-red-zone dark:text-[#FF9B7F]">
+                    Registration Error
+                  </h3>
+                  <div className="mt-2 text-sm text-red-zone dark:text-[#FF9B7F]">{error}</div>
                 </div>
               </div>
             </div>

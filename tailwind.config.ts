@@ -43,6 +43,17 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        /* UVM Brand Colors */
+        'catamount-green': '#154734',
+        'uvm-gold': '#FFD100',
+        'vermont-slate': '#00313C',
+        'clear-sky': '#489FDF',
+        'old-mill': '#DC582A',
+        'morning-fog': '#F7F7F7',
+        /* Traffic Light Zones */
+        'green-zone': '#154734',
+        'yellow-zone': '#FFD100',
+        'red-zone': '#DC582A',
       },
       borderRadius: {
         lg: 'var(--radius)',

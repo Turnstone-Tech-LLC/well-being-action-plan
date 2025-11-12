@@ -130,8 +130,16 @@ export default function OnboardingStep3Page() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-morning-fog to-[#F0F8FF] p-4 dark:from-gray-900 dark:to-gray-800 md:p-8">
       <div className="w-full max-w-md space-y-6">
+        {/* UVM Branding Header */}
+        <div className="mb-4 text-center">
+          <h2 className="text-2xl font-bold text-catamount-green">Well-Being Action Plan</h2>
+          <p className="text-xs text-vermont-slate">
+            Developed in collaboration with The University of Vermont Children's Hospital
+          </p>
+        </div>
+
         <ProgressIndicator currentStep={3} totalSteps={3} />
 
         <Card>
@@ -149,7 +157,7 @@ export default function OnboardingStep3Page() {
           <CardContent className="space-y-6">
             {/* Notification permission warning */}
             {permissionStatus === 'unsupported' && (
-              <div className="flex items-start gap-2 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
+              <div className="flex items-start gap-2 rounded-lg bg-[#FFD100]/10 p-3 text-sm text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]">
                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <p>
                   Your browser doesn&apos;t support notifications. You can still use the app, but
@@ -159,7 +167,7 @@ export default function OnboardingStep3Page() {
             )}
 
             {permissionStatus === 'denied' && (
-              <div className="flex items-start gap-2 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
+              <div className="flex items-start gap-2 rounded-lg bg-[#FFD100]/10 p-3 text-sm text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]">
                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <p>
                   Notifications are currently blocked. To enable them, please update your browser

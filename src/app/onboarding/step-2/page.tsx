@@ -326,8 +326,16 @@ export default function OnboardingStep2Page() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 py-8 md:p-8">
+    <main className="flex min-h-screen flex-col items-center bg-gradient-to-br from-morning-fog to-[#F0F8FF] p-4 py-8 dark:from-gray-900 dark:to-gray-800 md:p-8">
       <div className="w-full max-w-3xl space-y-6">
+        {/* UVM Branding Header */}
+        <div className="mb-4 text-center">
+          <h2 className="text-2xl font-bold text-catamount-green">Well-Being Action Plan</h2>
+          <p className="text-xs text-vermont-slate">
+            Developed in collaboration with The University of Vermont Children's Hospital
+          </p>
+        </div>
+
         <ProgressIndicator currentStep={2} totalSteps={3} />
 
         <Card>

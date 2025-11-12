@@ -69,15 +69,15 @@ export default function GreenZoneCheckIn() {
   if (saved) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-6">
-        <Card className="w-full max-w-2xl border-green-500 bg-green-50 dark:bg-green-950">
+        <Card className="w-full max-w-2xl border-green-zone bg-[#154734]/5 dark:bg-[#154734]/20">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-              <Check className="h-10 w-10 text-green-600 dark:text-green-400" />
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#154734]/10 dark:bg-[#154734]/30">
+              <Check className="h-10 w-10 text-green-zone dark:text-[#7FD4B8]" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-green-700 dark:text-green-300">
+            <h2 className="mb-2 text-2xl font-bold text-green-zone dark:text-[#7FD4B8]">
               Check-In Saved!
             </h2>
-            <p className="text-green-600 dark:text-green-400">
+            <p className="text-green-zone dark:text-[#7FD4B8]">
               Great to hear you&apos;re doing well. Keep up the positive momentum!
             </p>
           </CardContent>
@@ -103,22 +103,22 @@ export default function GreenZoneCheckIn() {
         </div>
 
         {/* Green Zone Indicator */}
-        <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950">
+        <Card className="border-2 border-green-zone bg-[#154734]/5 dark:bg-[#154734]/20">
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                <CircleCheck className="h-12 w-12 text-green-600 dark:text-green-400" />
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#154734]/10 dark:bg-[#154734]/30">
+                <CircleCheck className="h-12 w-12 text-green-zone dark:text-[#7FD4B8]" />
               </div>
             </div>
             <div className="mb-2 flex justify-center">
-              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <Badge className="bg-[#154734]/10 text-green-zone dark:bg-[#154734]/30 dark:text-[#7FD4B8]">
                 Green Zone
               </Badge>
             </div>
-            <CardTitle className="text-3xl text-green-700 dark:text-green-300">
+            <CardTitle className="text-3xl text-green-zone dark:text-[#7FD4B8]">
               You&apos;re Doing Great! 🌱
             </CardTitle>
-            <CardDescription className="text-lg text-green-600 dark:text-green-400">
+            <CardDescription className="text-lg text-green-zone dark:text-[#7FD4B8]">
               It&apos;s wonderful to see you in a positive place. Keep nurturing your well-being!
             </CardDescription>
           </CardHeader>
@@ -139,8 +139,8 @@ export default function GreenZoneCheckIn() {
                   className={cn(
                     'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all hover:scale-105',
                     selectedMood === option.value
-                      ? 'border-green-500 bg-green-50 dark:bg-green-950'
-                      : 'border-border hover:border-green-300'
+                      ? 'border-green-zone bg-[#154734]/5 dark:bg-[#154734]/20'
+                      : 'border-border hover:border-green-zone/50'
                   )}
                   aria-label={`Select ${option.label} mood`}
                   aria-pressed={selectedMood === option.value}
