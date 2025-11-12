@@ -14,7 +14,9 @@ export class ProviderService {
   /**
    * Create or update a provider profile
    */
-  async upsertProfile(profile: Omit<ProviderProfile, 'createdAt' | 'updatedAt'>): Promise<ProviderProfile> {
+  async upsertProfile(
+    profile: Omit<ProviderProfile, 'createdAt' | 'updatedAt'>
+  ): Promise<ProviderProfile> {
     const { data, error } = await this.supabase
       .from('provider_profiles')
       .upsert({
@@ -134,10 +136,7 @@ export class ProviderService {
    * Delete a link
    */
   async deleteLink(linkId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('provider_links')
-      .delete()
-      .eq('id', linkId);
+    const { error } = await this.supabase.from('provider_links').delete().eq('id', linkId);
 
     if (error) throw error;
   }
@@ -153,11 +152,8 @@ export class ProviderService {
     const links = await this.getAllLinks(providerId);
 
     const totalLinks = links.length;
-    const activeLinks = links.filter(link => link.isActive).length;
-    const totalPatients = links.reduce(
-      (sum, link) => sum + (link.metadata?.patientCount || 0),
-      0
-    );
+    const activeLinks = links.filter((link) => link.isActive).length;
+    const totalPatients = links.reduce((sum, link) => sum + (link.metadata?.patientCount || 0), 0);
 
     return {
       totalLinks,
@@ -169,10 +165,7 @@ export class ProviderService {
   /**
    * Update provider settings
    */
-  async updateSettings(
-    providerId: string,
-    settings: ProviderProfile['settings']
-  ): Promise<void> {
+  async updateSettings(providerId: string, settings: ProviderProfile['settings']): Promise<void> {
     const { error } = await this.supabase
       .from('provider_profiles')
       .update({

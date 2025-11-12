@@ -44,7 +44,7 @@ function rowToActionPlan(row: ActionPlanRow): ActionPlan {
  */
 function actionPlanToRow(plan: CreateActionPlan | UpdateActionPlan): Partial<ActionPlanRow> {
   return {
-    ...(('id' in plan && plan.id) ? { id: plan.id } : {}),
+    ...('id' in plan && plan.id ? { id: plan.id } : {}),
     ...('providerId' in plan ? { provider_id: plan.providerId } : {}),
     ...(plan.name ? { name: plan.name } : {}),
     ...(plan.ageRange !== undefined ? { age_range: plan.ageRange || null } : {}),
@@ -66,11 +66,7 @@ async function createActionPlan(plan: CreateActionPlan): Promise<ActionPlan> {
     copingStrategyIds: plan.copingStrategyIds || [],
   });
 
-  const { data, error } = await supabase
-    .from('action_plans')
-    .insert(row)
-    .select()
-    .single();
+  const { data, error } = await supabase.from('action_plans').insert(row).select().single();
 
   if (error) {
     throw new Error(`Failed to create action plan: ${error.message}`);
@@ -85,11 +81,7 @@ async function createActionPlan(plan: CreateActionPlan): Promise<ActionPlan> {
 async function getActionPlan(id: string): Promise<ActionPlan | null> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('action_plans')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('action_plans').select('*').eq('id', id).single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -169,10 +161,7 @@ async function updateActionPlan(plan: UpdateActionPlan): Promise<ActionPlan> {
 async function deleteActionPlan(id: string): Promise<void> {
   const supabase = createClient();
 
-  const { error } = await supabase
-    .from('action_plans')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('action_plans').delete().eq('id', id);
 
   if (error) {
     throw new Error(`Failed to delete action plan: ${error.message}`);
