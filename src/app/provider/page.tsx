@@ -59,24 +59,24 @@ export default function ProviderDashboardPage() {
       value: statsLoading ? '...' : linkStats.activeLinks.toString(),
       description: 'Patient onboarding links',
       icon: Link2,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100 dark:bg-blue-900/20',
+      color: 'text-clear-sky',
+      bgColor: 'bg-[#489FDF]/10 dark:bg-[#489FDF]/20',
     },
     {
       title: 'Patients',
       value: statsLoading ? '...' : linkStats.totalPatients.toString(),
       description: 'Using your plans',
       icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100 dark:bg-green-900/20',
+      color: 'text-green-zone',
+      bgColor: 'bg-[#154734]/10 dark:bg-[#154734]/20',
     },
     {
       title: 'Strategies',
       value: '18',
       description: 'Available in library',
       icon: Sparkles,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100 dark:bg-purple-900/20',
+      color: 'text-uvm-gold',
+      bgColor: 'bg-[#FFD100]/10 dark:bg-[#FFD100]/20',
     },
   ];
 
@@ -157,10 +157,10 @@ export default function ProviderDashboardPage() {
     <div className="mx-auto max-w-7xl space-y-8">
       {/* Welcome Section */}
       <div>
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-4xl font-bold text-catamount-green dark:text-[#7FD4B8]">
           Welcome back{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}!
         </h1>
-        <p className="mt-2 text-lg text-muted-foreground">
+        <p className="mt-2 text-lg text-vermont-slate dark:text-[#A8D5FF]">
           {profile?.organization
             ? `${profile.organization} - Provider Portal`
             : 'Create personalized well-being action plans for your patients'}

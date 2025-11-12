@@ -168,23 +168,23 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-morning-fog to-white dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
-          <p className="text-gray-600">Loading settings...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-catamount-green" />
+          <p className="text-vermont-slate dark:text-[#A8D5FF]">Loading settings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-morning-fog to-white dark:from-gray-900 dark:to-gray-800">
       <div className="mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.push('/dashboard')}
-            className="mb-4 flex items-center gap-2 text-blue-600 hover:text-blue-700"
+            className="mb-4 flex items-center gap-2 text-catamount-green hover:text-[#0F3428] dark:hover:text-[#7FD4B8]"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -196,20 +196,22 @@ export default function SettingsPage() {
             </svg>
             Back to Dashboard
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          {patientName && <p className="mt-2 text-gray-600">Hello, {patientName}</p>}
+          <h1 className="text-3xl font-bold text-catamount-green dark:text-[#7FD4B8]">Settings</h1>
+          {patientName && (
+            <p className="mt-2 text-vermont-slate dark:text-[#A8D5FF]">Hello, {patientName}</p>
+          )}
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+          <div className="mb-6 rounded-lg border border-red-zone bg-[#DC582A]/10 p-4 text-red-zone dark:bg-[#DC582A]/20 dark:text-[#FF9B7F]">
             {error}
           </div>
         )}
 
         {/* Success Message */}
         {success && (
-          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-green-700">
+          <div className="mb-6 rounded-lg border border-green-zone bg-[#154734]/10 p-4 text-green-zone dark:bg-[#154734]/20 dark:text-[#7FD4B8]">
             {success}
           </div>
         )}
@@ -219,11 +221,13 @@ export default function SettingsPage() {
           <h2 className="mb-4 text-xl font-semibold text-gray-900">Daily Check-In Notifications</h2>
 
           {/* Permission Status */}
-          <div className="mb-6 rounded-lg bg-gray-50 p-4">
+          <div className="mb-6 rounded-lg bg-morning-fog p-4 dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">Permission Status</p>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="font-medium text-catamount-green dark:text-[#7FD4B8]">
+                  Permission Status
+                </p>
+                <p className="mt-1 text-sm text-vermont-slate dark:text-[#A8D5FF]">
                   {permissionStatus === 'granted' && 'Notifications are allowed'}
                   {permissionStatus === 'denied' && 'Notifications are blocked'}
                   {permissionStatus === 'default' && 'Permission not yet requested'}
@@ -232,17 +236,17 @@ export default function SettingsPage() {
               </div>
               <div className="flex-shrink-0">
                 {permissionStatus === 'granted' && (
-                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                  <span className="inline-flex items-center rounded-full bg-[#154734]/10 px-3 py-1 text-sm font-medium text-green-zone dark:bg-[#154734]/30 dark:text-[#7FD4B8]">
                     Enabled
                   </span>
                 )}
                 {permissionStatus === 'denied' && (
-                  <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+                  <span className="inline-flex items-center rounded-full bg-[#DC582A]/10 px-3 py-1 text-sm font-medium text-red-zone dark:bg-[#DC582A]/30 dark:text-[#FF9B7F]">
                     Blocked
                   </span>
                 )}
                 {permissionStatus === 'default' && (
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
+                  <span className="inline-flex items-center rounded-full bg-[#FFD100]/10 px-3 py-1 text-sm font-medium text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]">
                     Not Set
                   </span>
                 )}
@@ -266,7 +270,7 @@ export default function SettingsPage() {
                 disabled={saving || permissionStatus === 'unsupported'}
                 aria-label="Toggle daily reminders"
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  notificationsEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  notificationsEnabled ? 'bg-catamount-green' : 'bg-gray-300'
                 } ${saving ? 'cursor-not-allowed opacity-50' : ''}`}
               >
                 <span

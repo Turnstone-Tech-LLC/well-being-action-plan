@@ -22,22 +22,22 @@ interface CalendarDay {
   checkIns: CheckIn[];
 }
 
-// Zone color mappings for calendar display
+// Zone color mappings for calendar display - UVM Brand Colors
 const zoneColors: Record<ZoneType, { bg: string; border: string; text: string }> = {
   [ZoneType.Green]: {
-    bg: 'bg-green-100 dark:bg-green-900',
-    border: 'border-green-500',
-    text: 'text-green-700 dark:text-green-300',
+    bg: 'bg-[#154734]/10 dark:bg-[#154734]/30',
+    border: 'border-green-zone',
+    text: 'text-green-zone dark:text-[#7FD4B8]',
   },
   [ZoneType.Yellow]: {
-    bg: 'bg-yellow-100 dark:bg-yellow-900',
-    border: 'border-yellow-500',
-    text: 'text-yellow-700 dark:text-yellow-300',
+    bg: 'bg-[#FFD100]/10 dark:bg-[#FFD100]/20',
+    border: 'border-yellow-zone',
+    text: 'text-[#B39D00] dark:text-[#FFE066]',
   },
   [ZoneType.Red]: {
-    bg: 'bg-red-100 dark:bg-red-900',
-    border: 'border-red-500',
-    text: 'text-red-700 dark:text-red-300',
+    bg: 'bg-[#DC582A]/10 dark:bg-[#DC582A]/30',
+    border: 'border-red-zone',
+    text: 'text-red-zone dark:text-[#FF9B7F]',
   },
 };
 

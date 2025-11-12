@@ -83,8 +83,10 @@ export default function ComponentsDemo() {
   return (
     <div className="container mx-auto max-w-6xl space-y-8 p-6">
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold">Component Library Demo</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-4xl font-bold text-catamount-green dark:text-[#7FD4B8]">
+          Component Library Demo
+        </h1>
+        <p className="text-vermont-slate dark:text-[#A8D5FF]">
           A showcase of reusable components for the Well-Being Action Plan
         </p>
       </div>

@@ -123,10 +123,18 @@ export default function Home() {
   // Success state - valid provider link detected
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6">
+      {/* UVM Branding Header */}
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl font-bold text-catamount-green">Well-Being Action Plan</h1>
+        <p className="mt-2 text-sm text-vermont-slate">
+          Developed in collaboration with The University of Vermont Children's Hospital
+        </p>
+      </div>
+
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-500" />
+            <CheckCircle2 className="h-6 w-6 text-green-zone dark:text-[#7FD4B8]" />
             <CardTitle>Welcome to Your Well-Being Action Plan</CardTitle>
           </div>
           <CardDescription>

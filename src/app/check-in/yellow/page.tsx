@@ -113,15 +113,15 @@ export default function YellowZoneCheckIn() {
   if (saved) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-6">
-        <Card className="w-full max-w-2xl border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+        <Card className="w-full max-w-2xl border-yellow-zone bg-[#FFD100]/5 dark:bg-[#FFD100]/15">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900">
-              <Check className="h-10 w-10 text-yellow-600 dark:text-yellow-400" />
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#FFD100]/10 dark:bg-[#FFD100]/20">
+              <Check className="h-10 w-10 text-[#B39D00] dark:text-[#FFE066]" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+            <h2 className="mb-2 text-2xl font-bold text-[#B39D00] dark:text-[#FFE066]">
               Check-In Saved!
             </h2>
-            <p className="text-yellow-600 dark:text-yellow-400">
+            <p className="text-[#B39D00] dark:text-[#FFE066]">
               You&apos;re taking important steps. Remember, reaching out for support is a sign of
               strength.
             </p>
@@ -148,22 +148,22 @@ export default function YellowZoneCheckIn() {
         </div>
 
         {/* Yellow Zone Indicator */}
-        <Card className="border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+        <Card className="border-2 border-yellow-zone bg-[#FFD100]/5 dark:bg-[#FFD100]/15">
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900">
-                <AlertTriangle className="h-12 w-12 text-yellow-600 dark:text-yellow-400" />
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#FFD100]/10 dark:bg-[#FFD100]/20">
+                <AlertTriangle className="h-12 w-12 text-[#B39D00] dark:text-[#FFE066]" />
               </div>
             </div>
             <div className="mb-2 flex justify-center">
-              <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+              <Badge className="bg-[#FFD100]/10 text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]">
                 Yellow Zone
               </Badge>
             </div>
-            <CardTitle className="text-3xl text-yellow-700 dark:text-yellow-300">
+            <CardTitle className="text-3xl text-[#B39D00] dark:text-[#FFE066]">
               You&apos;re Not Alone 🤝
             </CardTitle>
-            <CardDescription className="text-lg text-yellow-600 dark:text-yellow-400">
+            <CardDescription className="text-lg text-[#B39D00] dark:text-[#FFE066]">
               It&apos;s okay to struggle. Let&apos;s explore some strategies that might help you
               feel better.
             </CardDescription>

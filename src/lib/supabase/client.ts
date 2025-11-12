@@ -3,15 +3,15 @@
  *
  * This client is used for client-side authentication and operations.
  * It handles provider authentication for the provider portal.
+ *
+ * Note: If Supabase credentials are not configured, this will use placeholder
+ * values to allow the build to succeed. The provider portal will not function
+ * without proper credentials, but patient-facing features will work fine.
  */
 
 import { createBrowserClient } from '@supabase/ssr';
+import { getSupabaseUrl, getSupabaseAnonKey } from './config';
 
 export function createClient() {
-  return createBrowserClient(
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  return createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey());
 }

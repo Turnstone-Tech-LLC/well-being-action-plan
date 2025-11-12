@@ -147,11 +147,11 @@ export default function DashboardPage() {
   const getZoneColor = (zone: ZoneType) => {
     switch (zone) {
       case ZoneType.Green:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200';
+        return 'bg-[#154734]/10 text-green-zone dark:bg-[#154734]/30 dark:text-[#7FD4B8]';
       case ZoneType.Yellow:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200';
+        return 'bg-[#FFD100]/10 text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]';
       case ZoneType.Red:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200';
+        return 'bg-[#DC582A]/10 text-red-zone dark:bg-[#DC582A]/30 dark:text-[#FF9B7F]';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200';
     }
@@ -182,12 +182,20 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 dark:from-gray-900 dark:to-gray-800 md:p-8">
+    <main className="min-h-screen bg-gradient-to-br from-morning-fog to-[#F0F8FF] p-4 dark:from-gray-900 dark:to-gray-800 md:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
+        {/* UVM Branding Header */}
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-bold text-catamount-green">Well-Being Action Plan</h2>
+          <p className="text-xs text-vermont-slate">
+            Developed in collaboration with The University of Vermont Children's Hospital
+          </p>
+        </div>
+
         {/* Welcome Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-3xl font-bold text-vermont-slate">
               Welcome back{patientName ? `, ${patientName}` : ''}! 👋
             </h1>
             <p className="mt-1 text-muted-foreground">
@@ -205,14 +213,14 @@ export default function DashboardPage() {
 
         {/* Check-in Streak Card */}
         {checkInStreak > 0 && (
-          <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 dark:border-orange-800 dark:from-orange-950/20 dark:to-amber-950/20">
+          <Card className="border-uvm-gold bg-gradient-to-r from-[#FFD100]/10 to-[#FFD100]/5 dark:border-[#FFD100]/30 dark:from-[#FFD100]/15 dark:to-[#FFD100]/5">
             <CardContent className="flex items-center gap-4 py-4">
-              <div className="rounded-full bg-orange-100 p-3 dark:bg-orange-900/30">
-                <Flame className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              <div className="rounded-full bg-[#FFD100]/20 p-3 dark:bg-[#FFD100]/30">
+                <Flame className="h-6 w-6 text-[#B39D00] dark:text-[#FFE066]" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground">Check-in Streak</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-vermont-slate">
                   {checkInStreak} {checkInStreak === 1 ? 'Day' : 'Days'}
                 </p>
               </div>
@@ -383,13 +391,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Crisis Resources */}
-        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10">
+        <Card className="border-red-zone bg-[#DC582A]/5 dark:border-[#DC582A]/30 dark:bg-[#DC582A]/10">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-900 dark:text-red-200">
+            <CardTitle className="flex items-center gap-2 text-red-zone dark:text-[#FF9B7F]">
               <AlertCircle className="h-5 w-5" />
               Crisis Resources
             </CardTitle>
-            <CardDescription className="text-red-800 dark:text-red-300">
+            <CardDescription className="text-[#8B3D1F] dark:text-[#FFB399]">
               Help is always available when you need it
             </CardDescription>
           </CardHeader>
@@ -397,7 +405,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 variant="outline"
-                className="flex-1 border-red-300 bg-white hover:bg-red-50 dark:border-red-700 dark:bg-red-950/50"
+                className="flex-1 border-red-zone bg-white hover:bg-[#DC582A]/5 dark:border-[#DC582A]/50 dark:bg-[#DC582A]/10"
                 asChild
               >
                 <a href="tel:988">
@@ -407,7 +415,7 @@ export default function DashboardPage() {
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 border-red-300 bg-white hover:bg-red-50 dark:border-red-700 dark:bg-red-950/50"
+                className="flex-1 border-red-zone bg-white hover:bg-[#DC582A]/5 dark:border-[#DC582A]/50 dark:bg-[#DC582A]/10"
                 asChild
               >
                 <a href="sms:741741">
@@ -416,15 +424,15 @@ export default function DashboardPage() {
                 </a>
               </Button>
             </div>
-            <p className="text-xs text-red-700 dark:text-red-400">
+            <p className="text-xs text-[#8B3D1F] dark:text-[#FFB399]">
               If you&apos;re in immediate danger, call 911 or go to your nearest emergency room.
             </p>
           </CardContent>
         </Card>
 
         {/* Privacy Notice */}
-        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10">
-          <CardContent className="py-4 text-center text-sm text-muted-foreground">
+        <Card className="border-clear-sky bg-[#489FDF]/5 dark:border-[#489FDF]/30 dark:bg-[#489FDF]/10">
+          <CardContent className="py-4 text-center text-sm text-vermont-slate dark:text-[#A8D5FF]">
             🔒 Your data is private and stored only on your device. We never share your information.
           </CardContent>
         </Card>
