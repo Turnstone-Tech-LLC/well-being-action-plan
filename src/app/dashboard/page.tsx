@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,31 +30,11 @@ import { initializeNotificationScheduling } from '@/lib/services/notificationSer
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 
 /**
- * Patient Dashboard / Home Screen
- *
- * Main landing screen after onboarding showing:
- * - Personalized welcome
- * - Daily check-in CTA
- * - Today's check-ins
- * - Check-in streak
- * - Provider information
- * - Coping strategies
- * - Crisis resources
- * - Navigation to history and settings
- *
- * Protected Route: Requires completed onboarding
+ * Session Message Component
+ * Separated to use useSearchParams() with Suspense boundary
  */
-export default function DashboardPage() {
-  const router = useRouter();
+function SessionMessage() {
   const searchParams = useSearchParams();
-  // Patient authentication - redirects to onboarding if not complete
-  const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
-  const [loading, setLoading] = useState(true);
-  const [patientName, setPatientName] = useState<string>('');
-  const [providerConfig, setProviderConfig] = useState<ProviderLinkConfig | null>(null);
-  const [todayCheckIns, setTodayCheckIns] = useState<CheckIn[]>([]);
-  const [checkInStreak, setCheckInStreak] = useState(0);
-  const [copingStrategies, setCopingStrategies] = useState<CopingStrategy[]>([]);
   const [showSessionMessage, setShowSessionMessage] = useState(false);
 
   useEffect(() => {
@@ -72,6 +52,46 @@ export default function DashboardPage() {
       }, 5000);
     }
   }, [searchParams]);
+
+  if (!showSessionMessage) {
+    return null;
+  }
+
+  return (
+    <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+      <AlertDescription className="text-blue-800 dark:text-blue-200">
+        You already have an active session. Your existing well-being plan is loaded below.
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+/**
+ * Patient Dashboard / Home Screen
+ *
+ * Main landing screen after onboarding showing:
+ * - Personalized welcome
+ * - Daily check-in CTA
+ * - Today's check-ins
+ * - Check-in streak
+ * - Provider information
+ * - Coping strategies
+ * - Crisis resources
+ * - Navigation to history and settings
+ *
+ * Protected Route: Requires completed onboarding
+ */
+export default function DashboardPage() {
+  const router = useRouter();
+  // Patient authentication - redirects to onboarding if not complete
+  const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
+  const [loading, setLoading] = useState(true);
+  const [patientName, setPatientName] = useState<string>('');
+  const [providerConfig, setProviderConfig] = useState<ProviderLinkConfig | null>(null);
+  const [todayCheckIns, setTodayCheckIns] = useState<CheckIn[]>([]);
+  const [checkInStreak, setCheckInStreak] = useState(0);
+  const [copingStrategies, setCopingStrategies] = useState<CopingStrategy[]>([]);
 
   useEffect(() => {
     // Only load dashboard data if onboarding is complete
@@ -249,14 +269,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Session Exists Message */}
-        {showSessionMessage && (
-          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <AlertDescription className="text-blue-800 dark:text-blue-200">
-              You already have an active session. Your existing well-being plan is loaded below.
-            </AlertDescription>
-          </Alert>
-        )}
+        <Suspense fallback={null}>
+          <SessionMessage />
+        </Suspense>
 
         {/* Check-in Streak Card */}
         {checkInStreak > 0 && (

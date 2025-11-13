@@ -17,10 +17,10 @@ import {
   generateProviderUrl,
   encodeProviderConfig,
   ACCESS_CODE_PARAM,
-  PROVIDER_CONFIG_PARAM,
-  type ProviderLinkConfig,
 } from '../urlConfig';
+import type { ProviderLinkConfig } from '@/lib/types';
 import { ZoneType } from '@/lib/types/zone';
+import { CopingStrategyCategory } from '@/lib/types/coping-strategy';
 
 describe('URL Config - Basic Encoding and Decoding', () => {
   const sampleConfig: ShareablePlanConfig = {
@@ -667,8 +667,18 @@ describe('URL Config - Access Code Parameter Support', () => {
           },
         },
         customMessage: 'Welcome message',
-        preselectedStrategies: ['strategy-1', 'strategy-2'],
-        config: {
+        copingStrategies: [
+          {
+            id: 'strategy-1',
+            title: 'Deep Breathing',
+            description: 'Take slow, deep breaths',
+            category: CopingStrategyCategory.Breathing,
+            isFavorite: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        planConfig: {
           enableNotifications: true,
           enableCheckInReminders: true,
           checkInFrequencyHours: 24,

@@ -4,7 +4,7 @@
  * Tests export/import functionality for user data
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { validateImportData, getDataSummary, type ExportDataFile } from '../dataPortabilityService';
 import { ZoneType } from '@/lib/types/zone';
 import { CopingStrategyCategory } from '@/lib/types/coping-strategy';
@@ -135,13 +135,18 @@ describe('Data Portability Service', () => {
     });
 
     it('should count multiple items correctly', () => {
+      const baseCheckIn = validExportData.data.checkIns[0];
+      if (!baseCheckIn) {
+        throw new Error('Base check-in not found');
+      }
+
       const multiData: ExportDataFile = {
         ...validExportData,
         data: {
           checkIns: [
-            { ...validExportData.data.checkIns[0]!, id: 'check-in-1' },
-            { ...validExportData.data.checkIns[0]!, id: 'check-in-2' },
-            { ...validExportData.data.checkIns[0]!, id: 'check-in-3' },
+            { ...baseCheckIn, id: 'check-in-1' },
+            { ...baseCheckIn, id: 'check-in-2' },
+            { ...baseCheckIn, id: 'check-in-3' },
           ],
           copingStrategies: validExportData.data.copingStrategies,
           userConfig: validExportData.data.userConfig,
