@@ -106,14 +106,16 @@ function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
                         </button>
                         {isProviderMode && (
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               setUserMenuOpen(false);
+                              // Sign out the provider first, then revoke provider mode
+                              await signOut();
                               revokeProviderMode();
                             }}
                             className="flex w-full items-center gap-2 border-t px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Shield className="h-4 w-4" />
-                            Revoke Provider Mode
+                            Leave Provider Mode
                           </button>
                         )}
                       </div>

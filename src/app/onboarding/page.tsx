@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
-import { setUserConfig } from '@/lib/db';
-import { parseAccessCode, decodeProviderConfig } from '@/lib/utils';
 import { AlertCircle, Building2, Mail, Phone, Globe } from 'lucide-react';
 import type { ProviderLinkConfig } from '@/lib/types/provider';
+import { getStoredProviderConfig } from '@/lib/utils/linkHelpers';
+import { isProviderModeEnabled } from '@/lib/utils/providerMode';
 
 /**
  * Onboarding Step 1: Collect patient's preferred name
@@ -38,36 +38,19 @@ export default function OnboardingPage() {
   useEffect(() => {
     const checkProviderConfig = () => {
       try {
-        // Check URL params first
-        const searchParams = new URLSearchParams(window.location.search);
-        const accessCode = parseAccessCode(searchParams);
+        // Check if in provider mode - redirect to provider portal
+        if (isProviderModeEnabled()) {
+          router.push('/provider?error=cannot_access_patient_onboarding');
+          return;
+        }
 
-        if (accessCode) {
-          // Try to decode and store the config
-          try {
-            const config = decodeProviderConfig(accessCode);
-            localStorage.setItem('providerConfig', JSON.stringify(config));
-            setProviderInfo(config.provider);
-            setHasValidConfig(true);
-          } catch (err) {
-            console.error('Invalid access code in URL:', err);
-            setHasValidConfig(false);
-          }
+        // Check if config exists in localStorage
+        const storedConfig = getStoredProviderConfig();
+        if (storedConfig) {
+          setProviderInfo(storedConfig.provider);
+          setHasValidConfig(true);
         } else {
-          // Check if config exists in localStorage
-          const storedConfigJson = localStorage.getItem('providerConfig');
-          if (storedConfigJson) {
-            try {
-              const storedConfig: ProviderLinkConfig = JSON.parse(storedConfigJson);
-              setProviderInfo(storedConfig.provider);
-              setHasValidConfig(true);
-            } catch (err) {
-              console.error('Error parsing stored config:', err);
-              setHasValidConfig(false);
-            }
-          } else {
-            setHasValidConfig(false);
-          }
+          setHasValidConfig(false);
         }
       } catch (err) {
         console.error('Error checking provider config:', err);
@@ -78,7 +61,7 @@ export default function OnboardingPage() {
     };
 
     checkProviderConfig();
-  }, []);
+  }, [router]);
 
   /**
    * Validates and saves the patient's name
@@ -103,12 +86,11 @@ export default function OnboardingPage() {
     try {
       setIsLoading(true);
 
-      // Save name to IndexedDB
-      // Using 'patient' as default userId for now since we're in a single-user context
-      await setUserConfig('patient', 'preferredName', trimmedName);
+      // Store name in sessionStorage (don't write to IndexedDB yet)
+      // This data will be saved to IndexedDB only when onboarding is completed
+      sessionStorage.setItem('onboarding_preferredName', trimmedName);
 
       // Navigate to step 2
-      // TODO: Update this path when step 2 is implemented
       router.push('/onboarding/step-2');
     } catch (err) {
       console.error('Failed to save name:', err);

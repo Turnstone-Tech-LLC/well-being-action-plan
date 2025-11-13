@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { providerService } from '@/lib/services/providerService';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   _request: NextRequest,
@@ -25,8 +25,24 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid slug parameter' }, { status: 400 });
     }
 
+    // Create server-side Supabase client for database access
+    const supabase = await createClient();
+
     // Fetch link from database
-    const link = await providerService.getLinkBySlug(slug);
+    const { data: link, error: fetchError } = await supabase
+      .from('provider_links')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    // Handle fetch errors
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        // Not found error
+        return NextResponse.json({ error: 'Provider link not found' }, { status: 404 });
+      }
+      throw fetchError;
+    }
 
     if (!link) {
       return NextResponse.json({ error: 'Provider link not found' }, { status: 404 });
@@ -46,9 +62,18 @@ export async function GET(
     }
 
     // Increment patient count (fire and forget)
-    providerService.incrementPatientCount(link.id).catch((error) => {
-      console.error('Failed to increment patient count:', error);
-    });
+    supabase
+      .from('provider_links')
+      .update({
+        patient_count: (link.patient_count || 0) + 1,
+        last_accessed_at: new Date().toISOString(),
+      })
+      .eq('id', link.id)
+      .then(({ error: updateError }) => {
+        if (updateError) {
+          console.error('Failed to increment patient count:', updateError);
+        }
+      });
 
     // Return provider configuration
     return NextResponse.json(

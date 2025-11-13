@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { parseProviderUrl, parseAccessCode, decodeProviderConfig } from '@/lib/utils';
 import { ProviderLinkConfig } from '@/lib/types';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getUserConfig } from '@/lib/db';
@@ -16,6 +15,11 @@ import {
   isProviderModeEnabled,
 } from '@/lib/utils/providerMode';
 import { Flash } from '@/components/flash';
+import {
+  fetchProviderConfigBySlug,
+  getStoredProviderConfig,
+  storeProviderConfig,
+} from '@/lib/utils/linkHelpers';
 
 /**
  * Landing page component with provider link detection
@@ -57,43 +61,19 @@ export default function Home() {
       const onboardingConfig = await getUserConfig('patient', 'onboardingCompleted');
       const hasActiveSession = onboardingConfig && onboardingConfig.value === true;
 
-      // Get URL search params
-      const searchParams = new URLSearchParams(window.location.search);
+      if (hasActiveSession) {
+        // User has completed onboarding - redirect to dashboard
+        router.push('/dashboard');
+        return;
+      }
 
-      // Check for access code in URL (supports both 'access_code' and 'config' params)
-      const accessCode = parseAccessCode(searchParams);
-      const hasAccessCode = !!accessCode;
-
-      // If there's an access code, try to parse it
-      if (hasAccessCode) {
-        // If user already has an active session, redirect to dashboard with message
-        if (hasActiveSession) {
-          router.push('/dashboard?message=session_exists');
-          return;
-        }
-
-        // Parse the access code
-        const result = parseProviderUrl(searchParams);
-
-        if (result.success && result.config) {
-          setConfig(result.config);
-          setError(null);
-          setShowWelcomeScreen(false);
-        } else {
-          // Invalid access code
-          setError(result.error || 'Invalid access code');
-          setConfig(null);
-          setShowWelcomeScreen(false);
-        }
+      // Check if there's a stored provider config from a previous slug entry or /link/[slug] visit
+      const storedConfig = getStoredProviderConfig();
+      if (storedConfig) {
+        setConfig(storedConfig);
+        setShowWelcomeScreen(false);
       } else {
-        // No access code in URL
-        if (hasActiveSession) {
-          // User has completed onboarding and is just visiting the home page
-          router.push('/dashboard');
-          return;
-        }
-
-        // New user without access code - show welcome screen
+        // No stored config - show welcome screen
         setShowWelcomeScreen(true);
         setConfig(null);
         setError(null);
@@ -109,7 +89,7 @@ export default function Home() {
   const handleGetStarted = () => {
     // Store provider config to localStorage for persistence across onboarding
     if (config) {
-      localStorage.setItem('providerConfig', JSON.stringify(config));
+      storeProviderConfig(config);
     }
 
     // Navigate to onboarding flow
@@ -117,20 +97,33 @@ export default function Home() {
   };
 
   const handleAccessCodeSubmit = async (accessCode: string) => {
+    // Check if in provider mode before processing access code
+    if (isProviderModeEnabled()) {
+      setError('You are in provider mode. Please leave provider mode to access patient features.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Try to decode the access code
-      const providerConfig = decodeProviderConfig(accessCode);
+      // Fetch config from API using the slug
+      const result = await fetchProviderConfigBySlug(accessCode);
 
-      // If successful, set config and show the provider welcome view
-      setConfig(providerConfig);
-      setShowWelcomeScreen(false);
+      if (result.success) {
+        // Store config and show the provider welcome view
+        storeProviderConfig(result.config);
+        setConfig(result.config);
+        setShowWelcomeScreen(false);
+      } else {
+        // Show error from API
+        setError(result.error);
+      }
+
       setLoading(false);
     } catch (err) {
-      // Invalid access code
-      setError(err instanceof Error ? err.message : 'Invalid access code');
+      // Unexpected error
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       setLoading(false);
     }
   };

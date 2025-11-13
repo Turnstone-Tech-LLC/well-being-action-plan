@@ -55,7 +55,7 @@ export class ProviderService {
   async createLink(
     providerId: string,
     linkConfig: ProviderLinkConfig,
-    encodedUrl: string,
+    encodedUrl: string | null = null,
     options?: {
       slug?: string;
       qrCodeUrl?: string;

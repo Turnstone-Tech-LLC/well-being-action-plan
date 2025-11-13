@@ -106,9 +106,26 @@ export async function updateSession(request: NextRequest) {
   }
 
   // ============================================================================
-  // Patient Routes - No Server-Side Protection
+  // Patient Route Protection - Block Authenticated Providers
   // ============================================================================
-  // Patient routes are protected client-side using the usePatientAuth hook
+  // Authenticated providers should not access patient routes
+  // This prevents accidental mixing of provider and patient contexts
+
+  const patientRoutes = ['/dashboard', '/check-in', '/history', '/settings', '/onboarding'];
+  const isPatientRoute = patientRoutes.some((route) => request.nextUrl.pathname.startsWith(route));
+
+  if (user && isPatientRoute) {
+    // Authenticated provider trying to access patient route - redirect to provider portal
+    const url = request.nextUrl.clone();
+    url.pathname = '/provider';
+    url.searchParams.set('error', 'provider_cannot_access_patient_routes');
+    return NextResponse.redirect(url);
+  }
+
+  // ============================================================================
+  // Patient Routes - Client-Side Protection
+  // ============================================================================
+  // Patient routes are also protected client-side using the usePatientAuth hook
   // This maintains the privacy-first architecture where patient data never
   // leaves the device and IndexedDB validation happens in the browser.
 

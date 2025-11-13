@@ -17,6 +17,7 @@ import {
   getOnboardingRedirectPath,
   type PatientOnboardingStatus,
 } from '@/lib/utils/patientAuth';
+import { isProviderModeEnabled } from '@/lib/utils/providerMode';
 
 /**
  * Hook options for customizing behavior
@@ -95,6 +96,17 @@ export function usePatientAuth(options: UsePatientAuthOptions = {}): UsePatientA
   const checkOnboarding = async () => {
     try {
       setLoading(true);
+
+      // Check if in provider mode - patient routes should be blocked
+      if (isProviderModeEnabled()) {
+        const isOnProviderPage = pathname?.startsWith('/provider');
+        // If not on provider page, redirect to provider portal
+        if (!isOnProviderPage) {
+          router.push('/provider?error=cannot_access_patient_routes');
+          return;
+        }
+      }
+
       const onboardingStatus = await checkPatientOnboarding(userId);
       setStatus(onboardingStatus);
 

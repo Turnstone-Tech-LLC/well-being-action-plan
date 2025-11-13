@@ -8,10 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
-import { ProviderLinkConfig } from '@/lib/types';
 import { CopingStrategy, CopingStrategyCategory } from '@/lib/types/coping-strategy';
-import { setUserConfig, createCopingStrategy } from '@/lib/db';
 import { categoryConfig } from '@/lib/config/categoryConfig';
+import { getStoredProviderConfig } from '@/lib/utils/linkHelpers';
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 
 /**
@@ -35,15 +34,14 @@ export default function OnboardingStep2Page() {
   // Load coping strategies from provider config
   useEffect(() => {
     try {
-      const configJson = localStorage.getItem('providerConfig');
+      const config = getStoredProviderConfig();
 
-      if (!configJson) {
+      if (!config) {
         setError('No provider configuration found. Please start from the beginning.');
         setLoading(false);
         return;
       }
 
-      const config: ProviderLinkConfig = JSON.parse(configJson);
       setProviderName(config.provider.name);
 
       // Get coping strategies from provider config
@@ -183,27 +181,19 @@ export default function OnboardingStep2Page() {
         return;
       }
 
-      // Save selected strategy IDs to userConfig
+      // Store selected strategies in sessionStorage (don't write to IndexedDB yet)
+      // This data will be saved to IndexedDB only when onboarding is completed in step 3
       const selectedIdsArray = Array.from(selectedIds);
-      await setUserConfig('patient', 'selectedCopingStrategyIds', selectedIdsArray);
-
-      // Also save the full strategy objects to the copingStrategies table
       const selectedStrategies = strategies.filter((s) => selectedIds.has(s.id));
 
-      // Create each selected strategy in the database
-      for (const strategy of selectedStrategies) {
-        try {
-          await createCopingStrategy({
-            title: strategy.title,
-            description: strategy.description,
-            category: strategy.category,
-            isFavorite: false,
-          });
-        } catch {
-          // Strategy might already exist, which is fine
-          console.warn('Strategy might already exist:', strategy.title);
-        }
-      }
+      sessionStorage.setItem(
+        'onboarding_selectedCopingStrategyIds',
+        JSON.stringify(selectedIdsArray)
+      );
+      sessionStorage.setItem(
+        'onboarding_selectedCopingStrategies',
+        JSON.stringify(selectedStrategies)
+      );
 
       // Navigate to Step 3
       router.push('/onboarding/step-3');

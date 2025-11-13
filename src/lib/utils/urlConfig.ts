@@ -1,21 +1,16 @@
 /**
  * URL Configuration Utilities
  *
- * This module provides functionality for encoding and decoding configurations into
- * URL-safe strings, supporting two distinct use cases:
+ * This module provides functionality for encoding and decoding well-being plan
+ * configurations into URL-safe strings for sharing between users.
  *
- * 1. **Plan Sharing**: Share well-being plan configurations between users
- *    - Uses `plan` URL parameter
- *    - Employs gzip compression via pako
- *    - Validates with Zod schemas
- *    - URL structure: `https://example.com/?plan={encoded_plan}`
+ * ## Plan Sharing
  *
- * 2. **Provider Links**: Provider-generated onboarding links for patients
- *    - Uses `access_code` URL parameter (user-facing)
- *    - Also supports `config` parameter for internal/legacy use
- *    - Uses gzip compression for compact QR codes
- *    - Contains provider information and preferences
- *    - URL structure: `https://example.com/?access_code={encoded_config}`
+ * Share well-being plan configurations between users via URL:
+ * - Uses `plan` URL parameter
+ * - Employs gzip compression via pako for compact URLs
+ * - Validates with Zod schemas
+ * - URL structure: `https://example.com/?plan={encoded_plan}`
  *
  * ## Size Limitations
  *
@@ -29,7 +24,6 @@
 import { z } from 'zod';
 import pako from 'pako';
 import { ZoneType } from '../types/zone';
-import { ProviderLinkConfig, ProviderLinkParseResult } from '@/lib/types';
 
 // ============================================================================
 // PLAN SHARING - For sharing well-being plans between users
@@ -418,231 +412,3 @@ export function canShareViaUrl(
     };
   }
 }
-
-// ============================================================================
-// PROVIDER LINKS - For provider-generated patient onboarding links
-// ============================================================================
-
-/**
- * URL parameter name for provider configuration (user-facing)
- */
-export const ACCESS_CODE_PARAM = 'access_code';
-
-/**
- * URL parameter name for provider configuration (internal/legacy)
- */
-export const PROVIDER_CONFIG_PARAM = 'config';
-
-/**
- * Maximum URL length for QR codes (alphanumeric at level H)
- * QR codes can hold ~2953 bytes but we use a conservative limit
- */
-export const MAX_QR_CODE_URL_LENGTH = 800;
-
-/**
- * Encodes a provider link configuration into a URL-safe string
- * Uses gzip compression to keep URLs short for QR codes
- *
- * @param config - The provider link configuration to encode
- * @returns URL-safe base64 encoded compressed string
- * @throws Error if the encoded string exceeds MAX_URL_LENGTH
- */
-export function encodeProviderConfig(config: ProviderLinkConfig): string {
-  try {
-    // Serialize to JSON
-    const json = JSON.stringify(config);
-
-    // Convert string to Uint8Array for compression
-    const uint8Array = new TextEncoder().encode(json);
-
-    // Compress using gzip
-    const compressed = pako.gzip(uint8Array);
-
-    // Convert to base64 (URL-safe)
-    const base64 = btoa(String.fromCharCode(...compressed))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-
-    // Check length
-    if (base64.length > MAX_URL_LENGTH) {
-      throw new Error(
-        `Encoded configuration exceeds maximum URL length (${base64.length} > ${MAX_URL_LENGTH})`
-      );
-    }
-
-    return base64;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to encode configuration: ${error.message}`);
-    }
-    throw new Error('Failed to encode configuration: Unknown error');
-  }
-}
-
-/**
- * Decodes a URL-safe base64 string into a provider link configuration
- * Supports both compressed (new) and uncompressed (legacy) formats
- *
- * @param encoded - The URL-safe base64 encoded string
- * @returns Parsed provider link configuration
- * @throws Error if decoding or parsing fails
- */
-export function decodeProviderConfig(encoded: string): ProviderLinkConfig {
-  try {
-    // Restore base64 padding if needed
-    let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
-    while (base64.length % 4) {
-      base64 += '=';
-    }
-
-    // Decode from base64
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    let json: string;
-    try {
-      // Try to decompress (new format)
-      const decompressed = pako.ungzip(bytes);
-      json = new TextDecoder().decode(decompressed);
-    } catch {
-      // Fall back to uncompressed format (legacy)
-      json = binaryString;
-    }
-
-    // Parse JSON
-    const config = JSON.parse(json) as ProviderLinkConfig;
-
-    // Validate required fields
-    if (!config.provider || !config.provider.id || !config.provider.name) {
-      throw new Error('Invalid configuration: missing required provider fields');
-    }
-
-    return config;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to decode configuration: ${error.message}`);
-    }
-    throw new Error('Failed to decode configuration: Unknown error');
-  }
-}
-
-/**
- * Generates a complete URL with encoded provider configuration
- * Uses the access_code parameter for user-facing URLs
- *
- * @param baseUrl - The base URL (e.g., 'https://example.com')
- * @param config - The provider link configuration
- * @param useAccessCodeParam - If true, uses 'access_code' parameter; if false, uses 'config' (default: true)
- * @returns Complete URL with encoded configuration parameter
- */
-export function generateProviderUrl(
-  baseUrl: string,
-  config: ProviderLinkConfig,
-  useAccessCodeParam = true
-): string {
-  const encoded = encodeProviderConfig(config);
-  const url = new URL(baseUrl);
-  const paramName = useAccessCodeParam ? ACCESS_CODE_PARAM : PROVIDER_CONFIG_PARAM;
-  url.searchParams.set(paramName, encoded);
-  return url.toString();
-}
-
-/**
- * Parses provider configuration from URL search parameters
- * Checks both 'access_code' (preferred) and 'config' (legacy) parameters
- *
- * @param searchParams - URLSearchParams or search string (e.g., '?access_code=...')
- * @returns Parse result with success status and config or error
- */
-export function parseProviderUrl(searchParams: URLSearchParams | string): ProviderLinkParseResult {
-  try {
-    // Handle string input
-    const params =
-      typeof searchParams === 'string' ? new URLSearchParams(searchParams) : searchParams;
-
-    // Check for access_code parameter first (preferred), then fall back to config (legacy)
-    const encoded = params.get(ACCESS_CODE_PARAM) || params.get(PROVIDER_CONFIG_PARAM);
-
-    if (!encoded) {
-      return {
-        success: false,
-        error: 'No configuration parameter found in URL',
-      };
-    }
-
-    // Decode configuration
-    const config = decodeProviderConfig(encoded);
-
-    return {
-      success: true,
-      config,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to parse provider URL',
-    };
-  }
-}
-
-/**
- * Extracts access code from URL search parameters
- * Checks both 'access_code' and 'config' parameters
- *
- * @param searchParams - URLSearchParams or search string
- * @returns The encoded access code string or null if not found
- */
-export function parseAccessCode(searchParams: URLSearchParams | string): string | null {
-  const params =
-    typeof searchParams === 'string' ? new URLSearchParams(searchParams) : searchParams;
-
-  // Check for access_code parameter first (preferred), then fall back to config (legacy)
-  return params.get(ACCESS_CODE_PARAM) || params.get(PROVIDER_CONFIG_PARAM);
-}
-
-/**
- * Validates a provider link configuration
- *
- * @param config - The configuration to validate
- * @returns true if valid, false otherwise
- */
-export function validateProviderConfig(config: unknown): config is ProviderLinkConfig {
-  if (!config || typeof config !== 'object') {
-    return false;
-  }
-
-  const c = config as Partial<ProviderLinkConfig>;
-
-  // Validate provider info
-  if (!c.provider || typeof c.provider !== 'object') {
-    return false;
-  }
-
-  if (!c.provider.id || typeof c.provider.id !== 'string') {
-    return false;
-  }
-
-  if (!c.provider.name || typeof c.provider.name !== 'string') {
-    return false;
-  }
-
-  return true;
-}
-
-// ============================================================================
-// LEGACY EXPORTS - For backward compatibility
-// ============================================================================
-
-/**
- * @deprecated Use `encodePlanConfig` instead
- */
-export const encodeConfig = encodePlanConfig;
-
-/**
- * @deprecated Use `decodePlanConfig` instead
- */
-export const decodeConfig = decodePlanConfig;
