@@ -12,7 +12,7 @@ import {
   updateNotificationTime,
   registerNotificationServiceWorker,
 } from '@/lib/services/notificationService';
-import { getUserConfig, clearAllData } from '@/lib/db';
+import { getUserConfig, setUserConfig, clearAllData } from '@/lib/db';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { exportDataToFile } from '@/lib/services/dataPortabilityService';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
@@ -96,6 +96,19 @@ export default function SettingsPage() {
 
       const success = await scheduleDailyNotification('patient', notificationTime, true);
       if (success) {
+        // Update notification preferences in the database
+        const currentPrefs = await getUserConfig('patient', 'notificationPreferences');
+        const updatedPrefs = {
+          enableNotifications: true,
+          enableCheckInReminders: true,
+          checkInFrequencyHours:
+            (currentPrefs?.value as { checkInFrequencyHours?: number })?.checkInFrequencyHours ||
+            24,
+          permissionStatus,
+          scheduledTime: notificationTime,
+        };
+        await setUserConfig('patient', 'notificationPreferences', updatedPrefs);
+
         setNotificationsEnabled(true);
         setSuccess('Daily notifications enabled successfully!');
         setTimeout(() => setSuccess(null), 3000);
@@ -116,6 +129,19 @@ export default function SettingsPage() {
       setSaving(true);
 
       await cancelScheduledNotifications('patient');
+
+      // Update notification preferences in the database
+      const currentPrefs = await getUserConfig('patient', 'notificationPreferences');
+      const updatedPrefs = {
+        enableNotifications: false,
+        enableCheckInReminders: false,
+        checkInFrequencyHours:
+          (currentPrefs?.value as { checkInFrequencyHours?: number })?.checkInFrequencyHours || 24,
+        permissionStatus,
+        scheduledTime: notificationTime,
+      };
+      await setUserConfig('patient', 'notificationPreferences', updatedPrefs);
+
       setNotificationsEnabled(false);
       setSuccess('Daily notifications disabled');
       setTimeout(() => setSuccess(null), 3000);

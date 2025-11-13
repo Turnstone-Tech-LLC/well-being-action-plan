@@ -213,12 +213,18 @@ export async function initializeNotificationScheduling(userId: string): Promise<
 
     const prefs = prefsConfig.value as NotificationPreferences;
 
-    // Check if notifications are enabled and permission is granted
+    // Check if notifications are enabled in preferences and permission is granted
     if (
       !prefs.enableNotifications ||
       !prefs.enableCheckInReminders ||
       getNotificationPermissionStatus() !== 'granted'
     ) {
+      return;
+    }
+
+    // IMPORTANT: Check if the schedule has been explicitly disabled by the user
+    // This takes precedence over the preferences
+    if (scheduleConfig?.enabled === false) {
       return;
     }
 
