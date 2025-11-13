@@ -26,6 +26,11 @@ function LoginForm() {
 
   const redirectPath = searchParams.get('redirect') || '/provider';
 
+  const handleLeaveProviderMode = () => {
+    revokeProviderMode();
+    router.push('/');
+  };
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
@@ -140,7 +145,7 @@ function LoginForm() {
 
         <div className="text-center">
           <button
-            onClick={() => revokeProviderMode()}
+            onClick={handleLeaveProviderMode}
             className="text-sm font-medium text-gray-600 hover:text-gray-500"
           >
             ← Leave Provider Mode
