@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,13 +12,11 @@ import { ProviderLinkConfig, ProviderInfo } from '@/lib/types';
 import { CopingStrategy, CopingStrategyCategory } from '@/lib/types/coping-strategy';
 import { generateProviderUrl, MAX_QR_CODE_URL_LENGTH } from '@/lib/utils';
 import { categoryConfig } from '@/lib/config/categoryConfig';
+import { providerService } from '@/lib/services/providerService';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import {
   Link2,
-  Copy,
   Check,
-  QrCode,
-  Eye,
-  Download,
   AlertCircle,
   Building2,
   User,
@@ -26,8 +24,8 @@ import {
   Phone,
   Globe,
   MessageSquare,
+  Loader2,
 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 
 /**
  * Default coping strategies that providers can select from
@@ -154,6 +152,9 @@ const DEFAULT_STRATEGIES: CopingStrategy[] = [
  * - Preview what patients will see
  */
 export default function ProviderLinkGeneratorPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+
   // Provider information state
   const [providerInfo, setProviderInfo] = useState<ProviderInfo>({
     id: '',
@@ -168,19 +169,19 @@ export default function ProviderLinkGeneratorPage() {
 
   const [customMessage, setCustomMessage] = useState('');
   const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
-  const [generatedUrl, setGeneratedUrl] = useState<string>('');
-  const [copied, setCopied] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [expirationDays, setExpirationDays] = useState<number>(30);
+  const [noExpiration, setNoExpiration] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [qrCodeWarning, setQrCodeWarning] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Generate provider ID on mount
   useEffect(() => {
     setProviderInfo((prev) => ({
       ...prev,
-      id: `provider-${Date.now()}`,
+      id: user?.id || `provider-${Date.now()}`,
     }));
-  }, []);
+  }, [user?.id]);
 
   /**
    * Toggle coping strategy selection
@@ -198,17 +199,28 @@ export default function ProviderLinkGeneratorPage() {
   };
 
   /**
-   * Generate the shareable URL
+   * Generate and save the link to the database
+   * This combines the old "Generate" and "Save" steps into one action
    */
-  const handleGenerateUrl = () => {
+  const handleGenerateUrl = async () => {
     try {
       setUrlError(null);
       setQrCodeWarning(null);
+      setIsSaving(true);
 
       // Validation
       if (!providerInfo.name.trim()) {
         setUrlError('Provider name is required');
         return;
+      }
+
+      // Note: user is guaranteed to exist due to middleware protection on /provider/* routes
+      if (!user) {
+        throw new Error('User session not found. Please sign in again.');
+      }
+
+      if (!user.id) {
+        throw new Error('User ID is missing. Please sign in again.');
       }
 
       // Build configuration
@@ -234,9 +246,8 @@ export default function ProviderLinkGeneratorPage() {
       const baseUrl =
         typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
 
-      // Generate URL
+      // Generate URL (for backward compatibility)
       const url = generateProviderUrl(baseUrl, config);
-      setGeneratedUrl(url);
 
       // Check if URL is too long for QR codes
       if (url.length > MAX_QR_CODE_URL_LENGTH) {
@@ -245,65 +256,32 @@ export default function ProviderLinkGeneratorPage() {
             `Consider selecting fewer coping strategies or shortening your custom message.`
         );
       }
-    } catch (error) {
-      console.error('Error generating URL:', error);
-      setUrlError(
-        error instanceof Error ? error.message : 'Failed to generate URL. Please try again.'
-      );
-    }
-  };
 
-  /**
-   * Copy URL to clipboard
-   */
-  const handleCopyUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy URL:', error);
-    }
-  };
+      // Calculate expiration date
+      const expiresAt = noExpiration ? null : new Date();
+      if (expiresAt) {
+        expiresAt.setDate(expiresAt.getDate() + expirationDays);
+      }
 
-  /**
-   * Download QR code as PNG
-   */
-  const handleDownloadQR = () => {
-    const svg = document.getElementById('qr-code-svg');
-    if (!svg) return;
-
-    // Create canvas from SVG
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const svgData = new window.XMLSerializer().serializeToString(svg);
-    const img = new window.Image();
-    const blob = new window.Blob([svgData], { type: 'image/svg+xml' });
-    const url = window.URL.createObjectURL(blob);
-
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `wbap-qr-${providerInfo.name.replace(/\s+/g, '-').toLowerCase()}.png`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+      // Save to database with auto-generated slug
+      const link = await providerService.createLink(user.id, config, url, {
+        expiresAt: expiresAt || undefined,
       });
 
-      window.URL.revokeObjectURL(url);
-    };
-
-    img.src = url;
+      // Redirect to link detail page
+      router.push(`/provider/links/${link.id}`);
+    } catch (error) {
+      let errorMessage = 'Failed to generate link. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage = JSON.stringify(error);
+      }
+      console.error('Error generating and saving link:', errorMessage);
+      setUrlError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Group strategies by category
@@ -329,8 +307,8 @@ export default function ProviderLinkGeneratorPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left Column: Form */}
+      <div className="mx-auto max-w-2xl">
+        {/* Form */}
         <div className="space-y-6">
           {/* Provider Information */}
           <Card>
@@ -574,10 +552,55 @@ export default function ProviderLinkGeneratorPage() {
             </CardContent>
           </Card>
 
+          {/* Link Expiration Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Link Expiration</CardTitle>
+              <CardDescription>Set when this link should expire</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="expiration-days">Expires in (days)</Label>
+                  <Input
+                    id="expiration-days"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={expirationDays}
+                    onChange={(e) => setExpirationDays(Math.max(1, parseInt(e.target.value) || 1))}
+                    disabled={noExpiration}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="no-expiration"
+                  checked={noExpiration}
+                  onChange={(e) => setNoExpiration(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="no-expiration" className="font-normal">
+                  No expiration
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Generate Button */}
-          <Button onClick={handleGenerateUrl} size="lg" className="w-full">
-            <Link2 className="mr-2 h-4 w-4" />
-            Generate Link
+          <Button onClick={handleGenerateUrl} size="lg" className="w-full" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Link...
+              </>
+            ) : (
+              <>
+                <Link2 className="mr-2 h-4 w-4" />
+                Generate Link
+              </>
+            )}
           </Button>
 
           {/* Error message */}
@@ -587,153 +610,14 @@ export default function ProviderLinkGeneratorPage() {
               <span>{urlError}</span>
             </div>
           )}
-        </div>
 
-        {/* Right Column: Preview & QR Code */}
-        <div className="space-y-6">
-          {/* Generated URL */}
-          {generatedUrl && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-600" />
-                  Link Generated Successfully
-                </CardTitle>
-                <CardDescription>
-                  Share this link with your patients to get them started.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* URL Display */}
-                <div className="rounded-lg bg-muted p-3">
-                  <p className="break-all font-mono text-sm">{generatedUrl}</p>
-                </div>
-
-                {/* Copy Button */}
-                <Button onClick={handleCopyUrl} variant="outline" className="w-full">
-                  {copied ? (
-                    <>
-                      <Check className="mr-2 h-4 w-4 text-green-600" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="mr-2 h-4 w-4" />
-                      Copy Link
-                    </>
-                  )}
-                </Button>
-
-                {/* Preview Button */}
-                <Button
-                  onClick={() => setShowPreview(!showPreview)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  {showPreview ? 'Hide' : 'Show'} Preview
-                </Button>
-              </CardContent>
-            </Card>
+          {/* QR Code Warning */}
+          {qrCodeWarning && (
+            <div className="flex items-center gap-2 rounded-lg border border-yellow-600 bg-yellow-50 p-4 text-sm text-yellow-800 dark:border-yellow-500 dark:bg-yellow-900/20 dark:text-yellow-200">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{qrCodeWarning}</span>
+            </div>
           )}
-
-          {/* QR Code */}
-          {generatedUrl && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <QrCode className="h-5 w-5" />
-                  QR Code
-                </CardTitle>
-                <CardDescription>
-                  Patients can scan this code with their phone camera to access the link.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Warning if URL is too long */}
-                {qrCodeWarning && (
-                  <div className="flex items-start gap-2 rounded-lg border border-yellow-600 bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
-                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <span>{qrCodeWarning}</span>
-                  </div>
-                )}
-
-                {/* QR Code Display */}
-                <div className="flex justify-center rounded-lg bg-white p-6">
-                  <QRCodeSVG id="qr-code-svg" value={generatedUrl} size={200} level="M" />
-                </div>
-
-                {/* Download Button */}
-                <Button onClick={handleDownloadQR} variant="outline" className="w-full">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download QR Code
-                </Button>
-
-                <p className="text-xs text-muted-foreground">
-                  Print this QR code on appointment cards, flyers, or other materials.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Preview */}
-          {generatedUrl && showPreview && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Patient Preview</CardTitle>
-                <CardDescription>
-                  This is what patients will see when they open the link.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border-2 border-dashed p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-5 w-5 text-green-600" />
-                      <p className="font-semibold">Welcome to Your Well-Being Action Plan</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {customMessage ||
-                        `You've been invited by ${providerInfo.name} to create your personalized mental health support plan.`}
-                    </p>
-                    <div className="rounded-md bg-muted/50 p-3">
-                      <p className="text-xs font-semibold">Your Provider</p>
-                      <p className="text-sm font-medium">{providerInfo.name}</p>
-                      {providerInfo.organization && (
-                        <p className="text-xs text-muted-foreground">{providerInfo.organization}</p>
-                      )}
-                    </div>
-                    {selectedStrategies.size > 0 && (
-                      <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
-                        <p className="text-xs font-semibold">Recommended Strategies</p>
-                        <p className="text-xs text-muted-foreground">
-                          {selectedStrategies.size} coping{' '}
-                          {selectedStrategies.size === 1 ? 'strategy' : 'strategies'} selected for
-                          you
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Help Card */}
-          <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
-            <CardHeader>
-              <CardTitle className="text-base">How to Share</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>1. Copy the link and send it via email or text</p>
-              <p>2. Download the QR code and print it on materials</p>
-              <p>3. Share the link on your website or patient portal</p>
-              <p className="mt-4 text-xs text-muted-foreground">
-                Tip: Test the link yourself before sharing with patients to ensure everything looks
-                correct.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

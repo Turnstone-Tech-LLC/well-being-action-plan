@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS provider_profiles (
 -- Provider Links Table
 -- Stores information about generated provider links for tracking and management
 CREATE TABLE IF NOT EXISTS provider_links (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider_id UUID NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
   link_config JSONB NOT NULL,
   encoded_url TEXT NOT NULL,

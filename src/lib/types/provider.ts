@@ -71,16 +71,17 @@ export interface ProviderProfile {
  */
 export interface ProviderLink {
   id: string;
-  providerId: string;
-  linkConfig: ProviderLinkConfig;
-  encodedUrl: string;
-  qrCodeUrl?: string;
-  createdAt: Date;
-  expiresAt?: Date;
-  isActive: boolean;
+  provider_id: string;
+  link_config: ProviderLinkConfig;
+  encoded_url: string;
+  slug: string;
+  qr_code_url?: string;
+  created_at: Date;
+  expires_at?: Date;
+  is_active: boolean;
   metadata?: {
     patientCount?: number;
-    lastAccessedAt?: Date;
+    lastAccessedAt?: string;
     notes?: string;
   };
 }
