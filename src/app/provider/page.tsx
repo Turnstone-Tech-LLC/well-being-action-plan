@@ -61,6 +61,7 @@ export default function ProviderDashboardPage() {
       icon: Link2,
       color: 'text-clear-sky',
       bgColor: 'bg-[#489FDF]/10 dark:bg-[#489FDF]/20',
+      href: '/provider/links',
     },
     {
       title: 'Patients',
@@ -69,6 +70,7 @@ export default function ProviderDashboardPage() {
       icon: Users,
       color: 'text-green-zone',
       bgColor: 'bg-[#154734]/10 dark:bg-[#154734]/20',
+      href: '/provider/links',
     },
     {
       title: 'Strategies',
@@ -77,6 +79,8 @@ export default function ProviderDashboardPage() {
       icon: Sparkles,
       color: 'text-uvm-gold',
       bgColor: 'bg-[#FFD100]/10 dark:bg-[#FFD100]/20',
+      href: '#',
+      disabled: true,
     },
   ];
 
@@ -172,7 +176,15 @@ export default function ProviderDashboardPage() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.title}>
+            <Card
+              key={stat.title}
+              className={
+                stat.disabled
+                  ? 'cursor-not-allowed opacity-60'
+                  : 'cursor-pointer transition-shadow hover:shadow-md'
+              }
+              onClick={() => !stat.disabled && router.push(stat.href)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <div className={`rounded-full p-2 ${stat.bgColor}`}>
@@ -341,15 +353,21 @@ export default function ProviderDashboardPage() {
                 ? `You have ${linkStats.totalLinks} link${linkStats.totalLinks !== 1 ? 's' : ''} created.`
                 : 'No links created yet. Get started by creating your first patient link!'}
             </p>
-            <Button
-              onClick={() => router.push('/provider/link-generator')}
-              className="mt-4"
-              variant="outline"
-              size="sm"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First Link
-            </Button>
+            <div className="mt-4 flex gap-2">
+              {linkStats.totalLinks > 0 && (
+                <Button onClick={() => router.push('/provider/links')} variant="default" size="sm">
+                  View All Links
+                </Button>
+              )}
+              <Button
+                onClick={() => router.push('/provider/link-generator')}
+                variant={linkStats.totalLinks > 0 ? 'outline' : 'default'}
+                size="sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {linkStats.totalLinks > 0 ? 'Create New Link' : 'Create Your First Link'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -4,7 +4,7 @@
 -- Action Plans Table
 -- Stores action plans created by providers that can be shared with patients
 CREATE TABLE IF NOT EXISTS action_plans (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider_id UUID NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   age_range TEXT,

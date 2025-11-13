@@ -9,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
 import { setUserConfig } from '@/lib/db';
 import { parseAccessCode, decodeProviderConfig } from '@/lib/utils';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Building2, Mail, Phone, Globe } from 'lucide-react';
+import type { ProviderLinkConfig } from '@/lib/types/provider';
 
 /**
  * Onboarding Step 1: Collect patient's preferred name
@@ -29,6 +30,7 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [checkingConfig, setCheckingConfig] = useState(true);
+  const [providerInfo, setProviderInfo] = useState<ProviderLinkConfig['provider'] | null>(null);
 
   /**
    * Check for provider config on mount
@@ -45,6 +47,7 @@ export default function OnboardingPage() {
           try {
             const config = decodeProviderConfig(accessCode);
             localStorage.setItem('providerConfig', JSON.stringify(config));
+            setProviderInfo(config.provider);
             setHasValidConfig(true);
           } catch (err) {
             console.error('Invalid access code in URL:', err);
@@ -52,8 +55,19 @@ export default function OnboardingPage() {
           }
         } else {
           // Check if config exists in localStorage
-          const storedConfig = localStorage.getItem('providerConfig');
-          setHasValidConfig(!!storedConfig);
+          const storedConfigJson = localStorage.getItem('providerConfig');
+          if (storedConfigJson) {
+            try {
+              const storedConfig: ProviderLinkConfig = JSON.parse(storedConfigJson);
+              setProviderInfo(storedConfig.provider);
+              setHasValidConfig(true);
+            } catch (err) {
+              console.error('Error parsing stored config:', err);
+              setHasValidConfig(false);
+            }
+          } else {
+            setHasValidConfig(false);
+          }
         }
       } catch (err) {
         console.error('Error checking provider config:', err);
@@ -167,6 +181,66 @@ export default function OnboardingPage() {
 
         {/* Progress indicator */}
         <ProgressIndicator currentStep={1} totalSteps={3} />
+
+        {/* Provider Info Card (if available) */}
+        {providerInfo && (
+          <Card className="border-catamount-green/20 bg-catamount-green/5">
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Building2 className="mt-1 h-5 w-5 flex-shrink-0 text-catamount-green" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-vermont-slate">{providerInfo.name}</p>
+                    {providerInfo.organization && (
+                      <p className="text-sm text-muted-foreground">{providerInfo.organization}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                {providerInfo.contactInfo && (
+                  <div className="space-y-2 border-t border-catamount-green/10 pt-3">
+                    {providerInfo.contactInfo.email && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <a
+                          href={`mailto:${providerInfo.contactInfo.email}`}
+                          className="text-clear-sky hover:underline"
+                        >
+                          {providerInfo.contactInfo.email}
+                        </a>
+                      </div>
+                    )}
+                    {providerInfo.contactInfo.phone && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <a
+                          href={`tel:${providerInfo.contactInfo.phone}`}
+                          className="text-clear-sky hover:underline"
+                        >
+                          {providerInfo.contactInfo.phone}
+                        </a>
+                      </div>
+                    )}
+                    {providerInfo.contactInfo.website && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                        <a
+                          href={providerInfo.contactInfo.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-clear-sky hover:underline"
+                        >
+                          Visit Website
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Welcome card */}
         <Card>
