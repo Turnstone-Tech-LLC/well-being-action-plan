@@ -125,4 +125,34 @@ test.describe('Provider Mode', () => {
     // Verify input is still visible and usable
     await expect(providerKeyInput).toBeVisible();
   });
+
+  test('should redirect to provider portal when visiting home in provider mode', async ({
+    page,
+  }) => {
+    // First, enable provider mode by entering valid key
+    const providerKeyInput = page.locator('input[id="provider-key"]');
+    await providerKeyInput.fill('test-provider-key-2024');
+
+    // Click provider mode button
+    await page.click('button:has-text("Enter Provider Mode")');
+
+    // Wait for redirect to provider auth login
+    await page.waitForURL('**/provider/auth/login');
+
+    // Verify we're on the provider login page
+    await expect(page.locator('h1:has-text("Provider Portal")')).toBeVisible();
+
+    // Now navigate back to home page
+    await page.goto('/', { waitUntil: 'networkidle' });
+
+    // Should be redirected back to provider portal (which then redirects to login since no session)
+    // The key is that we should NOT see the patient welcome screen
+    await page.waitForURL('**/provider/**');
+
+    // Verify we're still on a provider page (not the patient welcome screen)
+    await expect(page.locator('h1:has-text("Provider Portal")')).toBeVisible();
+
+    // Verify we don't see the patient welcome screen elements
+    await expect(page.locator('text=Enter your access code')).not.toBeVisible();
+  });
 });

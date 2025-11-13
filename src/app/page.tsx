@@ -10,7 +10,11 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getUserConfig } from '@/lib/db';
 import { WelcomeScreen } from '@/components/welcome-screen';
 import { ImportDataDialog } from '@/components/import-data-dialog';
-import { validateProviderKey, enableProviderMode } from '@/lib/utils/providerMode';
+import {
+  validateProviderKey,
+  enableProviderMode,
+  isProviderModeEnabled,
+} from '@/lib/utils/providerMode';
 import { Flash } from '@/components/flash';
 
 /**
@@ -43,6 +47,12 @@ export default function Home() {
 
   const checkOnboardingAndRedirect = async () => {
     try {
+      // Check if provider mode is enabled - redirect to provider portal
+      if (isProviderModeEnabled()) {
+        router.push('/provider');
+        return;
+      }
+
       // Check if user has completed onboarding (active session)
       const onboardingConfig = await getUserConfig('patient', 'onboardingCompleted');
       const hasActiveSession = onboardingConfig && onboardingConfig.value === true;
