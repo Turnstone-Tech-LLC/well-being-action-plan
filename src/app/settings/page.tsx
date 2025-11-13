@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   areNotificationsEnabled,
@@ -13,9 +13,17 @@ import {
   registerNotificationServiceWorker,
 } from '@/lib/services/notificationService';
 import { getUserConfig } from '@/lib/db';
+import { usePatientAuth } from '@/hooks/usePatientAuth';
 
+/**
+ * Settings Page
+ *
+ * Protected Route: Requires completed onboarding
+ */
 export default function SettingsPage() {
   const router = useRouter();
+  // Patient authentication - redirects to onboarding if not complete
+  const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -25,11 +33,7 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [patientName, setPatientName] = useState<string>('');
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -61,7 +65,14 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Only load settings if onboarding is complete
+    if (!authLoading && isOnboardingComplete) {
+      loadSettings();
+    }
+  }, [authLoading, isOnboardingComplete, loadSettings]);
 
   const handleEnableNotifications = async () => {
     try {
@@ -166,15 +177,23 @@ export default function SettingsPage() {
     }
   };
 
-  if (loading) {
+  // Show loading state while checking authentication or loading data
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-morning-fog to-white dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-catamount-green" />
-          <p className="text-vermont-slate dark:text-[#A8D5FF]">Loading settings...</p>
+          <p className="text-vermont-slate dark:text-[#A8D5FF]">
+            {authLoading ? 'Checking authentication...' : 'Loading settings...'}
+          </p>
         </div>
       </div>
     );
+  }
+
+  // If onboarding is not complete, the usePatientAuth hook will redirect
+  if (!isOnboardingComplete) {
+    return null;
   }
 
   return (

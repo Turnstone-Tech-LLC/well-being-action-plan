@@ -92,12 +92,44 @@ WBAP has two distinct URL encoding systems (see `src/lib/utils/urlConfig.ts`):
 
 **Important**: Base64 encoding is NOT encryption—it's for URL safety only.
 
-### 3. Dual User Model
+### 3. Dual Authentication System
 
-- **Patients**: Use the app offline-first, data stored locally only
-- **Providers**: Authenticate via Supabase, create action plans, generate patient links
+The application implements **two separate authentication systems** to maintain privacy while enabling provider functionality:
 
-Provider routes are under `/provider/*` and require authentication. Patient routes are public and work fully offline.
+#### Provider Authentication (Server-Side)
+
+- **Routes**: `/provider/*` (except `/provider/auth/*`)
+- **Method**: Supabase Auth with HTTP-only cookies
+- **Middleware**: `src/lib/supabase/middleware.ts` validates sessions
+- **Redirect**: Unauthenticated users → `/provider/auth/login`
+- **Purpose**: Secure provider portal access, link generation, profile management
+
+#### Patient Authentication (Client-Side)
+
+- **Routes**: `/dashboard`, `/check-in/*`, `/history`, `/settings`
+- **Method**: IndexedDB validation via `usePatientAuth` hook
+- **Validation**: Checks onboarding completion status
+- **Redirect**: Incomplete onboarding → `/onboarding`
+- **Purpose**: Ensure patients complete setup before accessing features
+
+**Why Two Systems?**
+
+- **Privacy**: Patient data must stay local (IndexedDB), cannot be validated server-side
+- **Edge Middleware Limitation**: Next.js edge middleware cannot access browser APIs like IndexedDB
+- **Security**: Provider data requires server-side session validation
+- **Separation of Concerns**: Provider and patient data flows are completely independent
+
+**Onboarding Validation Requirements**:
+
+1. Preferred name is set (`preferredName` in userConfig)
+2. Onboarding completed flag is true (`onboardingCompleted = true`)
+3. At least one coping strategy exists in the database
+
+**Public Routes** (no authentication required):
+
+- `/` - Home page
+- `/onboarding/*` - Patient onboarding workflow
+- `/provider/auth/*` - Provider authentication pages
 
 ### 4. Zone System
 
@@ -127,12 +159,19 @@ Zone types are defined in `src/lib/types/zone.ts` and used throughout check-ins,
 
 - `src/lib/utils/urlConfig.ts` - Plan sharing and provider link encoding/decoding
 
-### Authentication (Provider Portal)
+### Authentication
+
+**Provider Authentication (Server-Side)**:
 
 - `src/lib/supabase/client.ts` - Client-side Supabase
 - `src/lib/supabase/server.ts` - Server-side Supabase
 - `src/lib/supabase/middleware.ts` - Session management
 - `src/middleware.ts` - Next.js middleware for protected routes
+
+**Patient Authentication (Client-Side)**:
+
+- `src/hooks/usePatientAuth.ts` - React hook for route protection
+- `src/lib/utils/patientAuth.ts` - Onboarding validation utilities
 
 ### UI Components
 
