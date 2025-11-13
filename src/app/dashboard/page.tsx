@@ -25,6 +25,7 @@ import type { CheckIn } from '@/lib/types/check-in';
 import type { CopingStrategy } from '@/lib/types/coping-strategy';
 import { ZoneType } from '@/lib/types/zone';
 import { initializeNotificationScheduling } from '@/lib/services/notificationService';
+import { usePatientAuth } from '@/hooks/usePatientAuth';
 
 /**
  * Patient Dashboard / Home Screen
@@ -38,9 +39,13 @@ import { initializeNotificationScheduling } from '@/lib/services/notificationSer
  * - Coping strategies
  * - Crisis resources
  * - Navigation to history and settings
+ *
+ * Protected Route: Requires completed onboarding
  */
 export default function DashboardPage() {
   const router = useRouter();
+  // Patient authentication - redirects to onboarding if not complete
+  const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState<string>('');
   const [providerConfig, setProviderConfig] = useState<ProviderLinkConfig | null>(null);
@@ -49,9 +54,12 @@ export default function DashboardPage() {
   const [copingStrategies, setCopingStrategies] = useState<CopingStrategy[]>([]);
 
   useEffect(() => {
-    loadDashboardData();
+    // Only load dashboard data if onboarding is complete
+    if (!authLoading && isOnboardingComplete) {
+      loadDashboardData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, isOnboardingComplete]);
 
   const loadDashboardData = async () => {
     try {
@@ -170,15 +178,24 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
+  // Show loading state while checking authentication or loading data
+  if (authLoading || loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground">Loading your dashboard...</p>
+          <p className="text-muted-foreground">
+            {authLoading ? 'Checking authentication...' : 'Loading your dashboard...'}
+          </p>
         </div>
       </main>
     );
+  }
+
+  // If onboarding is not complete, the usePatientAuth hook will redirect
+  // This is a safety check in case the redirect hasn't happened yet
+  if (!isOnboardingComplete) {
+    return null;
   }
 
   return (

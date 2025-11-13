@@ -1,26 +1,74 @@
-# Provider Authentication Setup Guide
+# Authentication Setup Guide
 
-This guide explains how to set up Supabase authentication for the Well-Being Action Plan provider portal.
+This guide explains the dual authentication system used in the Well-Being Action Plan application.
 
 ## Overview
 
-The provider portal uses **Supabase Auth** for authentication and **Supabase Database** for storing provider profiles and link management. Patient data remains local-only on their devices.
+The application implements **two separate authentication systems** to maintain privacy while enabling provider functionality:
+
+1. **Provider Authentication**: Server-side Supabase Auth for provider portal access
+2. **Patient Authentication**: Client-side IndexedDB validation for patient route protection
 
 ## Architecture
 
+### Dual Authentication System
+
 ```
-Provider Authentication Flow:
+┌─────────────────────────────────────────────────────────────────┐
+│                    WELL-BEING ACTION PLAN                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  PROVIDER ROUTES (/provider/*)                                 │
+│  ├─ Authentication: Supabase Auth (Server-Side)                │
+│  ├─ Session: HTTP-only cookies                                 │
+│  ├─ Middleware: src/lib/supabase/middleware.ts                 │
+│  └─ Redirect: /provider/auth/login if not authenticated        │
+│                                                                 │
+│  PATIENT ROUTES (/dashboard, /check-in, /history, /settings)   │
+│  ├─ Authentication: IndexedDB validation (Client-Side)         │
+│  ├─ Validation: usePatientAuth hook                            │
+│  ├─ Check: Onboarding completion status                        │
+│  └─ Redirect: /onboarding if not complete                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Provider Authentication Flow
+
 1. Provider signs up/signs in via Supabase Auth
 2. Profile automatically created in provider_profiles table (via trigger)
 3. Provider can create/manage patient onboarding links
 4. Links and metadata stored in provider_links table
 5. All operations protected by Row Level Security (RLS)
+6. Middleware validates session on every request
 
-Patient Data Flow (Unchanged):
-- Remains fully local on patient devices
-- No patient data sent to or stored on servers
-- Privacy-first architecture maintained
-```
+### Patient Authentication Flow
+
+1. Patient receives provider-generated onboarding link
+2. Patient completes 3-step onboarding workflow
+3. Onboarding data stored in local IndexedDB:
+   - Preferred name
+   - Selected coping strategies
+   - Notification preferences
+   - Onboarding completion flag
+4. Protected routes check IndexedDB for completion status
+5. Redirect to onboarding if validation fails
+
+### Privacy-First Design
+
+**Patient Data**:
+
+- ✅ Stored locally in IndexedDB only
+- ✅ Never transmitted to servers
+- ✅ No authentication tokens or sessions
+- ✅ Validated client-side only
+
+**Provider Data**:
+
+- ✅ Stored in Supabase database
+- ✅ Protected by Row Level Security
+- ✅ Session-based authentication
+- ✅ No access to patient mental health data
 
 ## Prerequisites
 
@@ -72,6 +120,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 5. Click **Run** to execute the migration
 
 The migration will create:
+
 - `provider_profiles` table
 - `provider_links` table
 - Row Level Security (RLS) policies
@@ -114,6 +163,7 @@ supabase db push
 ## Step 7: Test the Authentication Flow
 
 1. Start the development server:
+
 ```bash
 pnpm dev
 ```
@@ -133,41 +183,108 @@ pnpm dev
 
 7. Try creating a patient link in the Link Generator
 
+## Patient Route Protection
+
+### Implementation
+
+Patient routes are protected using a client-side authentication hook that validates onboarding completion.
+
+**Protected Routes**:
+
+- `/dashboard` - Main patient dashboard
+- `/check-in/*` - Emotional check-in flows (green, yellow, red)
+- `/history` - Check-in history calendar
+- `/settings` - User settings and preferences
+
+**Public Routes**:
+
+- `/` - Home page
+- `/onboarding/*` - Onboarding workflow (steps 1-3)
+- `/provider/auth/*` - Provider authentication pages
+
+### Validation Requirements
+
+For a patient to access protected routes, the following must be present in IndexedDB:
+
+1. **Preferred Name**: User's chosen display name
+2. **Onboarding Completed Flag**: `onboardingCompleted = true`
+3. **At Least One Coping Strategy**: User has selected/created strategies
+
+### Using the usePatientAuth Hook
+
+```typescript
+import { usePatientAuth } from '@/hooks/usePatientAuth';
+
+export default function ProtectedPage() {
+  const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return <LoadingSpinner />;
+  }
+
+  // Hook will automatically redirect if onboarding is not complete
+  if (!isOnboardingComplete) {
+    return null;
+  }
+
+  // Render protected content
+  return <div>Protected content here</div>;
+}
+```
+
+### Manual Validation
+
+You can also manually check onboarding status:
+
+```typescript
+import { checkPatientOnboarding, isPatientOnboardingComplete } from '@/lib/utils/patientAuth';
+
+// Get detailed status
+const status = await checkPatientOnboarding('patient');
+console.log(status.isComplete); // boolean
+console.log(status.missingSteps); // array of missing requirements
+
+// Simple boolean check
+const isComplete = await isPatientOnboardingComplete('patient');
+```
+
 ## Database Schema
 
 ### provider_profiles
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key, references auth.users.id |
-| email | TEXT | Provider's email address |
-| name | TEXT | Provider's full name |
-| organization | TEXT | Optional organization name |
-| logo_url | TEXT | Optional logo/profile picture URL |
-| contact_info | JSONB | Phone, email, website |
-| settings | JSONB | Provider preferences and defaults |
-| created_at | TIMESTAMP | Account creation timestamp |
-| updated_at | TIMESTAMP | Last update timestamp |
+| Column       | Type      | Description                           |
+| ------------ | --------- | ------------------------------------- |
+| id           | UUID      | Primary key, references auth.users.id |
+| email        | TEXT      | Provider's email address              |
+| name         | TEXT      | Provider's full name                  |
+| organization | TEXT      | Optional organization name            |
+| logo_url     | TEXT      | Optional logo/profile picture URL     |
+| contact_info | JSONB     | Phone, email, website                 |
+| settings     | JSONB     | Provider preferences and defaults     |
+| created_at   | TIMESTAMP | Account creation timestamp            |
+| updated_at   | TIMESTAMP | Last update timestamp                 |
 
 ### provider_links
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| provider_id | UUID | Foreign key to provider_profiles.id |
-| link_config | JSONB | Complete provider link configuration |
-| encoded_url | TEXT | Full encoded URL for sharing |
-| qr_code_url | TEXT | Optional QR code image URL |
-| created_at | TIMESTAMP | Link creation timestamp |
-| expires_at | TIMESTAMP | Optional expiration date |
-| is_active | BOOLEAN | Whether link is currently active |
-| metadata | JSONB | Patient count, last accessed, notes |
+| Column      | Type      | Description                          |
+| ----------- | --------- | ------------------------------------ |
+| id          | UUID      | Primary key                          |
+| provider_id | UUID      | Foreign key to provider_profiles.id  |
+| link_config | JSONB     | Complete provider link configuration |
+| encoded_url | TEXT      | Full encoded URL for sharing         |
+| qr_code_url | TEXT      | Optional QR code image URL           |
+| created_at  | TIMESTAMP | Link creation timestamp              |
+| expires_at  | TIMESTAMP | Optional expiration date             |
+| is_active   | BOOLEAN   | Whether link is currently active     |
+| metadata    | JSONB     | Patient count, last accessed, notes  |
 
 ## Security Features
 
 ### Row Level Security (RLS)
 
 All tables have RLS enabled. Providers can only:
+
 - View their own profile
 - Update their own profile
 - View their own links
@@ -176,6 +293,7 @@ All tables have RLS enabled. Providers can only:
 ### Authentication Middleware
 
 The middleware (`src/middleware.ts`) automatically:
+
 - Refreshes auth sessions
 - Protects `/provider/*` routes (requires authentication)
 - Redirects unauthenticated users to login
@@ -191,13 +309,13 @@ The `AuthContext` provides the following:
 
 ```typescript
 const {
-  user,              // Current Supabase user object
-  profile,           // Provider profile from database
-  loading,           // Loading state
-  signIn,            // Function to sign in
-  signUp,            // Function to sign up
-  signOut,           // Function to sign out
-  updateProfile,     // Function to update profile
+  user, // Current Supabase user object
+  profile, // Provider profile from database
+  loading, // Loading state
+  signIn, // Function to sign in
+  signUp, // Function to sign up
+  signOut, // Function to sign out
+  updateProfile, // Function to update profile
 } = useAuth();
 ```
 
@@ -253,26 +371,31 @@ src/
 ## Troubleshooting
 
 ### "Invalid API key" error
+
 - Verify your `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are correct
 - Make sure you copied the **anon/public** key, not the service role key
 - Restart the dev server after changing environment variables
 
 ### "Row not found" error when loading profile
+
 - Make sure the database migration ran successfully
 - Check if the trigger `on_auth_user_created` exists in your database
 - Manually insert a profile row if needed
 
 ### User can't sign up
+
 - Check Authentication settings in Supabase dashboard
 - Look for error messages in browser console
 - Verify email confirmation settings
 
 ### Protected routes not working
+
 - Check that `src/middleware.ts` exists
 - Verify the middleware config matcher is correct
 - Clear cookies and try again
 
 ### Stats not loading on dashboard
+
 - Check browser console for errors
 - Verify RLS policies are set up correctly
 - Make sure the provider_links table exists
@@ -316,6 +439,7 @@ NEXT_PUBLIC_APP_URL=https://your-domain.com
 ## Support
 
 If you encounter issues:
+
 1. Check the troubleshooting section above
 2. Review the [GitHub Issues](https://github.com/Turnstone-Tech-LLC/well-being-action-plan/issues)
 3. Join our community discussions
@@ -324,6 +448,7 @@ If you encounter issues:
 ## Next Steps
 
 After setting up authentication:
+
 1. Customize provider profile settings
 2. Create patient onboarding links
 3. Share links with your patients

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { usePatientAuth } from '@/hooks/usePatientAuth';
 
 interface DayCheckIns {
   date: Date;
@@ -41,8 +42,15 @@ const zoneColors: Record<ZoneType, { bg: string; border: string; text: string }>
   },
 };
 
+/**
+ * Mood History Page
+ *
+ * Protected Route: Requires completed onboarding
+ */
 export default function MoodHistoryPage() {
   const router = useRouter();
+  // Patient authentication - redirects to onboarding if not complete
+  const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [selectedDay, setSelectedDay] = useState<DayCheckIns | null>(null);
@@ -51,33 +59,36 @@ export default function MoodHistoryPage() {
   // Fetch check-ins for the current month
   useEffect(() => {
     const fetchCheckIns = async () => {
-      setLoading(true);
-      try {
-        const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-        const endDate = new Date(
-          currentMonth.getFullYear(),
-          currentMonth.getMonth() + 1,
-          0,
-          23,
-          59,
-          59
-        );
+      // Only fetch if onboarding is complete
+      if (!authLoading && isOnboardingComplete) {
+        setLoading(true);
+        try {
+          const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+          const endDate = new Date(
+            currentMonth.getFullYear(),
+            currentMonth.getMonth() + 1,
+            0,
+            23,
+            59,
+            59
+          );
 
-        const data = await getCheckInsByUser('default-user', {
-          startDate,
-          endDate,
-        });
+          const data = await getCheckInsByUser('default-user', {
+            startDate,
+            endDate,
+          });
 
-        setCheckIns(data);
-      } catch (error) {
-        console.error('Error fetching check-ins:', error);
-      } finally {
-        setLoading(false);
+          setCheckIns(data);
+        } catch (error) {
+          console.error('Error fetching check-ins:', error);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
     fetchCheckIns();
-  }, [currentMonth]);
+  }, [currentMonth, authLoading, isOnboardingComplete]);
 
   // Generate calendar days for the current month view
   const generateCalendarDays = (): CalendarDay[] => {
@@ -190,6 +201,23 @@ export default function MoodHistoryPage() {
       date.getFullYear() === today.getFullYear()
     );
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If onboarding is not complete, the usePatientAuth hook will redirect
+  if (!isOnboardingComplete) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">

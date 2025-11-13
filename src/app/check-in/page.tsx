@@ -6,6 +6,7 @@ import { ZoneCard } from '@/components/zone-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { usePatientAuth } from '@/hooks/usePatientAuth';
 
 /**
  * Zone Selection Interface
@@ -19,9 +20,13 @@ import { Button } from '@/components/ui/button';
  * - Color palette accommodates colorblind users
  * - Clear descriptive labels for each zone
  * - Responsive design for mobile and desktop
+ *
+ * Protected Route: Requires completed onboarding
  */
 export default function CheckInPage() {
   const router = useRouter();
+  // Patient authentication - redirects to onboarding if not complete
+  const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
 
   const handleZoneSelect = (zone: ZoneType) => {
     router.push(`/check-in/${zone}`);
@@ -30,6 +35,23 @@ export default function CheckInPage() {
   const handleBack = () => {
     router.push('/');
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // If onboarding is not complete, the usePatientAuth hook will redirect
+  if (!isOnboardingComplete) {
+    return null;
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 py-12">
