@@ -4,17 +4,21 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { parseProviderUrl } from '@/lib/utils';
+import { parseProviderUrl, parseAccessCode, decodeProviderConfig } from '@/lib/utils';
 import { ProviderLinkConfig } from '@/lib/types';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getUserConfig } from '@/lib/db';
+import { WelcomeScreen } from '@/components/welcome-screen';
+import { ImportDataDialog } from '@/components/import-data-dialog';
 
 /**
  * Landing page component with provider link detection
  *
  * This component handles:
  * - Redirecting returning patients to their dashboard
- * - URL parameter parsing for provider-generated links
+ * - URL parameter parsing for provider-generated access codes
+ * - Welcome screen for new patients without access codes
+ * - Data import functionality for returning users
  * - Customized welcome messages with provider-specific content
  * - Loading states during configuration parsing
  * - Error handling for invalid or missing links
@@ -25,6 +29,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<ProviderLinkConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   useEffect(() => {
     checkOnboardingAndRedirect();
@@ -33,28 +39,50 @@ export default function Home() {
 
   const checkOnboardingAndRedirect = async () => {
     try {
-      // Check if user has completed onboarding
+      // Check if user has completed onboarding (active session)
       const onboardingConfig = await getUserConfig('patient', 'onboardingCompleted');
+      const hasActiveSession = onboardingConfig && onboardingConfig.value === true;
 
-      // If onboarding is complete and there's no provider link, redirect to dashboard
+      // Get URL search params
       const searchParams = new URLSearchParams(window.location.search);
-      const hasProviderLink = searchParams.has('config');
 
-      if (onboardingConfig && onboardingConfig.value === true && !hasProviderLink) {
-        // User has completed onboarding and is just visiting the home page
-        router.push('/dashboard');
-        return;
-      }
+      // Check for access code in URL (supports both 'access_code' and 'config' params)
+      const accessCode = parseAccessCode(searchParams);
+      const hasAccessCode = !!accessCode;
 
-      // Parse URL parameters for provider link
-      const result = parseProviderUrl(searchParams);
+      // If there's an access code, try to parse it
+      if (hasAccessCode) {
+        // If user already has an active session, redirect to dashboard with message
+        if (hasActiveSession) {
+          router.push('/dashboard?message=session_exists');
+          return;
+        }
 
-      if (result.success && result.config) {
-        setConfig(result.config);
-        setError(null);
+        // Parse the access code
+        const result = parseProviderUrl(searchParams);
+
+        if (result.success && result.config) {
+          setConfig(result.config);
+          setError(null);
+          setShowWelcomeScreen(false);
+        } else {
+          // Invalid access code
+          setError(result.error || 'Invalid access code');
+          setConfig(null);
+          setShowWelcomeScreen(false);
+        }
       } else {
-        setError(result.error || 'No provider link detected');
+        // No access code in URL
+        if (hasActiveSession) {
+          // User has completed onboarding and is just visiting the home page
+          router.push('/dashboard');
+          return;
+        }
+
+        // New user without access code - show welcome screen
+        setShowWelcomeScreen(true);
         setConfig(null);
+        setError(null);
       }
 
       setLoading(false);
@@ -74,6 +102,34 @@ export default function Home() {
     router.push('/onboarding');
   };
 
+  const handleAccessCodeSubmit = async (accessCode: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Try to decode the access code
+      const providerConfig = decodeProviderConfig(accessCode);
+
+      // If successful, set config and show the provider welcome view
+      setConfig(providerConfig);
+      setShowWelcomeScreen(false);
+      setLoading(false);
+    } catch (err) {
+      // Invalid access code
+      setError(err instanceof Error ? err.message : 'Invalid access code');
+      setLoading(false);
+    }
+  };
+
+  const handleImportData = () => {
+    setShowImportDialog(true);
+  };
+
+  const handleImportSuccess = () => {
+    // After successful import, redirect to dashboard
+    router.push('/dashboard');
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -88,19 +144,36 @@ export default function Home() {
     );
   }
 
-  // Error state - no valid provider link
-  if (error || !config) {
+  // Show welcome screen for new users without access code
+  if (showWelcomeScreen) {
+    return (
+      <>
+        <WelcomeScreen
+          onAccessCodeSubmit={handleAccessCodeSubmit}
+          onImportData={handleImportData}
+          loading={loading}
+          error={error}
+        />
+        <ImportDataDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          onImportSuccess={handleImportSuccess}
+        />
+      </>
+    );
+  }
+
+  // Error state - invalid access code
+  if (error && !showWelcomeScreen) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-6">
         <Card className="w-full max-w-2xl border-destructive">
           <CardHeader>
             <div className="flex items-center gap-2">
               <AlertCircle className="h-6 w-6 text-destructive" />
-              <CardTitle className="text-destructive">Invalid Provider Link</CardTitle>
+              <CardTitle className="text-destructive">Invalid Access Code</CardTitle>
             </div>
-            <CardDescription>
-              We couldn&apos;t find a valid provider link in the URL.
-            </CardDescription>
+            <CardDescription>We couldn&apos;t validate the access code provided.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg bg-muted p-4">
@@ -110,14 +183,22 @@ export default function Home() {
               <p className="text-sm font-medium">What to do:</p>
               <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
                 <li>Check that you copied the complete URL from your provider</li>
-                <li>Make sure the link hasn&apos;t been modified</li>
-                <li>Contact your mental health provider for a new link</li>
+                <li>Make sure the access code hasn&apos;t been modified</li>
+                <li>Contact your mental health provider for a new access code</li>
               </ul>
             </div>
+            <Button onClick={() => router.push('/')} className="w-full">
+              Go Back
+            </Button>
           </CardContent>
         </Card>
       </main>
     );
+  }
+
+  // Config is null but no error and not showing welcome screen - shouldn't happen
+  if (!config) {
+    return null;
   }
 
   // Success state - valid provider link detected

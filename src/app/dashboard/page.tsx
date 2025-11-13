@@ -1,12 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Heart,
   Flame,
@@ -18,6 +19,7 @@ import {
   ChevronRight,
   Settings,
   TrendingUp,
+  Info,
 } from 'lucide-react';
 import { getUserConfig, getCheckInsByUser, getAllCopingStrategies } from '@/lib/db';
 import type { ProviderLinkConfig } from '@/lib/types';
@@ -26,6 +28,44 @@ import type { CopingStrategy } from '@/lib/types/coping-strategy';
 import { ZoneType } from '@/lib/types/zone';
 import { initializeNotificationScheduling } from '@/lib/services/notificationService';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
+
+/**
+ * Session Message Component
+ * Separated to use useSearchParams() with Suspense boundary
+ */
+function SessionMessage() {
+  const searchParams = useSearchParams();
+  const [showSessionMessage, setShowSessionMessage] = useState(false);
+
+  useEffect(() => {
+    // Check for session message in URL params
+    const message = searchParams.get('message');
+    if (message === 'session_exists') {
+      setShowSessionMessage(true);
+      // Clear the message from URL after 5 seconds
+      setTimeout(() => {
+        setShowSessionMessage(false);
+        // Remove the message param from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('message');
+        window.history.replaceState({}, '', url.toString());
+      }, 5000);
+    }
+  }, [searchParams]);
+
+  if (!showSessionMessage) {
+    return null;
+  }
+
+  return (
+    <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+      <AlertDescription className="text-blue-800 dark:text-blue-200">
+        You already have an active session. Your existing well-being plan is loaded below.
+      </AlertDescription>
+    </Alert>
+  );
+}
 
 /**
  * Patient Dashboard / Home Screen
@@ -227,6 +267,11 @@ export default function DashboardPage() {
             <Settings className="h-5 w-5" />
           </Button>
         </div>
+
+        {/* Session Exists Message */}
+        <Suspense fallback={null}>
+          <SessionMessage />
+        </Suspense>
 
         {/* Check-in Streak Card */}
         {checkInStreak > 0 && (

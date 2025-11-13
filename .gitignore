@@ -64,3 +64,5 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+.agent_docs/

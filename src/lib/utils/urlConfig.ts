@@ -11,10 +11,11 @@
  *    - URL structure: `https://example.com/?plan={encoded_plan}`
  *
  * 2. **Provider Links**: Provider-generated onboarding links for patients
- *    - Uses `config` URL parameter
- *    - Simple base64 encoding
+ *    - Uses `access_code` URL parameter (user-facing)
+ *    - Also supports `config` parameter for internal/legacy use
+ *    - Uses gzip compression for compact QR codes
  *    - Contains provider information and preferences
- *    - URL structure: `https://example.com/?config={encoded_config}`
+ *    - URL structure: `https://example.com/?access_code={encoded_config}`
  *
  * ## Size Limitations
  *
@@ -423,7 +424,12 @@ export function canShareViaUrl(
 // ============================================================================
 
 /**
- * URL parameter name for provider configuration
+ * URL parameter name for provider configuration (user-facing)
+ */
+export const ACCESS_CODE_PARAM = 'access_code';
+
+/**
+ * URL parameter name for provider configuration (internal/legacy)
  */
 export const PROVIDER_CONFIG_PARAM = 'config';
 
@@ -526,22 +532,30 @@ export function decodeProviderConfig(encoded: string): ProviderLinkConfig {
 
 /**
  * Generates a complete URL with encoded provider configuration
+ * Uses the access_code parameter for user-facing URLs
  *
  * @param baseUrl - The base URL (e.g., 'https://example.com')
  * @param config - The provider link configuration
+ * @param useAccessCodeParam - If true, uses 'access_code' parameter; if false, uses 'config' (default: true)
  * @returns Complete URL with encoded configuration parameter
  */
-export function generateProviderUrl(baseUrl: string, config: ProviderLinkConfig): string {
+export function generateProviderUrl(
+  baseUrl: string,
+  config: ProviderLinkConfig,
+  useAccessCodeParam = true
+): string {
   const encoded = encodeProviderConfig(config);
   const url = new URL(baseUrl);
-  url.searchParams.set(PROVIDER_CONFIG_PARAM, encoded);
+  const paramName = useAccessCodeParam ? ACCESS_CODE_PARAM : PROVIDER_CONFIG_PARAM;
+  url.searchParams.set(paramName, encoded);
   return url.toString();
 }
 
 /**
  * Parses provider configuration from URL search parameters
+ * Checks both 'access_code' (preferred) and 'config' (legacy) parameters
  *
- * @param searchParams - URLSearchParams or search string (e.g., '?config=...')
+ * @param searchParams - URLSearchParams or search string (e.g., '?access_code=...')
  * @returns Parse result with success status and config or error
  */
 export function parseProviderUrl(searchParams: URLSearchParams | string): ProviderLinkParseResult {
@@ -550,8 +564,8 @@ export function parseProviderUrl(searchParams: URLSearchParams | string): Provid
     const params =
       typeof searchParams === 'string' ? new URLSearchParams(searchParams) : searchParams;
 
-    // Get config parameter
-    const encoded = params.get(PROVIDER_CONFIG_PARAM);
+    // Check for access_code parameter first (preferred), then fall back to config (legacy)
+    const encoded = params.get(ACCESS_CODE_PARAM) || params.get(PROVIDER_CONFIG_PARAM);
 
     if (!encoded) {
       return {
@@ -573,6 +587,21 @@ export function parseProviderUrl(searchParams: URLSearchParams | string): Provid
       error: error instanceof Error ? error.message : 'Failed to parse provider URL',
     };
   }
+}
+
+/**
+ * Extracts access code from URL search parameters
+ * Checks both 'access_code' and 'config' parameters
+ *
+ * @param searchParams - URLSearchParams or search string
+ * @returns The encoded access code string or null if not found
+ */
+export function parseAccessCode(searchParams: URLSearchParams | string): string | null {
+  const params =
+    typeof searchParams === 'string' ? new URLSearchParams(searchParams) : searchParams;
+
+  // Check for access_code parameter first (preferred), then fall back to config (legacy)
+  return params.get(ACCESS_CODE_PARAM) || params.get(PROVIDER_CONFIG_PARAM);
 }
 
 /**
