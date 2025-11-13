@@ -77,8 +77,9 @@ export default function LinkPage() {
 
         const { config } = await response.json();
 
-        // Store config in localStorage for onboarding to use
-        localStorage.setItem('providerConfig', JSON.stringify(config));
+        // Store config in sessionStorage temporarily (not localStorage yet)
+        // It will be moved to localStorage only when onboarding completes in step 3
+        sessionStorage.setItem('providerConfig', JSON.stringify(config));
 
         // Redirect to onboarding
         router.push('/onboarding');

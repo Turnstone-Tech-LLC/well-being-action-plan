@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ProviderLinkConfig, ProviderInfo } from '@/lib/types';
 import { CopingStrategy, CopingStrategyCategory } from '@/lib/types/coping-strategy';
-import { generateProviderUrl, MAX_QR_CODE_URL_LENGTH } from '@/lib/utils';
 import { categoryConfig } from '@/lib/config/categoryConfig';
 import { providerService } from '@/lib/services/providerService';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -242,21 +241,6 @@ export default function ProviderLinkGeneratorPage() {
             : undefined,
       };
 
-      // Get base URL
-      const baseUrl =
-        typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-
-      // Generate URL (for backward compatibility)
-      const url = generateProviderUrl(baseUrl, config);
-
-      // Check if URL is too long for QR codes
-      if (url.length > MAX_QR_CODE_URL_LENGTH) {
-        setQrCodeWarning(
-          `The URL is ${url.length} characters long, which may be too large for reliable QR code scanning. ` +
-            `Consider selecting fewer coping strategies or shortening your custom message.`
-        );
-      }
-
       // Calculate expiration date
       const expiresAt = noExpiration ? null : new Date();
       if (expiresAt) {
@@ -264,7 +248,8 @@ export default function ProviderLinkGeneratorPage() {
       }
 
       // Save to database with auto-generated slug
-      const link = await providerService.createLink(user.id, config, url, {
+      // The URL is generated server-side based on the slug
+      const link = await providerService.createLink(user.id, config, null, {
         expiresAt: expiresAt || undefined,
       });
 

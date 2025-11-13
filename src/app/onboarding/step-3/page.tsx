@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
-import { setUserConfig } from '@/lib/db';
+import { setUserConfig, createCopingStrategy } from '@/lib/db';
+import { CopingStrategy } from '@/lib/types/coping-strategy';
 import { ChevronLeft, Loader2, Bell, Clock, AlertCircle } from 'lucide-react';
 
 /**
@@ -99,13 +100,65 @@ export default function OnboardingStep3Page() {
 
   /**
    * Save notification preferences and complete onboarding
+   *
+   * This is the ONLY place where onboarding data is written to IndexedDB.
+   * All previous steps store data in sessionStorage temporarily.
    */
   const handleComplete = async () => {
     try {
       setSaving(true);
       setError(null);
 
-      // Save notification preferences to userConfig
+      // Retrieve ALL onboarding data from sessionStorage
+      const preferredName = sessionStorage.getItem('onboarding_preferredName');
+      const selectedCopingStrategyIds = sessionStorage.getItem(
+        'onboarding_selectedCopingStrategyIds'
+      );
+      const selectedCopingStrategies = sessionStorage.getItem(
+        'onboarding_selectedCopingStrategies'
+      );
+
+      // Validate that we have all required data
+      if (!preferredName) {
+        setError('Missing preferred name. Please go back to Step 1.');
+        setSaving(false);
+        return;
+      }
+
+      if (!selectedCopingStrategyIds || !selectedCopingStrategies) {
+        setError('Missing coping strategies. Please go back to Step 2.');
+        setSaving(false);
+        return;
+      }
+
+      // Parse the JSON data
+      const strategyIds: string[] = JSON.parse(selectedCopingStrategyIds);
+      const strategies: CopingStrategy[] = JSON.parse(selectedCopingStrategies);
+
+      // Now write EVERYTHING to IndexedDB in one batch
+
+      // 1. Save preferred name
+      await setUserConfig('patient', 'preferredName', preferredName);
+
+      // 2. Save selected strategy IDs
+      await setUserConfig('patient', 'selectedCopingStrategyIds', strategyIds);
+
+      // 3. Save coping strategies to the database
+      for (const strategy of strategies) {
+        try {
+          await createCopingStrategy({
+            title: strategy.title,
+            description: strategy.description,
+            category: strategy.category,
+            isFavorite: false,
+          });
+        } catch (strategyError) {
+          // Strategy might already exist, which is fine
+          console.warn('Strategy might already exist:', strategy.title, strategyError);
+        }
+      }
+
+      // 4. Save notification preferences
       const notificationPreferences = {
         enableNotifications,
         enableCheckInReminders: enableNotifications && enableCheckInReminders,
@@ -113,18 +166,30 @@ export default function OnboardingStep3Page() {
         permissionStatus,
         scheduledTime: '09:00', // Default notification time: 9:00 AM
       };
-
       await setUserConfig('patient', 'notificationPreferences', notificationPreferences);
 
-      // Mark onboarding as complete
+      // 5. Mark onboarding as complete
       await setUserConfig('patient', 'onboardingCompleted', true);
       await setUserConfig('patient', 'onboardingCompletedAt', new Date().toISOString());
+
+      // 6. Move provider config from sessionStorage to localStorage
+      // This is the ONLY time we persist the provider config permanently
+      const providerConfigSession = sessionStorage.getItem('providerConfig');
+      if (providerConfigSession) {
+        localStorage.setItem('providerConfig', providerConfigSession);
+      }
+
+      // 7. Clean up sessionStorage now that data is persisted
+      sessionStorage.removeItem('onboarding_preferredName');
+      sessionStorage.removeItem('onboarding_selectedCopingStrategyIds');
+      sessionStorage.removeItem('onboarding_selectedCopingStrategies');
+      sessionStorage.removeItem('providerConfig');
 
       // Navigate to patient dashboard
       router.push('/dashboard');
     } catch (err) {
-      console.error('Failed to save notification preferences:', err);
-      setError('Failed to save your preferences. Please try again.');
+      console.error('Failed to complete onboarding:', err);
+      setError('Failed to save your information. Please try again.');
       setSaving(false);
     }
   };

@@ -103,21 +103,20 @@ export async function isPatientOnboardingComplete(userId: string = 'patient'): P
  * Get the appropriate redirect path based on onboarding status
  *
  * Determines where to redirect a patient who hasn't completed onboarding.
- * Checks for provider config link in URL to preserve onboarding flow.
+ * Checks for provider config in localStorage to preserve onboarding flow.
  *
  * @returns string - Path to redirect to (either '/' or '/onboarding')
  */
 export function getOnboardingRedirectPath(): string {
-  // Check if there's a provider config link in the URL
+  // Check if there's a provider config in localStorage
   if (typeof window !== 'undefined') {
-    const searchParams = new URLSearchParams(window.location.search);
-    const hasProviderLink = searchParams.has('config');
+    const hasProviderConfig = localStorage.getItem('providerConfig') !== null;
 
-    // If there's a provider link, redirect to home page which will handle the config
-    // Otherwise, redirect to onboarding start
-    return hasProviderLink ? '/' : '/onboarding';
+    // If there's a stored provider config, go to onboarding
+    // Otherwise, redirect to home to get an access code
+    return hasProviderConfig ? '/onboarding' : '/';
   }
 
-  // Default to onboarding if window is not available (SSR)
-  return '/onboarding';
+  // Default to home if window is not available (SSR)
+  return '/';
 }

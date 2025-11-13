@@ -4,8 +4,8 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  encodeConfig,
-  decodeConfig,
+  encodePlanConfig,
+  decodePlanConfig,
   generateShareableUrl,
   extractConfigFromUrl,
   estimateUrlLength,
@@ -13,14 +13,8 @@ import {
   PLAN_PARAM_NAME,
   MAX_URL_LENGTH,
   type ShareablePlanConfig,
-  parseAccessCode,
-  generateProviderUrl,
-  encodeProviderConfig,
-  ACCESS_CODE_PARAM,
 } from '../urlConfig';
-import type { ProviderLinkConfig } from '@/lib/types';
 import { ZoneType } from '@/lib/types/zone';
-import { CopingStrategyCategory } from '@/lib/types/coping-strategy';
 
 describe('URL Config - Basic Encoding and Decoding', () => {
   const sampleConfig: ShareablePlanConfig = {
@@ -70,20 +64,20 @@ describe('URL Config - Basic Encoding and Decoding', () => {
   };
 
   it('should encode a plan configuration into a string', () => {
-    const encoded = encodeConfig(sampleConfig);
+    const encoded = encodePlanConfig(sampleConfig);
     expect(encoded).toBeTruthy();
     expect(typeof encoded).toBe('string');
     expect(encoded.length).toBeGreaterThan(0);
   });
 
   it('should produce URL-safe base64 (no +, /, =)', () => {
-    const encoded = encodeConfig(sampleConfig);
+    const encoded = encodePlanConfig(sampleConfig);
     expect(encoded).not.toMatch(/[+/=]/);
   });
 
   it('should decode an encoded configuration', () => {
-    const encoded = encodeConfig(sampleConfig);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(sampleConfig);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -95,8 +89,8 @@ describe('URL Config - Basic Encoding and Decoding', () => {
   });
 
   it('should maintain data integrity through encode/decode cycle', () => {
-    const encoded = encodeConfig(sampleConfig);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(sampleConfig);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -115,8 +109,8 @@ describe('URL Config - Basic Encoding and Decoding', () => {
       },
     };
 
-    const encoded = encodeConfig(minimalConfig);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(minimalConfig);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -136,8 +130,8 @@ describe('URL Config - Basic Encoding and Decoding', () => {
       },
     };
 
-    const encoded = encodeConfig(unicodeConfig);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(unicodeConfig);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -154,7 +148,7 @@ describe('URL Config - Validation and Error Handling', () => {
       zoneStrategies: [],
     } as unknown as ShareablePlanConfig;
 
-    expect(() => encodeConfig(invalidConfig)).toThrow();
+    expect(() => encodePlanConfig(invalidConfig)).toThrow();
   });
 
   it('should reject invalid zone type', () => {
@@ -174,11 +168,11 @@ describe('URL Config - Validation and Error Handling', () => {
       },
     } as ShareablePlanConfig;
 
-    expect(() => encodeConfig(invalidZoneConfig)).toThrow();
+    expect(() => encodePlanConfig(invalidZoneConfig)).toThrow();
   });
 
   it('should return error for invalid encoded string', () => {
-    const result = decodeConfig('invalid-base64-string');
+    const result = decodePlanConfig('invalid-base64-string');
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toBeTruthy();
@@ -186,7 +180,7 @@ describe('URL Config - Validation and Error Handling', () => {
   });
 
   it('should return error for empty string', () => {
-    const result = decodeConfig('');
+    const result = decodePlanConfig('');
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toContain('Invalid input');
@@ -200,7 +194,7 @@ describe('URL Config - Validation and Error Handling', () => {
       .replace(/\//g, '_')
       .replace(/=/g, '');
 
-    const result = decodeConfig(invalidJson);
+    const result = decodePlanConfig(invalidJson);
     expect(result.success).toBe(false);
   });
 
@@ -215,12 +209,12 @@ describe('URL Config - Validation and Error Handling', () => {
       },
     };
 
-    const encoded = encodeConfig(validConfig);
+    const encoded = encodePlanConfig(validConfig);
 
     // Manually corrupt the data by decoding, modifying, and re-encoding
     const corrupted = `${encoded}corrupt`;
 
-    const result = decodeConfig(corrupted);
+    const result = decodePlanConfig(corrupted);
     expect(result.success).toBe(false);
   });
 });
@@ -386,7 +380,7 @@ describe('URL Config - Compression Effectiveness', () => {
     };
 
     const jsonString = JSON.stringify(config);
-    const encoded = encodeConfig(config);
+    const encoded = encodePlanConfig(config);
 
     // Compressed base64 should be smaller than original JSON
     // (though base64 adds ~33% overhead, compression should offset this for repetitive data)
@@ -416,8 +410,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodeConfig(config);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(config);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -448,8 +442,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodeConfig(config);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(config);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -470,8 +464,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodeConfig(config);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(config);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -507,8 +501,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodeConfig(config);
-    const result = decodeConfig(encoded);
+    const encoded = encodePlanConfig(config);
+    const result = decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -534,159 +528,13 @@ describe('URL Config - Edge Cases', () => {
         },
       };
 
-      const encoded = encodeConfig(config);
-      const result = decodeConfig(encoded);
+      const encoded = encodePlanConfig(config);
+      const result = decodePlanConfig(encoded);
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.config.theme).toBe(theme);
       }
-    });
-  });
-});
-
-describe('URL Config - Access Code Parameter Support', () => {
-  const sampleProviderConfig: ProviderLinkConfig = {
-    provider: {
-      id: 'provider-123',
-      name: 'Dr. Sarah Johnson',
-      organization: 'Community Mental Health Center',
-    },
-    customMessage: 'Welcome! I am excited to support you on your mental health journey.',
-  };
-
-  describe('parseAccessCode', () => {
-    it('should extract access code from access_code parameter', () => {
-      const params = new URLSearchParams('access_code=test123');
-      const accessCode = parseAccessCode(params);
-      expect(accessCode).toBe('test123');
-    });
-
-    it('should extract access code from config parameter (legacy)', () => {
-      const params = new URLSearchParams('config=test456');
-      const accessCode = parseAccessCode(params);
-      expect(accessCode).toBe('test456');
-    });
-
-    it('should prioritize access_code over config parameter', () => {
-      const params = new URLSearchParams('access_code=new123&config=old456');
-      const accessCode = parseAccessCode(params);
-      expect(accessCode).toBe('new123');
-    });
-
-    it('should return null when no access code parameter exists', () => {
-      const params = new URLSearchParams('other=value');
-      const accessCode = parseAccessCode(params);
-      expect(accessCode).toBeNull();
-    });
-
-    it('should return null when access_code is empty and no config parameter', () => {
-      const params = new URLSearchParams('access_code=');
-      const accessCode = parseAccessCode(params);
-      expect(accessCode).toBeNull();
-    });
-
-    it('should work with string input', () => {
-      const accessCode = parseAccessCode('?access_code=test789');
-      expect(accessCode).toBe('test789');
-    });
-  });
-
-  describe('generateProviderUrl', () => {
-    it('should generate URL with access_code parameter by default', () => {
-      const url = generateProviderUrl('https://example.com', sampleProviderConfig);
-      expect(url).toContain('access_code=');
-      expect(url).not.toContain('config=');
-    });
-
-    it('should generate URL with config parameter when useAccessCodeParam is false', () => {
-      const url = generateProviderUrl('https://example.com', sampleProviderConfig, false);
-      expect(url).toContain('config=');
-      expect(url).not.toContain('access_code=');
-    });
-
-    it('should encode provider configuration correctly', () => {
-      const url = generateProviderUrl('https://example.com', sampleProviderConfig);
-      const urlObj = new URL(url);
-      const encoded = urlObj.searchParams.get(ACCESS_CODE_PARAM);
-
-      expect(encoded).toBeTruthy();
-      expect(encoded).not.toMatch(/[+/=]/); // URL-safe base64
-    });
-
-    it('should preserve base URL structure', () => {
-      const baseUrl = 'https://example.com/path?existing=param';
-      const url = generateProviderUrl(baseUrl, sampleProviderConfig);
-
-      expect(url).toContain('https://example.com/path');
-      expect(url).toContain('existing=param');
-      expect(url).toContain('access_code=');
-    });
-
-    it('should generate decodable URLs', () => {
-      const url = generateProviderUrl('https://example.com', sampleProviderConfig);
-      const urlObj = new URL(url);
-      const encoded = urlObj.searchParams.get(ACCESS_CODE_PARAM);
-
-      expect(encoded).toBeTruthy();
-      // The encoded value should be decodable (tested in provider link tests)
-    });
-  });
-
-  describe('encodeProviderConfig', () => {
-    it('should encode provider configuration to URL-safe string', () => {
-      const encoded = encodeProviderConfig(sampleProviderConfig);
-
-      expect(encoded).toBeTruthy();
-      expect(typeof encoded).toBe('string');
-      expect(encoded).not.toMatch(/[+/=]/); // URL-safe base64
-    });
-
-    it('should handle minimal provider config', () => {
-      const minimalConfig: ProviderLinkConfig = {
-        provider: {
-          id: 'test',
-          name: 'Test Provider',
-        },
-      };
-
-      const encoded = encodeProviderConfig(minimalConfig);
-      expect(encoded).toBeTruthy();
-    });
-
-    it('should handle provider config with all optional fields', () => {
-      const fullConfig: ProviderLinkConfig = {
-        provider: {
-          id: 'provider-123',
-          name: 'Dr. Sarah Johnson',
-          organization: 'Community Mental Health Center',
-          contactInfo: {
-            phone: '555-1234',
-            email: 'sarah@example.com',
-            website: 'https://example.com',
-          },
-        },
-        customMessage: 'Welcome message',
-        copingStrategies: [
-          {
-            id: 'strategy-1',
-            title: 'Deep Breathing',
-            description: 'Take slow, deep breaths',
-            category: CopingStrategyCategory.Breathing,
-            isFavorite: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ],
-        planConfig: {
-          enableNotifications: true,
-          enableCheckInReminders: true,
-          checkInFrequencyHours: 24,
-        },
-      };
-
-      const encoded = encodeProviderConfig(fullConfig);
-      expect(encoded).toBeTruthy();
     });
   });
 });
