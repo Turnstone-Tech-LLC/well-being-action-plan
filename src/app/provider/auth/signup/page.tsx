@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { revokeProviderMode } from '@/lib/utils/providerMode';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,11 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const handleLeaveProviderMode = () => {
+    revokeProviderMode();
+    router.push('/');
+  };
 
   // Redirect if already logged in
   useEffect(() => {
@@ -250,9 +256,12 @@ export default function SignupPage() {
         </form>
 
         <div className="text-center">
-          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-500">
-            ← Back to home
-          </Link>
+          <button
+            onClick={handleLeaveProviderMode}
+            className="text-sm font-medium text-gray-600 hover:text-gray-500"
+          >
+            ← Leave Provider Mode
+          </button>
         </div>
       </div>
     </div>

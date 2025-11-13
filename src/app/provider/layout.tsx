@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Building2, LayoutDashboard, Link2, User, LogOut, Settings } from 'lucide-react';
+import { Building2, LayoutDashboard, Link2, User, LogOut, Settings, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthProvider, useAuth } from '@/lib/contexts/AuthContext';
 import { useState } from 'react';
+import { useProviderMode } from '@/hooks/useProviderMode';
 
 /**
  * Provider Portal Layout
@@ -18,6 +19,7 @@ function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, profile, signOut } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { isProviderMode, revokeProviderMode } = useProviderMode({ redirectIfDisabled: false });
 
   // Don't show nav on auth pages
   const isAuthPage = pathname?.startsWith('/provider/auth');
@@ -97,11 +99,23 @@ function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
                             await signOut();
                             router.push('/provider/auth/login');
                           }}
-                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           <LogOut className="h-4 w-4" />
                           Sign Out
                         </button>
+                        {isProviderMode && (
+                          <button
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              revokeProviderMode();
+                            }}
+                            className="flex w-full items-center gap-2 border-t px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <Shield className="h-4 w-4" />
+                            Revoke Provider Mode
+                          </button>
+                        )}
                       </div>
                     </div>
                   </>

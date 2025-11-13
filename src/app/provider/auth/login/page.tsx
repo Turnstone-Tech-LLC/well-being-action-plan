@@ -11,6 +11,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { revokeProviderMode } from '@/lib/utils/providerMode';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,11 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const redirectPath = searchParams.get('redirect') || '/provider';
+
+  const handleLeaveProviderMode = () => {
+    revokeProviderMode();
+    router.push('/');
+  };
 
   // Redirect if already logged in
   useEffect(() => {
@@ -138,9 +144,12 @@ function LoginForm() {
         </form>
 
         <div className="text-center">
-          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-500">
-            ← Back to home
-          </Link>
+          <button
+            onClick={handleLeaveProviderMode}
+            className="text-sm font-medium text-gray-600 hover:text-gray-500"
+          >
+            ← Leave Provider Mode
+          </button>
         </div>
       </div>
     </div>
