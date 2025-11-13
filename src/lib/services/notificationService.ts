@@ -63,14 +63,22 @@ export async function registerNotificationServiceWorker(): Promise<ServiceWorker
 
   try {
     // Check if we already have a service worker
-    const existingRegistration = await navigator.serviceWorker.getRegistration('/');
+    const existingRegistrations = await navigator.serviceWorker.getRegistrations();
 
-    if (existingRegistration) {
-      return existingRegistration;
+    // Look for our notification service worker by checking the script URL
+    let registration = existingRegistrations.find(
+      (reg) =>
+        reg.active?.scriptURL.includes('notification-sw.js') ||
+        reg.installing?.scriptURL.includes('notification-sw.js') ||
+        reg.waiting?.scriptURL.includes('notification-sw.js')
+    );
+
+    if (registration) {
+      return registration;
     }
 
     // Register the notification service worker
-    const registration = await navigator.serviceWorker.register('/notification-sw.js', {
+    registration = await navigator.serviceWorker.register('/notification-sw.js', {
       scope: '/',
     });
 
@@ -240,13 +248,35 @@ export async function initializeNotificationScheduling(userId: string): Promise<
 
 /**
  * Update notification time
+ * Updates both the notification schedule and preferences to keep them in sync
  */
 export async function updateNotificationTime(userId: string, newTime: string): Promise<boolean> {
   try {
     const schedule = await getNotificationSchedule(userId);
     const enabled = schedule?.enabled ?? true;
 
-    return await scheduleDailyNotification(userId, newTime, enabled);
+    // Update the schedule
+    const success = await scheduleDailyNotification(userId, newTime, enabled);
+
+    if (success) {
+      // Also update the preferences to keep both records in sync
+      try {
+        const prefsConfig = await getUserConfig(userId, 'notificationPreferences');
+        if (prefsConfig?.value) {
+          const currentPrefs = prefsConfig.value as NotificationPreferences;
+          const updatedPrefs = {
+            ...currentPrefs,
+            scheduledTime: newTime,
+          };
+          await setUserConfig(userId, 'notificationPreferences', updatedPrefs);
+        }
+      } catch (prefError) {
+        console.warn('Failed to update notification preferences:', prefError);
+        // Don't fail the entire operation if preferences update fails
+      }
+    }
+
+    return success;
   } catch (error) {
     console.error('Failed to update notification time:', error);
     return false;

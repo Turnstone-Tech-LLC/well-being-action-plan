@@ -161,6 +161,19 @@ export default function SettingsPage() {
         setError(null);
         const success = await updateNotificationTime('patient', newTime);
         if (success) {
+          // Update notification preferences in the database to keep both records in sync
+          const currentPrefs = await getUserConfig('patient', 'notificationPreferences');
+          const updatedPrefs = {
+            enableNotifications: true,
+            enableCheckInReminders: true,
+            checkInFrequencyHours:
+              (currentPrefs?.value as { checkInFrequencyHours?: number })?.checkInFrequencyHours ||
+              24,
+            permissionStatus,
+            scheduledTime: newTime,
+          };
+          await setUserConfig('patient', 'notificationPreferences', updatedPrefs);
+
           setSuccess('Notification time updated successfully!');
           setTimeout(() => setSuccess(null), 3000);
         } else {
@@ -190,21 +203,31 @@ export default function SettingsPage() {
       // Register service worker
       const registration = await registerNotificationServiceWorker();
 
-      if (registration) {
-        await registration.showNotification('Test Notification', {
-          body: 'Your daily check-in notifications are working!',
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
-          tag: 'test-notification',
-        });
-        setSuccess('Test notification sent!');
-        setTimeout(() => setSuccess(null), 3000);
+      if (registration && registration.active) {
+        try {
+          // Show test notification directly
+          await registration.showNotification('Test Notification', {
+            body: 'Your daily check-in notifications are working!',
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/icon-72x72.png',
+            tag: 'test-notification',
+          });
+          setSuccess('Test notification sent!');
+          setTimeout(() => setSuccess(null), 3000);
+        } catch (notificationError) {
+          console.error('Error showing notification:', notificationError);
+          setError(
+            `Failed to show notification: ${notificationError instanceof Error ? notificationError.message : 'Unknown error'}`
+          );
+        }
       } else {
-        setError('Failed to send test notification');
+        setError('Service worker not available or not active');
       }
     } catch (err) {
       console.error('Failed to send test notification:', err);
-      setError('Failed to send test notification');
+      setError(
+        `Failed to send test notification: ${err instanceof Error ? err.message : 'Unknown error'}`
+      );
     }
   };
 

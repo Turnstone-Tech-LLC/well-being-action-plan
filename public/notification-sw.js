@@ -16,6 +16,9 @@ self.addEventListener('message', (event) => {
     } else {
       cancelScheduledNotifications();
     }
+  } else if (event.data && event.data.type === 'CHECK_NOTIFICATION') {
+    // Periodic check from the main app
+    checkAndShowNotificationIfNeeded();
   }
 });
 
@@ -44,28 +47,77 @@ async function scheduleNextNotification(timeString) {
 
     const timeUntilNotification = scheduledDate.getTime() - now.getTime();
 
-    // Store the scheduled time
-    await self.registration.showNotification('Debug', {
-      body: `Next notification scheduled for ${scheduledDate.toLocaleString()}`,
-      tag: 'schedule-debug',
-      requireInteraction: false,
-      silent: true,
-    });
-
-    // Close debug notification immediately
-    setTimeout(() => {
-      self.registration.getNotifications({ tag: 'schedule-debug' }).then((notifications) => {
-        notifications.forEach((notification) => notification.close());
+    // Store the scheduled time in IndexedDB for persistence
+    try {
+      const db = await openNotificationDB();
+      const tx = db.transaction('schedules', 'readwrite');
+      await tx.store.put({
+        id: 'daily-checkin',
+        scheduledTime: timeString,
+        nextNotificationTime: scheduledDate.toISOString(),
+        createdAt: now.toISOString(),
       });
-    }, 100);
+    } catch (dbError) {
+      console.error('Error storing schedule in IndexedDB:', dbError);
+    }
 
-    // Schedule the notification using setTimeout (will be replaced by more robust solution)
-    // Note: Service workers can be terminated, so we'll also check on activation
+    // Schedule the notification using setTimeout
+    // This will fire if the service worker stays alive
     setTimeout(() => {
       showCheckInNotification();
     }, timeUntilNotification);
   } catch (error) {
     console.error('Error scheduling notification:', error);
+  }
+}
+
+// Open IndexedDB for storing schedules
+async function openNotificationDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('NotificationDB', 1);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('schedules')) {
+        db.createObjectStore('schedules', { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+// Check if it's time to show the notification
+async function checkAndShowNotificationIfNeeded() {
+  try {
+    const db = await openNotificationDB();
+    const tx = db.transaction('schedules', 'readonly');
+    const schedule = await tx.store.get('daily-checkin');
+
+    if (!schedule) {
+      return;
+    }
+
+    const now = new Date();
+    const nextNotificationTime = new Date(schedule.nextNotificationTime);
+
+    // If the scheduled time has passed, show the notification
+    if (now >= nextNotificationTime) {
+      await showCheckInNotification();
+
+      // Schedule for tomorrow
+      const tomorrow = new Date(nextNotificationTime);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const updateTx = db.transaction('schedules', 'readwrite');
+      await updateTx.store.put({
+        ...schedule,
+        nextNotificationTime: tomorrow.toISOString(),
+      });
+    }
+  } catch (error) {
+    console.error('Error checking notification schedule:', error);
   }
 }
 
@@ -163,7 +215,10 @@ self.addEventListener('notificationclose', (event) => {
 // Activate event - check for pending notifications
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    self.clients.claim().then(() => {
+    self.clients.claim().then(async () => {
+      // Check if there's a pending notification that should be shown
+      await checkAndShowNotificationIfNeeded();
+
       // Notify all clients that the service worker is ready
       return self.clients.matchAll().then((clients) => {
         clients.forEach((client) => {
