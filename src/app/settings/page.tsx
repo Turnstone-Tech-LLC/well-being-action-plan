@@ -12,8 +12,10 @@ import {
   updateNotificationTime,
   registerNotificationServiceWorker,
 } from '@/lib/services/notificationService';
-import { getUserConfig } from '@/lib/db';
+import { getUserConfig, clearAllData } from '@/lib/db';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
+import { exportDataToFile } from '@/lib/services/dataPortabilityService';
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 
 /**
  * Settings Page
@@ -32,6 +34,9 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [patientName, setPatientName] = useState<string>('');
+  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
+  const [clearingData, setClearingData] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -174,6 +179,43 @@ export default function SettingsPage() {
     } catch (err) {
       console.error('Failed to send test notification:', err);
       setError('Failed to send test notification');
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      setError(null);
+      setExportingData(true);
+
+      await exportDataToFile();
+
+      setSuccess('Data exported successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Failed to export data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to export data');
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    try {
+      setClearingData(true);
+      setError(null);
+
+      await clearAllData();
+
+      setSuccess('All data cleared successfully');
+      setTimeout(() => {
+        // Redirect to home page after clearing data
+        router.push('/');
+      }, 1500);
+    } catch (err) {
+      console.error('Failed to clear data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to clear data');
+      setClearingData(false);
+      setShowClearDataDialog(false);
     }
   };
 
@@ -343,6 +385,57 @@ export default function SettingsPage() {
           )}
         </div>
 
+        {/* Data Management Card */}
+        <div className="mb-6 rounded-xl bg-white p-6 shadow-md">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Data Management</h2>
+          <p className="mb-6 text-sm text-gray-600">
+            Export your data for backup or clear all data from this device
+          </p>
+
+          {/* Export Data */}
+          <div className="mb-6">
+            <div className="mb-3">
+              <p className="font-medium text-gray-900">Export Your Data</p>
+              <p className="mt-1 text-sm text-gray-600">
+                Download all your check-ins, coping strategies, and settings as a JSON file
+              </p>
+            </div>
+            <button
+              onClick={handleExportData}
+              disabled={exportingData}
+              className="w-full rounded-lg bg-catamount-green px-4 py-2 text-white transition-colors hover:bg-[#0F3428] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {exportingData ? 'Exporting...' : 'Export Data'}
+            </button>
+          </div>
+
+          {/* Clear All Data */}
+          <div>
+            <div className="mb-3">
+              <p className="font-medium text-red-zone">Clear All Data</p>
+              <p className="mt-1 text-sm text-gray-600">
+                Permanently delete all your data from this device. This action cannot be undone.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowClearDataDialog(true)}
+              disabled={clearingData}
+              className="w-full rounded-lg border-2 border-red-zone px-4 py-2 text-red-zone transition-colors hover:bg-red-zone hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Clear All Data
+            </button>
+          </div>
+
+          {/* Privacy Notice */}
+          <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <p className="text-sm text-blue-800">
+              <strong>Privacy First:</strong> All your data is stored locally on this device only.
+              When you export data, it's saved as a file on your device. No data is sent to external
+              servers.
+            </p>
+          </div>
+        </div>
+
         {/* Info Card */}
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
           <h3 className="mb-2 font-medium text-blue-900">About Daily Check-Ins</h3>
@@ -353,6 +446,29 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Clear Data Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showClearDataDialog}
+        onOpenChange={setShowClearDataDialog}
+        title="Clear All Data?"
+        description="This will permanently delete all your check-ins, coping strategies, and settings from this device. This action cannot be undone."
+        confirmText="Clear All Data"
+        cancelText="Cancel"
+        destructive
+        loading={clearingData}
+        onConfirm={handleClearData}
+      >
+        <div className="rounded-lg border border-uvm-gold bg-uvm-gold/10 p-4">
+          <p className="text-sm font-medium text-uvm-gold">⚠️ Before you proceed:</p>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            <li>• Consider exporting your data first as a backup</li>
+            <li>• All your check-in history will be lost</li>
+            <li>• All your coping strategies will be deleted</li>
+            <li>• You'll need a new access code to start over</li>
+          </ul>
+        </div>
+      </ConfirmationDialog>
     </div>
   );
 }

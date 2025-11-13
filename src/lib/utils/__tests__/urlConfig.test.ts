@@ -13,6 +13,12 @@ import {
   PLAN_PARAM_NAME,
   MAX_URL_LENGTH,
   type ShareablePlanConfig,
+  parseAccessCode,
+  generateProviderUrl,
+  encodeProviderConfig,
+  ACCESS_CODE_PARAM,
+  PROVIDER_CONFIG_PARAM,
+  type ProviderLinkConfig,
 } from '../urlConfig';
 import { ZoneType } from '@/lib/types/zone';
 
@@ -535,6 +541,142 @@ describe('URL Config - Edge Cases', () => {
       if (result.success) {
         expect(result.data.config.theme).toBe(theme);
       }
+    });
+  });
+});
+
+describe('URL Config - Access Code Parameter Support', () => {
+  const sampleProviderConfig: ProviderLinkConfig = {
+    provider: {
+      id: 'provider-123',
+      name: 'Dr. Sarah Johnson',
+      organization: 'Community Mental Health Center',
+    },
+    customMessage: 'Welcome! I am excited to support you on your mental health journey.',
+  };
+
+  describe('parseAccessCode', () => {
+    it('should extract access code from access_code parameter', () => {
+      const params = new URLSearchParams('access_code=test123');
+      const accessCode = parseAccessCode(params);
+      expect(accessCode).toBe('test123');
+    });
+
+    it('should extract access code from config parameter (legacy)', () => {
+      const params = new URLSearchParams('config=test456');
+      const accessCode = parseAccessCode(params);
+      expect(accessCode).toBe('test456');
+    });
+
+    it('should prioritize access_code over config parameter', () => {
+      const params = new URLSearchParams('access_code=new123&config=old456');
+      const accessCode = parseAccessCode(params);
+      expect(accessCode).toBe('new123');
+    });
+
+    it('should return null when no access code parameter exists', () => {
+      const params = new URLSearchParams('other=value');
+      const accessCode = parseAccessCode(params);
+      expect(accessCode).toBeNull();
+    });
+
+    it('should return null when access_code is empty and no config parameter', () => {
+      const params = new URLSearchParams('access_code=');
+      const accessCode = parseAccessCode(params);
+      expect(accessCode).toBeNull();
+    });
+
+    it('should work with string input', () => {
+      const accessCode = parseAccessCode('?access_code=test789');
+      expect(accessCode).toBe('test789');
+    });
+  });
+
+  describe('generateProviderUrl', () => {
+    it('should generate URL with access_code parameter by default', () => {
+      const url = generateProviderUrl('https://example.com', sampleProviderConfig);
+      expect(url).toContain('access_code=');
+      expect(url).not.toContain('config=');
+    });
+
+    it('should generate URL with config parameter when useAccessCodeParam is false', () => {
+      const url = generateProviderUrl('https://example.com', sampleProviderConfig, false);
+      expect(url).toContain('config=');
+      expect(url).not.toContain('access_code=');
+    });
+
+    it('should encode provider configuration correctly', () => {
+      const url = generateProviderUrl('https://example.com', sampleProviderConfig);
+      const urlObj = new URL(url);
+      const encoded = urlObj.searchParams.get(ACCESS_CODE_PARAM);
+
+      expect(encoded).toBeTruthy();
+      expect(encoded).not.toMatch(/[+/=]/); // URL-safe base64
+    });
+
+    it('should preserve base URL structure', () => {
+      const baseUrl = 'https://example.com/path?existing=param';
+      const url = generateProviderUrl(baseUrl, sampleProviderConfig);
+
+      expect(url).toContain('https://example.com/path');
+      expect(url).toContain('existing=param');
+      expect(url).toContain('access_code=');
+    });
+
+    it('should generate decodable URLs', () => {
+      const url = generateProviderUrl('https://example.com', sampleProviderConfig);
+      const urlObj = new URL(url);
+      const encoded = urlObj.searchParams.get(ACCESS_CODE_PARAM);
+
+      expect(encoded).toBeTruthy();
+      // The encoded value should be decodable (tested in provider link tests)
+    });
+  });
+
+  describe('encodeProviderConfig', () => {
+    it('should encode provider configuration to URL-safe string', () => {
+      const encoded = encodeProviderConfig(sampleProviderConfig);
+
+      expect(encoded).toBeTruthy();
+      expect(typeof encoded).toBe('string');
+      expect(encoded).not.toMatch(/[+/=]/); // URL-safe base64
+    });
+
+    it('should handle minimal provider config', () => {
+      const minimalConfig: ProviderLinkConfig = {
+        provider: {
+          id: 'test',
+          name: 'Test Provider',
+        },
+      };
+
+      const encoded = encodeProviderConfig(minimalConfig);
+      expect(encoded).toBeTruthy();
+    });
+
+    it('should handle provider config with all optional fields', () => {
+      const fullConfig: ProviderLinkConfig = {
+        provider: {
+          id: 'provider-123',
+          name: 'Dr. Sarah Johnson',
+          organization: 'Community Mental Health Center',
+          contactInfo: {
+            phone: '555-1234',
+            email: 'sarah@example.com',
+            website: 'https://example.com',
+          },
+        },
+        customMessage: 'Welcome message',
+        preselectedStrategies: ['strategy-1', 'strategy-2'],
+        config: {
+          enableNotifications: true,
+          enableCheckInReminders: true,
+          checkInFrequencyHours: 24,
+        },
+      };
+
+      const encoded = encodeProviderConfig(fullConfig);
+      expect(encoded).toBeTruthy();
     });
   });
 });

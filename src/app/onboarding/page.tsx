@@ -1,13 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
 import { setUserConfig } from '@/lib/db';
+import { parseAccessCode, decodeProviderConfig } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
 
 /**
  * Onboarding Step 1: Collect patient's preferred name
@@ -18,12 +20,51 @@ import { setUserConfig } from '@/lib/db';
  * - Data persistence to IndexedDB
  * - Progress tracking (Step 1 of 3)
  * - Navigation to Step 2
+ * - Validates presence of provider access code
  */
 export default function OnboardingPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [hasValidConfig, setHasValidConfig] = useState(false);
+  const [checkingConfig, setCheckingConfig] = useState(true);
+
+  /**
+   * Check for provider config on mount
+   */
+  useEffect(() => {
+    const checkProviderConfig = () => {
+      try {
+        // Check URL params first
+        const searchParams = new URLSearchParams(window.location.search);
+        const accessCode = parseAccessCode(searchParams);
+
+        if (accessCode) {
+          // Try to decode and store the config
+          try {
+            const config = decodeProviderConfig(accessCode);
+            localStorage.setItem('providerConfig', JSON.stringify(config));
+            setHasValidConfig(true);
+          } catch (err) {
+            console.error('Invalid access code in URL:', err);
+            setHasValidConfig(false);
+          }
+        } else {
+          // Check if config exists in localStorage
+          const storedConfig = localStorage.getItem('providerConfig');
+          setHasValidConfig(!!storedConfig);
+        }
+      } catch (err) {
+        console.error('Error checking provider config:', err);
+        setHasValidConfig(false);
+      } finally {
+        setCheckingConfig(false);
+      }
+    };
+
+    checkProviderConfig();
+  }, []);
 
   /**
    * Validates and saves the patient's name
@@ -70,6 +111,48 @@ export default function OnboardingPage() {
       setError('');
     }
   };
+
+  // Show loading state while checking config
+  if (checkingConfig) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-morning-fog to-[#F0F8FF] p-4 dark:from-gray-900 dark:to-gray-800 md:p-8">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-catamount-green" />
+          <p className="text-vermont-slate">Checking configuration...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Show error if no valid config
+  if (!hasValidConfig) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-morning-fog to-[#F0F8FF] p-4 dark:from-gray-900 dark:to-gray-800 md:p-8">
+        <div className="w-full max-w-md">
+          <Card className="border-destructive">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+                <CardTitle className="text-destructive">Access Code Required</CardTitle>
+              </div>
+              <CardDescription>
+                You need a valid provider access code to start onboarding.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Please return to the home page and enter your access code, or contact your mental
+                health provider to get one.
+              </p>
+              <Button onClick={() => router.push('/')} className="w-full">
+                Go to Home Page
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-morning-fog to-[#F0F8FF] p-4 dark:from-gray-900 dark:to-gray-800 md:p-8">
