@@ -10,6 +10,8 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getUserConfig } from '@/lib/db';
 import { WelcomeScreen } from '@/components/welcome-screen';
 import { ImportDataDialog } from '@/components/import-data-dialog';
+import { validateProviderKey, enableProviderMode } from '@/lib/utils/providerMode';
+import { Flash } from '@/components/flash';
 
 /**
  * Landing page component with provider link detection
@@ -31,6 +33,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [providerKeyError, setProviderKeyError] = useState<string | null>(null);
+  const [providerKeyFlashVisible, setProviderKeyFlashVisible] = useState(false);
 
   useEffect(() => {
     checkOnboardingAndRedirect();
@@ -130,6 +134,27 @@ export default function Home() {
     router.push('/dashboard');
   };
 
+  const handleProviderKeySubmit = (providerKey: string) => {
+    // Validate the provider key
+    if (validateProviderKey(providerKey)) {
+      // Valid key - enable provider mode and redirect
+      try {
+        enableProviderMode();
+        // Clear the provider key from the input by redirecting
+        router.push('/provider/auth/login');
+      } catch {
+        setProviderKeyError('Failed to enable provider mode. Please try again.');
+        setProviderKeyFlashVisible(true);
+      }
+    } else {
+      // Invalid key - show error
+      setProviderKeyError('Invalid provider key. Please check and try again.');
+      setProviderKeyFlashVisible(true);
+      // Auto-hide error after 5 seconds
+      setTimeout(() => setProviderKeyFlashVisible(false), 5000);
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -148,11 +173,20 @@ export default function Home() {
   if (showWelcomeScreen) {
     return (
       <>
+        <Flash
+          message={providerKeyError || ''}
+          variant="error"
+          visible={providerKeyFlashVisible}
+          onDismiss={() => setProviderKeyFlashVisible(false)}
+          autoDismissMs={5000}
+        />
         <WelcomeScreen
           onAccessCodeSubmit={handleAccessCodeSubmit}
           onImportData={handleImportData}
+          onProviderKeySubmit={handleProviderKeySubmit}
           loading={loading}
           error={error}
+          providerKeyError={providerKeyError}
         />
         <ImportDataDialog
           open={showImportDialog}

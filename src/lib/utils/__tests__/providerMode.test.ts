@@ -33,12 +33,16 @@ describe('Provider Mode Utilities', () => {
     });
 
     it('should return false for null-like values', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(validateProviderKey(null as any)).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(validateProviderKey(undefined as any)).toBe(false);
     });
 
     it('should return false for non-string values', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(validateProviderKey(123 as any)).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(validateProviderKey({} as any)).toBe(false);
     });
 

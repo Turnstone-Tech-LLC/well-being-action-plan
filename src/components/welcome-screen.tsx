@@ -32,6 +32,11 @@ export interface WelcomeScreenProps {
   onImportData: () => void;
 
   /**
+   * Callback when user submits a provider key
+   */
+  onProviderKeySubmit?: (providerKey: string) => void;
+
+  /**
    * Whether the access code is being validated
    */
   loading?: boolean;
@@ -40,6 +45,11 @@ export interface WelcomeScreenProps {
    * Error message to display
    */
   error?: string | null;
+
+  /**
+   * Provider key error message
+   */
+  providerKeyError?: string | null;
 }
 
 /**
@@ -60,10 +70,14 @@ export function WelcomeScreen({
   initialAccessCode = '',
   onAccessCodeSubmit,
   onImportData,
+  onProviderKeySubmit,
   loading = false,
   error = null,
+  providerKeyError = null,
 }: WelcomeScreenProps) {
   const [accessCode, setAccessCode] = useState(initialAccessCode);
+  const [providerKey, setProviderKey] = useState('');
+  const [providerKeyLoading, setProviderKeyLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +86,18 @@ export function WelcomeScreen({
     }
   };
 
+  const handleProviderKeySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (providerKey.trim() && onProviderKeySubmit) {
+      setProviderKeyLoading(true);
+      onProviderKeySubmit(providerKey.trim());
+      // Reset loading state after a short delay (will be handled by parent)
+      setTimeout(() => setProviderKeyLoading(false), 500);
+    }
+  };
+
   const isAccessCodeValid = accessCode.trim().length > 0;
+  const isProviderKeyValid = providerKey.trim().length > 0;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6">
@@ -203,6 +228,60 @@ export function WelcomeScreen({
               <span className="font-medium">Contact your mental health provider</span> to get
               started.
             </p>
+          </div>
+
+          {/* Provider Mode Section */}
+          <div className="border-t pt-4">
+            <div className="mb-3 text-center">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Provider Access
+              </p>
+            </div>
+
+            {providerKeyError && (
+              <div className="mb-3 flex items-start gap-2 rounded-lg border border-destructive bg-destructive/10 p-3">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                <p className="text-xs text-destructive/90">{providerKeyError}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleProviderKeySubmit} className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="provider-key" className="text-xs">
+                  Provider Key
+                </Label>
+                <Input
+                  id="provider-key"
+                  type="password"
+                  placeholder="Enter provider key"
+                  value={providerKey}
+                  onChange={(e) => setProviderKey(e.target.value)}
+                  disabled={providerKeyLoading}
+                  className="text-sm"
+                  aria-describedby="provider-key-description"
+                />
+                <p id="provider-key-description" className="text-xs text-muted-foreground">
+                  Providers: Enter your access key to manage plans
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                className="w-full"
+                disabled={!isProviderKeyValid || providerKeyLoading}
+              >
+                {providerKeyLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Enter Provider Mode'
+                )}
+              </Button>
+            </form>
           </div>
         </CardContent>
       </Card>
