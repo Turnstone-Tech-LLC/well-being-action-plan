@@ -24,9 +24,35 @@
  * @see src/lib/utils/patientAuth.ts for onboarding validation
  */
 
+// Polyfill for Edge Runtime compatibility
+// @ts-ignore - process polyfill for Edge Runtime
+if (typeof globalThis.process === 'undefined') {
+  // @ts-ignore
+  globalThis.process = {
+    version: 'v18.0.0',
+    versions: {
+      node: '18.0.0',
+      http_parser: '2.9.4',
+      v8: '10.2.154.26',
+      ares: '1.18.1',
+      uv: '1.43.0',
+      zlib: '1.2.11',
+      modules: '108',
+      nghttp2: '1.47.0',
+      napi: '8',
+      llhttp: '6.0.7',
+      openssl: '3.0.0+quic',
+    },
+    env: {
+      NODE_ENV: 'production',
+    },
+  };
+}
+
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseUrl, getSupabaseAnonKey } from './config';
+import { isProviderModeCookieSet } from '@/lib/utils/providerMode';
 
 /**
  * Update session and protect provider routes
@@ -77,14 +103,31 @@ export async function updateSession(request: NextRequest) {
   }
 
   // ============================================================================
-  // Provider Route Protection (Supabase Auth)
+  // Provider Route Protection (Provider Mode Check)
   // ============================================================================
 
-  // Protect all /provider/* routes except /provider/auth/*
+  // Check if provider mode is enabled via cookie
+  const cookieHeader = request.headers.get('cookie') || '';
+  const isProviderModeEnabled = isProviderModeCookieSet(cookieHeader);
+
+  // Protect all /provider/* routes - require provider mode to be enabled
   const isProviderRoute = request.nextUrl.pathname.startsWith('/provider');
   const isProviderAuthRoute = request.nextUrl.pathname.startsWith('/provider/auth');
 
-  if (isProviderRoute && !isProviderAuthRoute) {
+  if (isProviderRoute && !isProviderModeEnabled) {
+    // Provider mode not enabled - redirect to home page
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    url.search = ''; // Clear any query params
+    return NextResponse.redirect(url);
+  }
+
+  // ============================================================================
+  // Provider Route Protection (Supabase Auth)
+  // ============================================================================
+
+  // Protect authenticated provider routes (except auth pages) - require Supabase auth
+  if (isProviderRoute && !isProviderAuthRoute && isProviderModeEnabled) {
     if (!user) {
       // User is not authenticated - redirect to login
       const url = request.nextUrl.clone();
