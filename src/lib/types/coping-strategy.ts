@@ -2,7 +2,6 @@
  * Categories for organizing coping strategies
  */
 export enum CopingStrategyCategory {
-  Breathing = 'breathing',
   Physical = 'physical',
   Social = 'social',
   Emotional = 'emotional',

@@ -58,7 +58,7 @@ describe('Patient Authentication Utilities', () => {
       await createCopingStrategy({
         title: 'Deep Breathing',
         description: 'Take slow, deep breaths',
-        category: CopingStrategyCategory.Breathing,
+        category: CopingStrategyCategory.Physical,
         isFavorite: false,
       });
 
@@ -85,7 +85,7 @@ describe('Patient Authentication Utilities', () => {
       await createCopingStrategy({
         title: 'Deep Breathing',
         description: 'Take slow, deep breaths',
-        category: CopingStrategyCategory.Breathing,
+        category: CopingStrategyCategory.Physical,
         isFavorite: false,
       });
 
