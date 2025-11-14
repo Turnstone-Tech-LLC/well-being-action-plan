@@ -5,25 +5,17 @@
   <!-- Safe area circle (slightly lighter green for depth) -->
   <circle cx="256" cy="256" r="200" fill="#1a5a40"/>
 
-  <!-- Heart symbol representing well-being (properly proportioned) -->
-  <g transform="translate(256, 210)">
-    <path d="M 0,-45
-             C -25,-45 -45,-25 -45,0
-             C -45,25 -25,45 0,70
-             C 25,45 45,25 45,0
-             C 45,-25 25,-45 0,-45
-             M -22.5,-45
-             C -35,-45 -45,-35 -45,-22.5
-             C -45,-10 -35,0 -22.5,0
-             L 0,-22.5
-             Z
-             M 22.5,-45
-             C 35,-45 45,-35 45,-22.5
-             C 45,-10 35,0 22.5,0
-             L 0,-22.5
-             Z"
-             fill="#ffffff"
-             transform="scale(1.4)"/>
+  <!-- Heart symbol representing well-being (classic heart shape) -->
+  <g transform="translate(256, 230) scale(1.8)">
+    <path d="M 0,15
+             C -20,15 -35,0 -35,-15
+             C -35,-30 -25,-40 -17.5,-40
+             C -10,-40 0,-30 0,-20
+             C 0,-30 10,-40 17.5,-40
+             C 25,-40 35,-30 35,-15
+             C 35,0 20,15 0,35
+             C -20,15 -35,0 -35,-15"
+          fill="#ffffff"/>
   </g>
 
   <!-- Plus sign overlay (wellness/healthcare symbol) -->
