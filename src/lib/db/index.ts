@@ -10,6 +10,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { CheckIn } from '@/lib/types/check-in';
 import type { CopingStrategy } from '@/lib/types/coping-strategy';
+import type { ProviderProfile, ProviderLink } from '@/lib/types/provider';
 
 /**
  * User configuration interface for storing app-level settings and preferences
@@ -23,9 +24,50 @@ export interface UserConfig {
 }
 
 /**
+ * Cached provider profile for offline access
+ * Extends ProviderProfile with cache metadata
+ */
+export interface CachedProviderProfile extends ProviderProfile {
+  cachedAt: Date;
+}
+
+/**
+ * Cached provider link for offline access
+ * Extends ProviderLink with cache metadata
+ */
+export interface CachedProviderLink extends ProviderLink {
+  cachedAt: Date;
+}
+
+/**
+ * Pending change operation for sync queue
+ * Tracks operations to be synced when connection is restored
+ */
+export interface PendingChange {
+  id: string;
+  timestamp: Date;
+  operation: 'create' | 'update' | 'delete';
+  entity: 'profile' | 'link';
+  entityId: string;
+  data: ProviderProfile | ProviderLink | { id: string };
+  status: 'pending' | 'syncing' | 'failed';
+  retryCount: number;
+  lastError?: string;
+}
+
+/**
  * Database schema version history and migration guide:
  *
- * Version 1 (Current):
+ * Version 2 (Current):
+ * - Added provider offline support tables:
+ *   - providerProfiles: Cached provider account data
+ *     - Indexed by: id (primary), cachedAt
+ *   - providerLinks: Cached provider-generated patient links
+ *     - Indexed by: id (primary), provider_id, cachedAt, is_active
+ *   - pendingChanges: Sync queue for offline operations
+ *     - Indexed by: id (primary), status, timestamp, entity
+ *
+ * Version 1:
  * - checkIns: Core emotional state tracking
  *   - Indexed by: id (primary), userId, timestamp, zone
  *   - Multi-entry indexes: triggerIds, copingStrategyIds (for array searches)
@@ -82,6 +124,9 @@ class WellBeingDB extends Dexie {
   checkIns!: EntityTable<CheckIn, 'id'>;
   copingStrategies!: EntityTable<CopingStrategy, 'id'>;
   userConfig!: EntityTable<UserConfig, 'id'>;
+  providerProfiles!: EntityTable<CachedProviderProfile, 'id'>;
+  providerLinks!: EntityTable<CachedProviderLink, 'id'>;
+  pendingChanges!: EntityTable<PendingChange, 'id'>;
 
   constructor() {
     super('WellBeingActionPlanDB');
@@ -108,6 +153,34 @@ class WellBeingDB extends Dexie {
       // userId: Index for filtering by user
       // key: Index for filtering by config key
       userConfig: '&id, [userId+key], userId, key',
+    });
+
+    // Version 2: Provider offline support
+    this.version(2).stores({
+      // Keep existing tables (Dexie auto-copies from previous version)
+      checkIns: '&id, userId, timestamp, zone, *triggerIds, *copingStrategyIds',
+      copingStrategies: '&id, category, isFavorite',
+      userConfig: '&id, [userId+key], userId, key',
+
+      // New provider tables
+      // ProviderProfiles: Cached provider account data
+      // &id: Primary key (provider ID from Supabase auth)
+      // cachedAt: Index for cache expiration queries
+      providerProfiles: '&id, cachedAt',
+
+      // ProviderLinks: Cached provider-generated patient links
+      // &id: Primary key (link ID)
+      // provider_id: Index for filtering by provider
+      // cachedAt: Index for cache expiration queries
+      // is_active: Index for filtering active/inactive links
+      providerLinks: '&id, provider_id, cachedAt, is_active',
+
+      // PendingChanges: Sync queue for offline operations
+      // &id: Primary key (change ID)
+      // status: Index for filtering by sync status
+      // timestamp: Index for chronological processing
+      // entity: Index for filtering by entity type
+      pendingChanges: '&id, status, timestamp, entity',
     });
   }
 }
@@ -445,11 +518,25 @@ export async function deleteAllUserConfig(userId: string): Promise<number> {
  * ⚠️ WARNING: This will delete all data!
  */
 export async function clearAllData(): Promise<void> {
-  await db.transaction('rw', db.checkIns, db.copingStrategies, db.userConfig, async () => {
-    await db.checkIns.clear();
-    await db.copingStrategies.clear();
-    await db.userConfig.clear();
-  });
+  await db.transaction(
+    'rw',
+    [
+      db.checkIns,
+      db.copingStrategies,
+      db.userConfig,
+      db.providerProfiles,
+      db.providerLinks,
+      db.pendingChanges,
+    ],
+    async () => {
+      await db.checkIns.clear();
+      await db.copingStrategies.clear();
+      await db.userConfig.clear();
+      await db.providerProfiles.clear();
+      await db.providerLinks.clear();
+      await db.pendingChanges.clear();
+    }
+  );
 }
 
 /**
@@ -461,14 +548,28 @@ export async function getDbStats(): Promise<{
   checkIns: number;
   copingStrategies: number;
   userConfig: number;
+  providerProfiles: number;
+  providerLinks: number;
+  pendingChanges: number;
 }> {
-  const [checkIns, copingStrategies, userConfig] = await Promise.all([
-    db.checkIns.count(),
-    db.copingStrategies.count(),
-    db.userConfig.count(),
-  ]);
+  const [checkIns, copingStrategies, userConfig, providerProfiles, providerLinks, pendingChanges] =
+    await Promise.all([
+      db.checkIns.count(),
+      db.copingStrategies.count(),
+      db.userConfig.count(),
+      db.providerProfiles.count(),
+      db.providerLinks.count(),
+      db.pendingChanges.count(),
+    ]);
 
-  return { checkIns, copingStrategies, userConfig };
+  return {
+    checkIns,
+    copingStrategies,
+    userConfig,
+    providerProfiles,
+    providerLinks,
+    pendingChanges,
+  };
 }
 
 /**
@@ -480,14 +581,28 @@ export async function exportData(): Promise<{
   checkIns: CheckIn[];
   copingStrategies: CopingStrategy[];
   userConfig: UserConfig[];
+  providerProfiles: CachedProviderProfile[];
+  providerLinks: CachedProviderLink[];
+  pendingChanges: PendingChange[];
 }> {
-  const [checkIns, copingStrategies, userConfig] = await Promise.all([
-    db.checkIns.toArray(),
-    db.copingStrategies.toArray(),
-    db.userConfig.toArray(),
-  ]);
+  const [checkIns, copingStrategies, userConfig, providerProfiles, providerLinks, pendingChanges] =
+    await Promise.all([
+      db.checkIns.toArray(),
+      db.copingStrategies.toArray(),
+      db.userConfig.toArray(),
+      db.providerProfiles.toArray(),
+      db.providerLinks.toArray(),
+      db.pendingChanges.toArray(),
+    ]);
 
-  return { checkIns, copingStrategies, userConfig };
+  return {
+    checkIns,
+    copingStrategies,
+    userConfig,
+    providerProfiles,
+    providerLinks,
+    pendingChanges,
+  };
 }
 
 /**
@@ -500,16 +615,80 @@ export async function importData(data: {
   checkIns?: CheckIn[];
   copingStrategies?: CopingStrategy[];
   userConfig?: UserConfig[];
+  providerProfiles?: CachedProviderProfile[];
+  providerLinks?: CachedProviderLink[];
+  pendingChanges?: PendingChange[];
 }): Promise<void> {
-  await db.transaction('rw', db.checkIns, db.copingStrategies, db.userConfig, async () => {
-    if (data.checkIns) {
-      await db.checkIns.bulkPut(data.checkIns);
+  await db.transaction(
+    'rw',
+    [
+      db.checkIns,
+      db.copingStrategies,
+      db.userConfig,
+      db.providerProfiles,
+      db.providerLinks,
+      db.pendingChanges,
+    ],
+    async () => {
+      if (data.checkIns) {
+        await db.checkIns.bulkPut(data.checkIns);
+      }
+      if (data.copingStrategies) {
+        await db.copingStrategies.bulkPut(data.copingStrategies);
+      }
+      if (data.userConfig) {
+        await db.userConfig.bulkPut(data.userConfig);
+      }
+      if (data.providerProfiles) {
+        await db.providerProfiles.bulkPut(data.providerProfiles);
+      }
+      if (data.providerLinks) {
+        await db.providerLinks.bulkPut(data.providerLinks);
+      }
+      if (data.pendingChanges) {
+        await db.pendingChanges.bulkPut(data.pendingChanges);
+      }
     }
-    if (data.copingStrategies) {
-      await db.copingStrategies.bulkPut(data.copingStrategies);
-    }
-    if (data.userConfig) {
-      await db.userConfig.bulkPut(data.userConfig);
-    }
-  });
+  );
+}
+
+// =============================================================================
+// Patient User Config Convenience Functions
+// =============================================================================
+
+const DEFAULT_PATIENT_USER_ID = 'patient';
+
+/**
+ * Get the current patient's configuration as a typed object
+ * Convenience wrapper that returns all config as a single object
+ *
+ * @returns Promise<Record<string, unknown>> - Object containing all patient config
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getPatientConfig(): Promise<Record<string, any>> {
+  const configs = await getAllUserConfig(DEFAULT_PATIENT_USER_ID);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const configObj: Record<string, any> = {};
+
+  for (const config of configs) {
+    configObj[config.key] = config.value;
+  }
+
+  return configObj;
+}
+
+/**
+ * Update multiple patient configuration values at once
+ * Convenience wrapper for batch updates
+ *
+ * @param updates - Object with key-value pairs to update
+ * @returns Promise<void>
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function updatePatientConfig(updates: Record<string, any>): Promise<void> {
+  await Promise.all(
+    Object.entries(updates).map(([key, value]) =>
+      setUserConfig(DEFAULT_PATIENT_USER_ID, key, value)
+    )
+  );
 }
