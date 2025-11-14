@@ -9,6 +9,60 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === 'development',
   workboxOptions: {
     disableDevLogs: true,
+    runtimeCaching: [
+      {
+        // Cache page navigations (documents) with network-first strategy
+        urlPattern: /^https?:\/\/[^/]+\/(?!api\/).*$/,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'pages-cache',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+          networkTimeoutSeconds: 10,
+        },
+      },
+      {
+        // Cache static assets (JS, CSS) with cache-first strategy
+        urlPattern: /\.(js|css|woff2?|ttf|eot)$/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'static-assets-cache',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+        },
+      },
+      {
+        // Cache images with cache-first strategy
+        urlPattern: /\.(png|jpg|jpeg|svg|gif|webp|ico)$/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'image-cache',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+        },
+      },
+      {
+        // Cache fonts with cache-first strategy
+        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts-cache',
+          expiration: {
+            maxEntries: 20,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          },
+        },
+      },
+    ],
+  },
+  fallbacks: {
+    document: '/offline',
   },
 });
 
