@@ -520,12 +520,14 @@ export async function deleteAllUserConfig(userId: string): Promise<number> {
 export async function clearAllData(): Promise<void> {
   await db.transaction(
     'rw',
-    db.checkIns,
-    db.copingStrategies,
-    db.userConfig,
-    db.providerProfiles,
-    db.providerLinks,
-    db.pendingChanges,
+    [
+      db.checkIns,
+      db.copingStrategies,
+      db.userConfig,
+      db.providerProfiles,
+      db.providerLinks,
+      db.pendingChanges,
+    ],
     async () => {
       await db.checkIns.clear();
       await db.copingStrategies.clear();
@@ -619,12 +621,14 @@ export async function importData(data: {
 }): Promise<void> {
   await db.transaction(
     'rw',
-    db.checkIns,
-    db.copingStrategies,
-    db.userConfig,
-    db.providerProfiles,
-    db.providerLinks,
-    db.pendingChanges,
+    [
+      db.checkIns,
+      db.copingStrategies,
+      db.userConfig,
+      db.providerProfiles,
+      db.providerLinks,
+      db.pendingChanges,
+    ],
     async () => {
       if (data.checkIns) {
         await db.checkIns.bulkPut(data.checkIns);
