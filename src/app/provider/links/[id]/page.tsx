@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Copy, Download, QrCode } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCode as QRCodeComponent } from '@/components/provider/QRCode';
 import { CopingStrategyCard } from '@/components/coping-strategy-card';
 
 /**
@@ -190,7 +190,7 @@ export default function LinkDetailPage({ params }: { params: Promise<{ id: strin
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-center rounded-lg bg-white p-6">
-              <QRCodeSVG id="qr-code-svg" value={shareableUrl} size={200} level="M" />
+              <QRCodeComponent id="qr-code-svg" value={shareableUrl} size={200} level="M" />
             </div>
             <Button onClick={handleDownloadQR} variant="outline" className="w-full">
               <Download className="mr-2 h-4 w-4" />

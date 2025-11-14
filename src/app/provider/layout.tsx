@@ -11,6 +11,8 @@ import {
   Settings,
   Shield,
   BookOpen,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthProvider, useAuth } from '@/lib/contexts/AuthContext';
@@ -28,6 +30,7 @@ function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, profile, signOut } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isProviderMode, revokeProviderMode } = useProviderMode({ redirectIfDisabled: false });
 
   // Don't show nav on auth pages
@@ -64,85 +67,105 @@ function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
             >
               <Building2 className="h-6 w-6 text-primary" />
               <div>
-                <h1 className="text-lg font-semibold">Provider Portal</h1>
-                <p className="text-xs text-muted-foreground">Well-Being Action Plan</p>
+                <h1 className="text-base font-semibold sm:text-lg">Provider Portal</h1>
+                <p className="hidden text-xs text-muted-foreground sm:block">
+                  Well-Being Action Plan
+                </p>
               </div>
             </Link>
 
-            {/* User Menu */}
-            {user && profile && (
-              <div className="relative">
+            <div className="flex items-center gap-2">
+              {/* Mobile Menu Toggle */}
+              {!isAuthPage && user && (
                 <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden"
+                  aria-label="Toggle mobile menu"
                 >
-                  <User className="h-5 w-5" />
-                  <div className="text-left">
-                    <div className="font-semibold">{profile.name}</div>
-                    {profile.organization && (
-                      <div className="text-xs text-muted-foreground">{profile.organization}</div>
-                    )}
-                  </div>
+                  {mobileMenuOpen ? (
+                    <X className="h-6 w-6" aria-hidden="true" />
+                  ) : (
+                    <Menu className="h-6 w-6" aria-hidden="true" />
+                  )}
                 </button>
+              )}
 
-                {/* Dropdown Menu */}
-                {userMenuOpen && (
-                  <>
-                    {/* Backdrop */}
-                    <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+              {/* User Menu */}
+              {user && profile && (
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                    aria-label="User menu"
+                  >
+                    <User className="h-5 w-5" />
+                    <div className="hidden text-left sm:block">
+                      <div className="font-semibold">{profile.name}</div>
+                      {profile.organization && (
+                        <div className="text-xs text-muted-foreground">{profile.organization}</div>
+                      )}
+                    </div>
+                  </button>
 
-                    {/* Menu */}
-                    <div className="absolute right-0 z-20 mt-2 w-56 rounded-md border bg-white shadow-lg dark:bg-gray-800">
-                      <div className="border-b px-4 py-3">
-                        <div className="font-medium">{profile.name}</div>
-                        <div className="text-sm text-muted-foreground">{user.email}</div>
-                      </div>
-                      <div className="py-1">
-                        <button
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            router.push('/provider/settings');
-                          }}
-                          className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <Settings className="h-4 w-4" />
-                          Settings
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await signOut();
-                            router.push('/provider/auth/login');
-                          }}
-                          className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Sign Out
-                        </button>
-                        {isProviderMode && (
+                  {/* Dropdown Menu */}
+                  {userMenuOpen && (
+                    <>
+                      {/* Backdrop */}
+                      <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+
+                      {/* Menu */}
+                      <div className="absolute right-0 z-20 mt-2 w-56 rounded-md border bg-white shadow-lg dark:bg-gray-800">
+                        <div className="border-b px-4 py-3">
+                          <div className="font-medium">{profile.name}</div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </div>
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              router.push('/provider/settings');
+                            }}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <Settings className="h-4 w-4" />
+                            Settings
+                          </button>
                           <button
                             onClick={async () => {
-                              setUserMenuOpen(false);
-                              // Sign out the provider first, then revoke provider mode
                               await signOut();
-                              revokeProviderMode();
+                              router.push('/provider/auth/login');
                             }}
-                            className="flex w-full items-center gap-2 border-t px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
-                            <Shield className="h-4 w-4" />
-                            Leave Provider Mode
+                            <LogOut className="h-4 w-4" />
+                            Sign Out
                           </button>
-                        )}
+                          {isProviderMode && (
+                            <button
+                              onClick={async () => {
+                                setUserMenuOpen(false);
+                                // Sign out the provider first, then revoke provider mode
+                                await signOut();
+                                revokeProviderMode();
+                              }}
+                              className="flex w-full items-center gap-2 border-t px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Shield className="h-4 w-4" />
+                              Leave Provider Mode
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Navigation - Only show on authenticated pages */}
+          {/* Desktop Navigation - Only show on authenticated pages */}
           {!isAuthPage && (
-            <nav className="flex gap-1 border-t pt-1">
+            <nav className="hidden gap-1 border-t pt-1 md:flex">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -159,6 +182,33 @@ function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
                     )}
                   >
                     <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
+
+          {/* Mobile Navigation */}
+          {!isAuthPage && mobileMenuOpen && (
+            <nav className="border-t py-2 md:hidden">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium transition-colors',
+                      isActive
+                        ? 'bg-white text-primary dark:bg-gray-800'
+                        : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-gray-800/50'
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
                     {item.label}
                   </Link>
                 );

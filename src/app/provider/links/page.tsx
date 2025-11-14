@@ -11,7 +11,7 @@ import { SlugEditor } from '@/components/provider/SlugEditor';
 import { ExpirationPicker } from '@/components/provider/ExpirationPicker';
 import { ProviderLink } from '@/lib/types/provider';
 import { Link2, AlertCircle, Loader2 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCode } from '@/components/provider/QRCode';
 
 export default function ProviderLinksPage() {
   const router = useRouter();
@@ -290,7 +290,7 @@ export default function ProviderLinksPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-center rounded-lg bg-white p-6">
-                <QRCodeSVG
+                <QRCode
                   id={`qr-${showQRModal.id}`}
                   value={`${typeof window !== 'undefined' ? window.location.origin : 'https://app.com'}/link/${showQRModal.slug}`}
                   size={200}

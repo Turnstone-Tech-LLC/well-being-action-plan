@@ -378,6 +378,8 @@ export default function SettingsPage() {
                   notificationsEnabled ? handleDisableNotifications : handleEnableNotifications
                 }
                 disabled={saving || permissionStatus === 'unsupported'}
+                role="switch"
+                aria-checked={notificationsEnabled}
                 aria-label="Toggle daily reminders"
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   notificationsEnabled ? 'bg-catamount-green' : 'bg-gray-300'

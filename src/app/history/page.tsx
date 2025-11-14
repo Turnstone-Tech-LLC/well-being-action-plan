@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { getCheckInsByUser } from '@/lib/db';
@@ -91,7 +91,7 @@ export default function MoodHistoryPage() {
   }, [currentMonth, authLoading, isOnboardingComplete]);
 
   // Generate calendar days for the current month view
-  const generateCalendarDays = (): CalendarDay[] => {
+  const calendarDays = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
@@ -144,9 +144,7 @@ export default function MoodHistoryPage() {
     }
 
     return days;
-  };
-
-  const calendarDays = generateCalendarDays();
+  }, [currentMonth, checkIns]);
 
   // Navigation functions
   const goToPreviousMonth = () => {
