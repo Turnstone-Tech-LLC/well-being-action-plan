@@ -2,7 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Building2, LayoutDashboard, Link2, User, LogOut, Settings, Shield } from 'lucide-react';
+import {
+  Building2,
+  LayoutDashboard,
+  Link2,
+  User,
+  LogOut,
+  Settings,
+  Shield,
+  BookOpen,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthProvider, useAuth } from '@/lib/contexts/AuthContext';
 import { useState } from 'react';
@@ -31,9 +40,14 @@ function ProviderLayoutInner({ children }: { children: React.ReactNode }) {
       icon: LayoutDashboard,
     },
     {
-      label: 'Link Generator',
-      href: '/provider/link-generator',
+      label: 'Links',
+      href: '/provider/links',
       icon: Link2,
+    },
+    {
+      label: 'Strategies',
+      href: '/provider/strategies',
+      icon: BookOpen,
     },
   ];
 

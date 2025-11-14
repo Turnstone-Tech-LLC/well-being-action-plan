@@ -31,7 +31,7 @@ describe('Data Portability Service', () => {
           id: 'strategy-1',
           title: 'Deep Breathing',
           description: 'Take slow, deep breaths',
-          category: CopingStrategyCategory.Breathing,
+          category: CopingStrategyCategory.Physical,
           isFavorite: false,
           createdAt: new Date(),
           updatedAt: new Date(),

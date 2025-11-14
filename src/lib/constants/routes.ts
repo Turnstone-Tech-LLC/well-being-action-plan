@@ -27,6 +27,7 @@ export const PROVIDER_ROUTES = [
   '/provider/dashboard',
   '/provider/link-generator',
   '/provider/links',
+  '/provider/strategies',
   '/provider/profile',
   '/provider/settings',
 ] as const;

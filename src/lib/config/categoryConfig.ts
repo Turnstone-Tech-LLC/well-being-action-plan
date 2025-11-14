@@ -18,12 +18,6 @@ export interface CategoryConfig {
  * Colors are chosen for accessibility (WCAG 2.1 AA) and UVM branding alignment
  */
 export const categoryConfig: Record<CopingStrategyCategory, CategoryConfig> = {
-  [CopingStrategyCategory.Breathing]: {
-    icon: Activity,
-    color: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200',
-    iconColor: 'text-sky-600 dark:text-sky-400',
-    label: 'Breathing',
-  },
   [CopingStrategyCategory.Physical]: {
     icon: Activity,
     color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',

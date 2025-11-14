@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import {
   Link2,
-  Plus,
-  FileText,
   Users,
   TrendingUp,
   BookOpen,
@@ -16,9 +14,12 @@ import {
   Sparkles,
   AlertCircle,
   X,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { providerService } from '@/lib/services/providerService';
+import { defaultCopingStrategies } from '@/lib/data/copingStrategies';
+import type { ProviderLink } from '@/lib/types/provider';
 
 /**
  * Error message component that uses useSearchParams
@@ -78,8 +79,10 @@ export default function ProviderDashboardPage() {
     totalLinks: 0,
   });
   const [statsLoading, setStatsLoading] = React.useState(true);
+  const [strategyCount, setStrategyCount] = React.useState(0);
+  const [recentLinks, setRecentLinks] = React.useState<ProviderLink[]>([]);
 
-  // Load link statistics
+  // Load link statistics and recent links
   React.useEffect(() => {
     const loadStats = async () => {
       if (!user) return;
@@ -87,6 +90,10 @@ export default function ProviderDashboardPage() {
       try {
         const stats = await providerService.getLinkStats(user.id);
         setLinkStats(stats);
+
+        // Load recent links (top 5)
+        const links = await providerService.getActiveLinks(user.id);
+        setRecentLinks(links.slice(0, 5));
       } catch (error) {
         console.error('Error loading stats:', error);
       } finally {
@@ -97,6 +104,11 @@ export default function ProviderDashboardPage() {
     loadStats();
   }, [user]);
 
+  // Load strategy count from default strategies
+  React.useEffect(() => {
+    setStrategyCount(defaultCopingStrategies.length);
+  }, []);
+
   // Statistics cards with real data
   const stats = [
     {
@@ -106,7 +118,6 @@ export default function ProviderDashboardPage() {
       icon: Link2,
       color: 'text-clear-sky',
       bgColor: 'bg-[#489FDF]/10 dark:bg-[#489FDF]/20',
-      href: '/provider/links',
     },
     {
       title: 'Patients',
@@ -115,42 +126,14 @@ export default function ProviderDashboardPage() {
       icon: Users,
       color: 'text-green-zone',
       bgColor: 'bg-[#154734]/10 dark:bg-[#154734]/20',
-      href: '/provider/links',
     },
     {
       title: 'Strategies',
-      value: '18',
+      value: strategyCount > 0 ? strategyCount.toString() : '...',
       description: 'Available in library',
       icon: Sparkles,
       color: 'text-uvm-gold',
       bgColor: 'bg-[#FFD100]/10 dark:bg-[#FFD100]/20',
-      href: '#',
-      disabled: true,
-    },
-  ];
-
-  const quickActions = [
-    {
-      title: 'Generate Patient Link',
-      description: 'Create a personalized onboarding link with QR code',
-      icon: Link2,
-      href: '/provider/link-generator',
-      primary: true,
-    },
-    {
-      title: 'Coping Strategies Library',
-      description: 'Browse evidence-based strategies',
-      icon: BookOpen,
-      href: '#',
-      disabled: true,
-      comingSoon: true,
-    },
-    {
-      title: 'Plan Builder',
-      description: 'Create comprehensive well-being action plans',
-      icon: FileText,
-      href: '/provider/plan/new',
-      primary: false,
     },
   ];
 
@@ -226,15 +209,7 @@ export default function ProviderDashboardPage() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card
-              key={stat.title}
-              className={
-                stat.disabled
-                  ? 'cursor-not-allowed opacity-60'
-                  : 'cursor-pointer transition-shadow hover:shadow-md'
-              }
-              onClick={() => !stat.disabled && router.push(stat.href)}
-            >
+            <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <div className={`rounded-full p-2 ${stat.bgColor}`}>
@@ -250,100 +225,101 @@ export default function ProviderDashboardPage() {
         })}
       </div>
 
-      {/* Quick Actions */}
-      <div>
-        <h2 className="mb-4 text-2xl font-bold">Quick Actions</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Card
-                key={action.title}
-                className={`transition-all ${
-                  action.disabled
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'cursor-pointer hover:shadow-lg'
-                }`}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div
-                      className={`rounded-lg p-2 ${
-                        action.primary
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
+      {/* Getting Started Guide - Conditional Display */}
+      {linkStats.activeLinks === 0 && (
+        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:border-blue-800 dark:from-blue-950/20 dark:to-indigo-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Getting Started
+            </CardTitle>
+            <CardDescription>Follow these steps to start helping your patients</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {gettingStarted.map((item) => (
+              <div key={item.step} className="flex gap-4">
+                {/* Step number */}
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                  {item.step}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 space-y-1">
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                  {item.action && item.href && (
+                    <Button
+                      onClick={() => router.push(item.href)}
+                      size="sm"
+                      className="mt-2"
+                      variant="outline"
                     >
-                      <Icon className="h-6 w-6" />
+                      {item.action}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Links - Conditional Display */}
+      {recentLinks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Links</CardTitle>
+            <CardDescription>Your most recently created patient onboarding links</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentLinks.map((link) => {
+                const createdDate = new Date(link.created_at);
+                const patientCount = link.metadata?.patientCount || 0;
+
+                return (
+                  <div
+                    key={link.id}
+                    className="flex items-start justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{link.slug}</p>
+                        {link.is_active ? (
+                          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Created {createdDate.toLocaleDateString()} • {patientCount} patient
+                        {patientCount !== 1 ? 's' : ''}
+                      </p>
+                      {link.link_config.customMessage && (
+                        <p className="text-xs text-muted-foreground">
+                          "{link.link_config.customMessage.substring(0, 60)}
+                          {link.link_config.customMessage.length > 60 ? '...' : ''}"
+                        </p>
+                      )}
                     </div>
-                    {action.comingSoon && (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                        Soon
-                      </span>
-                    )}
+                    <Button
+                      onClick={() => router.push(`/provider/links/${link.id}`)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      View
+                    </Button>
                   </div>
-                  <CardTitle className="mt-4">{action.title}</CardTitle>
-                  <CardDescription>{action.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    onClick={() => !action.disabled && router.push(action.href)}
-                    disabled={action.disabled}
-                    variant={action.primary ? 'default' : 'outline'}
-                    className="w-full"
-                  >
-                    {action.primary ? (
-                      <>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Link
-                      </>
-                    ) : (
-                      'View'
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Getting Started Guide */}
-      <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:border-blue-800 dark:from-blue-950/20 dark:to-indigo-950/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Getting Started
-          </CardTitle>
-          <CardDescription>Follow these steps to start helping your patients</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {gettingStarted.map((item) => (
-            <div key={item.step} className="flex gap-4">
-              {/* Step number */}
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                {item.step}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 space-y-1">
-                <h3 className="font-semibold">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-                {item.action && item.href && (
-                  <Button
-                    onClick={() => router.push(item.href)}
-                    size="sm"
-                    className="mt-2"
-                    variant="outline"
-                  >
-                    {item.action}
-                  </Button>
-                )}
-              </div>
+                );
+              })}
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Resources */}
       <div>
@@ -386,39 +362,6 @@ export default function ProviderDashboardPage() {
             Provider links contain only your contact information and recommended strategies — no
             patient data is transmitted or stored on our servers.
           </p>
-        </CardContent>
-      </Card>
-
-      {/* Recent Activity */}
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle>Recent Links</CardTitle>
-          <CardDescription>Your recently created patient onboarding links</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">
-              {linkStats.totalLinks > 0
-                ? `You have ${linkStats.totalLinks} link${linkStats.totalLinks !== 1 ? 's' : ''} created.`
-                : 'No links created yet. Get started by creating your first patient link!'}
-            </p>
-            <div className="mt-4 flex gap-2">
-              {linkStats.totalLinks > 0 && (
-                <Button onClick={() => router.push('/provider/links')} variant="default" size="sm">
-                  View All Links
-                </Button>
-              )}
-              <Button
-                onClick={() => router.push('/provider/link-generator')}
-                variant={linkStats.totalLinks > 0 ? 'outline' : 'default'}
-                size="sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {linkStats.totalLinks > 0 ? 'Create New Link' : 'Create Your First Link'}
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
