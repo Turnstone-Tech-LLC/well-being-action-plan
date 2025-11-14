@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,27 +21,17 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { providerService } from '@/lib/services/providerService';
 
 /**
- * Provider Dashboard
- *
- * Main landing page for providers after login.
- * Displays authenticated provider information and real-time statistics
- * from the database including active links and patient counts.
+ * Error message component that uses useSearchParams
+ * Wrapped in Suspense to avoid prerendering issues
  */
-export default function ProviderDashboardPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { user, profile, loading } = useAuth();
-  const [linkStats, setLinkStats] = React.useState({
-    activeLinks: 0,
-    totalPatients: 0,
-    totalLinks: 0,
-  });
-  const [statsLoading, setStatsLoading] = React.useState(true);
+function ErrorMessageDisplay() {
+  const searchParams = new URLSearchParams(
+    typeof window !== 'undefined' ? window.location.search : ''
+  );
+  const error = searchParams.get('error');
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  // Check for error in URL params
   React.useEffect(() => {
-    const error = searchParams.get('error');
     if (error === 'cannot_access_patient_link_in_provider_mode') {
       setErrorMessage(
         'Cannot access patient onboarding links while in provider mode. Please exit provider mode to use patient features.'
@@ -50,7 +41,43 @@ export default function ProviderDashboardPage() {
         'Provider accounts cannot access patient routes. Please use the provider portal instead.'
       );
     }
-  }, [searchParams]);
+  }, [error]);
+
+  if (!errorMessage) return null;
+
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+      <div className="flex-1">
+        <p className="text-sm text-destructive">{errorMessage}</p>
+      </div>
+      <button
+        onClick={() => setErrorMessage(null)}
+        className="text-destructive hover:text-destructive/80"
+        aria-label="Dismiss error"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Provider Dashboard
+ *
+ * Main landing page for providers after login.
+ * Displays authenticated provider information and real-time statistics
+ * from the database including active links and patient counts.
+ */
+export default function ProviderDashboardPage() {
+  const router = useRouter();
+  const { user, profile, loading } = useAuth();
+  const [linkStats, setLinkStats] = React.useState({
+    activeLinks: 0,
+    totalPatients: 0,
+    totalLinks: 0,
+  });
+  const [statsLoading, setStatsLoading] = React.useState(true);
 
   // Load link statistics
   React.useEffect(() => {
@@ -190,21 +217,9 @@ export default function ProviderDashboardPage() {
       </div>
 
       {/* Error Message */}
-      {errorMessage && (
-        <div className="flex items-start gap-3 rounded-lg border border-destructive bg-destructive/10 p-4 dark:bg-destructive/20">
-          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-destructive">{errorMessage}</p>
-          </div>
-          <button
-            onClick={() => setErrorMessage(null)}
-            className="text-destructive hover:text-destructive/80"
-            aria-label="Dismiss error"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <ErrorMessageDisplay />
+      </Suspense>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
