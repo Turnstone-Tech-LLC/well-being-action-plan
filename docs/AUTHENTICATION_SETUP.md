@@ -272,7 +272,7 @@ const isComplete = await isPatientOnboardingComplete('patient');
 | id          | UUID      | Primary key                          |
 | provider_id | UUID      | Foreign key to provider_profiles.id  |
 | link_config | JSONB     | Complete provider link configuration |
-| encoded_url | TEXT      | Full encoded URL for sharing         |
+| slug        | TEXT      | Vermont-inspired friendly URL slug   |
 | qr_code_url | TEXT      | Optional QR code image URL           |
 | created_at  | TIMESTAMP | Link creation timestamp              |
 | expires_at  | TIMESTAMP | Optional expiration date             |
@@ -330,7 +330,7 @@ await providerService.getProfile(providerId);
 await providerService.updateSettings(providerId, settings);
 
 // Link management
-await providerService.createLink(providerId, linkConfig, encodedUrl);
+await providerService.createLink(providerId, linkConfig, { expiresAt, slug });
 await providerService.getActiveLinks(providerId);
 await providerService.updateLinkStatus(linkId, isActive);
 await providerService.deleteLink(linkId);

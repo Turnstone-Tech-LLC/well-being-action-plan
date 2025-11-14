@@ -11,7 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
 import { setUserConfig, createCopingStrategy } from '@/lib/db';
 import { CopingStrategy } from '@/lib/types/coping-strategy';
-import { ChevronLeft, Loader2, Bell, Clock, AlertCircle } from 'lucide-react';
+import { clearOnboardingSession } from '@/lib/utils/linkHelpers';
+import { ChevronLeft, Loader2, Bell, Clock, AlertCircle, X } from 'lucide-react';
 
 /**
  * Onboarding Step 3: Notification Preferences
@@ -96,6 +97,15 @@ export default function OnboardingStep3Page() {
    */
   const handleBack = () => {
     router.push('/onboarding/step-2');
+  };
+
+  /**
+   * Cancel onboarding and return to home page
+   * Clears all onboarding session data including provider config
+   */
+  const handleCancel = () => {
+    clearOnboardingSession();
+    router.push('/');
   };
 
   /**
@@ -209,14 +219,26 @@ export default function OnboardingStep3Page() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-6 w-6" />
-              Notification Preferences
-            </CardTitle>
-            <CardDescription>
-              Choose how you&apos;d like to be reminded to check in and manage your well-being. You
-              can change these settings anytime.
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-6 w-6" />
+                  Notification Preferences
+                </CardTitle>
+                <CardDescription>
+                  Choose how you&apos;d like to be reminded to check in and manage your well-being.
+                  You can change these settings anytime.
+                </CardDescription>
+              </div>
+              <button
+                onClick={handleCancel}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Cancel onboarding"
+                title="Cancel and return to home"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </CardHeader>
 
           <CardContent className="space-y-6">

@@ -55,7 +55,6 @@ export class ProviderService {
   async createLink(
     providerId: string,
     linkConfig: ProviderLinkConfig,
-    encodedUrl: string | null = null,
     options?: {
       slug?: string;
       qrCodeUrl?: string;
@@ -81,7 +80,6 @@ export class ProviderService {
       .insert({
         provider_id: providerId,
         link_config: linkConfig,
-        encoded_url: encodedUrl,
         slug,
         qr_code_url: options?.qrCodeUrl,
         expires_at: options?.expiresAt?.toISOString(),

@@ -249,7 +249,7 @@ export default function ProviderLinkGeneratorPage() {
 
       // Save to database with auto-generated slug
       // The URL is generated server-side based on the slug
-      const link = await providerService.createLink(user.id, config, null, {
+      const link = await providerService.createLink(user.id, config, {
         expiresAt: expiresAt || undefined,
       });
 

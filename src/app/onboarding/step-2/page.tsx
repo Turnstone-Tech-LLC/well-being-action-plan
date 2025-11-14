@@ -10,8 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
 import { CopingStrategy, CopingStrategyCategory } from '@/lib/types/coping-strategy';
 import { categoryConfig } from '@/lib/config/categoryConfig';
-import { getStoredProviderConfig } from '@/lib/utils/linkHelpers';
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { getStoredProviderConfig, clearOnboardingSession } from '@/lib/utils/linkHelpers';
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, X } from 'lucide-react';
 
 /**
  * Onboarding Step 2: Review and Select Coping Strategies
@@ -167,6 +167,15 @@ export default function OnboardingStep2Page() {
   };
 
   /**
+   * Cancel onboarding and return to home page
+   * Clears all onboarding session data including provider config
+   */
+  const handleCancel = () => {
+    clearOnboardingSession();
+    router.push('/');
+  };
+
+  /**
    * Save selections and navigate to Step 3
    */
   const handleNext = async () => {
@@ -271,11 +280,23 @@ export default function OnboardingStep2Page() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Choose Your Coping Strategies</CardTitle>
-            <CardDescription>
-              {providerName} has suggested these coping strategies for you. Select the ones that
-              resonate with you - you can always change them later.
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle>Choose Your Coping Strategies</CardTitle>
+                <CardDescription>
+                  {providerName} has suggested these coping strategies for you. Select the ones that
+                  resonate with you - you can always change them later.
+                </CardDescription>
+              </div>
+              <button
+                onClick={handleCancel}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Cancel onboarding"
+                title="Cancel and return to home"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </CardHeader>
 
           <CardContent className="space-y-6">

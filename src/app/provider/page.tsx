@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,53 @@ import {
   BookOpen,
   ExternalLink,
   Sparkles,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { providerService } from '@/lib/services/providerService';
+
+/**
+ * Error message component that uses useSearchParams
+ * Wrapped in Suspense to avoid prerendering issues
+ */
+function ErrorMessageDisplay() {
+  const searchParams = new URLSearchParams(
+    typeof window !== 'undefined' ? window.location.search : ''
+  );
+  const error = searchParams.get('error');
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (error === 'cannot_access_patient_link_in_provider_mode') {
+      setErrorMessage(
+        'Cannot access patient onboarding links while in provider mode. Please exit provider mode to use patient features.'
+      );
+    } else if (error === 'provider_cannot_access_patient_routes') {
+      setErrorMessage(
+        'Provider accounts cannot access patient routes. Please use the provider portal instead.'
+      );
+    }
+  }, [error]);
+
+  if (!errorMessage) return null;
+
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+      <div className="flex-1">
+        <p className="text-sm text-destructive">{errorMessage}</p>
+      </div>
+      <button
+        onClick={() => setErrorMessage(null)}
+        className="text-destructive hover:text-destructive/80"
+        aria-label="Dismiss error"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 /**
  * Provider Dashboard
@@ -170,6 +215,11 @@ export default function ProviderDashboardPage() {
             : 'Create personalized well-being action plans for your patients'}
         </p>
       </div>
+
+      {/* Error Message */}
+      <Suspense fallback={null}>
+        <ErrorMessageDisplay />
+      </Suspense>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">

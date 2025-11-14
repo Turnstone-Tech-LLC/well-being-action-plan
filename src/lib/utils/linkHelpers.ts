@@ -187,3 +187,26 @@ export function clearProviderConfig(): void {
     localStorage.removeItem('providerConfig');
   }
 }
+
+/**
+ * Clears all onboarding session data
+ *
+ * This removes all temporary data stored during the onboarding process:
+ * - Provider configuration
+ * - Preferred name
+ * - Selected coping strategies
+ * - Any other onboarding-related session data
+ *
+ * Used when user cancels the onboarding flow.
+ */
+export function clearOnboardingSession(): void {
+  if (typeof window !== 'undefined') {
+    // Clear provider config
+    clearProviderConfig();
+
+    // Clear onboarding-specific session data
+    sessionStorage.removeItem('onboarding_preferredName');
+    sessionStorage.removeItem('onboarding_selectedCopingStrategyIds');
+    sessionStorage.removeItem('onboarding_selectedCopingStrategies');
+  }
+}
