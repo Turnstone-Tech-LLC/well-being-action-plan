@@ -73,7 +73,6 @@ export interface ProviderLink {
   id: string;
   provider_id: string;
   link_config: ProviderLinkConfig;
-  encoded_url: string;
   slug: string;
   qr_code_url?: string;
   created_at: Date;

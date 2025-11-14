@@ -7,11 +7,12 @@
  * Flow:
  * 1. Patient visits /link/[slug]
  * 2. Page fetches provider config from /api/provider-link/[slug]
- * 3. Config is stored in localStorage
+ * 3. Config is stored in sessionStorage
  * 4. Patient is redirected to /onboarding
  * 5. Onboarding flow uses the stored config
  *
  * Error Handling:
+ * - Provider mode: Cannot access patient links while in provider mode
  * - 404: Link not found
  * - 410: Link expired or inactive
  * - 500: Server error
@@ -24,6 +25,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, Home } from 'lucide-react';
+import { isProviderModeEnabled } from '@/lib/utils/providerMode';
 
 interface LinkError {
   status: number;
@@ -43,6 +45,21 @@ export default function LinkPage() {
     const fetchAndRedirect = async () => {
       try {
         setLoading(true);
+
+        // Check if in provider mode - providers cannot access patient onboarding links
+        if (isProviderModeEnabled()) {
+          setError({
+            status: 403,
+            message: 'Cannot Access Patient Link',
+            description:
+              'You are currently in provider mode. Patient onboarding links cannot be accessed while in provider mode. Please exit provider mode to continue.',
+          });
+          // Redirect to provider dashboard after a short delay
+          setTimeout(() => {
+            router.push('/provider?error=cannot_access_patient_link_in_provider_mode');
+          }, 3000);
+          return;
+        }
 
         // Fetch provider config from API
         const response = await fetch(`/api/provider-link/${slug}`);
@@ -128,6 +145,16 @@ export default function LinkPage() {
             <CardDescription>{error.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error.status === 403 && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Error Code: {error.status} - Provider mode active
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Redirecting to provider dashboard...
+                </p>
+              </>
+            )}
             {error.status === 404 && (
               <p className="text-xs text-muted-foreground">
                 Error Code: {error.status} - Link not found
@@ -144,10 +171,12 @@ export default function LinkPage() {
               </p>
             )}
 
-            <Button onClick={() => router.push('/')} className="w-full">
-              <Home className="mr-2 h-4 w-4" />
-              Return Home
-            </Button>
+            {error.status !== 403 && (
+              <Button onClick={() => router.push('/')} className="w-full">
+                <Home className="mr-2 h-4 w-4" />
+                Return Home
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>

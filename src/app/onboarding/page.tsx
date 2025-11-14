@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressIndicator } from '@/components/onboarding/progress-indicator';
-import { AlertCircle, Building2, Mail, Phone, Globe } from 'lucide-react';
+import { AlertCircle, Building2, Mail, Phone, Globe, X } from 'lucide-react';
 import type { ProviderLinkConfig } from '@/lib/types/provider';
-import { getStoredProviderConfig } from '@/lib/utils/linkHelpers';
+import { getStoredProviderConfig, clearOnboardingSession } from '@/lib/utils/linkHelpers';
 import { isProviderModeEnabled } from '@/lib/utils/providerMode';
 
 /**
@@ -100,12 +100,21 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleNameChange = (e: React.ChangeEvent<React.ElementRef<'input'>>) => {
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
     // Clear error when user starts typing
     if (error) {
       setError('');
     }
+  };
+
+  /**
+   * Cancel onboarding and return to home page
+   * Clears all onboarding session data including provider config
+   */
+  const handleCancel = () => {
+    clearOnboardingSession();
+    router.push('/');
   };
 
   // Show loading state while checking config
@@ -227,10 +236,23 @@ export default function OnboardingPage() {
         {/* Welcome card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-center text-3xl">Welcome! 👋</CardTitle>
-            <CardDescription className="text-center text-base">
-              We&apos;re glad you&apos;re here. Let&apos;s get started by learning a bit about you.
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-center text-3xl">Welcome! 👋</CardTitle>
+                <CardDescription className="text-center text-base">
+                  We&apos;re glad you&apos;re here. Let&apos;s get started by learning a bit about
+                  you.
+                </CardDescription>
+              </div>
+              <button
+                onClick={handleCancel}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Cancel onboarding"
+                title="Cancel and return to home"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </CardHeader>
 
           <CardContent>
