@@ -115,24 +115,24 @@ export default function DashboardPage() {
         setProviderConfig(JSON.parse(providerConfigJson));
       }
 
-      // Load today's check-ins
+      // Prepare date ranges for today's check-ins
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const checkIns = await getCheckInsByUser('default-user', {
-        startDate: today,
-        endDate: tomorrow,
-      });
+      // Load data in parallel for faster performance
+      const [checkIns, streak, strategies] = await Promise.all([
+        getCheckInsByUser('default-user', {
+          startDate: today,
+          endDate: tomorrow,
+        }),
+        calculateStreak(),
+        getAllCopingStrategies({ limit: 6 }),
+      ]);
+
       setTodayCheckIns(checkIns);
-
-      // Calculate check-in streak
-      const streak = await calculateStreak();
       setCheckInStreak(streak);
-
-      // Load coping strategies
-      const strategies = await getAllCopingStrategies({ limit: 6 });
       setCopingStrategies(strategies);
 
       // Initialize notification scheduling
@@ -253,7 +253,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-vermont-slate">
-              Welcome back{patientName ? `, ${patientName}` : ''}! 👋
+              Welcome back{patientName ? `, ${patientName}` : ''}!{' '}
+              <span role="img" aria-label="waving hand">
+                👋
+              </span>
             </h1>
             <p className="mt-1 text-muted-foreground">
               {new Date().toLocaleDateString('en-US', {
@@ -263,7 +266,12 @@ export default function DashboardPage() {
               })}
             </p>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleViewSettings}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleViewSettings}
+            aria-label="Go to settings"
+          >
             <Settings className="h-5 w-5" />
           </Button>
         </div>
@@ -286,7 +294,12 @@ export default function DashboardPage() {
                   {checkInStreak} {checkInStreak === 1 ? 'Day' : 'Days'}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">Keep it up! 🎉</p>
+              <p className="text-xs text-muted-foreground">
+                Keep it up!{' '}
+                <span role="img" aria-label="celebration">
+                  🎉
+                </span>
+              </p>
             </CardContent>
           </Card>
         )}
@@ -375,7 +388,9 @@ export default function DashboardPage() {
                       )}
                       {providerConfig.provider.contactInfo.email && (
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <span>📧</span>
+                          <span role="img" aria-label="email">
+                            📧
+                          </span>
                           <span>{providerConfig.provider.contactInfo.email}</span>
                         </div>
                       )}
@@ -481,7 +496,9 @@ export default function DashboardPage() {
                 asChild
               >
                 <a href="sms:741741">
-                  <span className="mr-2">💬</span>
+                  <span role="img" aria-label="SMS message" className="mr-2">
+                    💬
+                  </span>
                   Text HOME to 741741 - Crisis Text Line
                 </a>
               </Button>
@@ -495,7 +512,10 @@ export default function DashboardPage() {
         {/* Privacy Notice */}
         <Card className="border-clear-sky bg-[#489FDF]/5 dark:border-[#489FDF]/30 dark:bg-[#489FDF]/10">
           <CardContent className="py-4 text-center text-sm text-vermont-slate dark:text-[#A8D5FF]">
-            🔒 Your data is private and stored only on your device. We never share your information.
+            <span role="img" aria-label="locked">
+              🔒
+            </span>{' '}
+            Your data is private and stored only on your device. We never share your information.
           </CardContent>
         </Card>
       </div>
