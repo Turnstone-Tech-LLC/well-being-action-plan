@@ -1,20 +1,33 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle with theme color -->
-  <circle cx="256" cy="256" r="256" fill="#3b82f6"/>
+  <!-- Background circle with UVM Catamount Green -->
+  <circle cx="256" cy="256" r="256" fill="#154734"/>
 
-  <!-- Safe area circle (for maskable icons) -->
-  <circle cx="256" cy="256" r="200" fill="#2563eb"/>
+  <!-- Safe area circle (slightly lighter green for depth) -->
+  <circle cx="256" cy="256" r="200" fill="#1a5a40"/>
 
-  <!-- Heart symbol representing well-being (centered and scaled for safe area) -->
-  <g transform="translate(256, 220)">
-    <!-- Left half of heart -->
-    <path d="M -80 0 Q -80 -50, -40 -50 Q 0 -50, 0 -10 L 0 60 L -60 0 Z" fill="#ffffff"/>
-    <!-- Right half of heart -->
-    <path d="M 80 0 Q 80 -50, 40 -50 Q 0 -50, 0 -10 L 0 60 L 60 0 Z" fill="#ffffff"/>
+  <!-- Heart symbol representing well-being (properly proportioned) -->
+  <g transform="translate(256, 210)">
+    <path d="M 0,-45
+             C -25,-45 -45,-25 -45,0
+             C -45,25 -25,45 0,70
+             C 25,45 45,25 45,0
+             C 45,-25 25,-45 0,-45
+             M -22.5,-45
+             C -35,-45 -45,-35 -45,-22.5
+             C -45,-10 -35,0 -22.5,0
+             L 0,-22.5
+             Z
+             M 22.5,-45
+             C 35,-45 45,-35 45,-22.5
+             C 45,-10 35,0 22.5,0
+             L 0,-22.5
+             Z"
+             fill="#ffffff"
+             transform="scale(1.4)"/>
   </g>
 
   <!-- Plus sign overlay (wellness/healthcare symbol) -->
-  <g transform="translate(256, 330)">
+  <g transform="translate(256, 340)">
     <rect x="-40" y="-8" width="80" height="16" rx="4" fill="#ffffff"/>
     <rect x="-8" y="-40" width="16" height="80" rx="4" fill="#ffffff"/>
   </g>
