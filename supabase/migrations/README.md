@@ -9,6 +9,7 @@ This directory contains SQL migration files for the Well-Being Action Plan provi
 Initial database schema for provider authentication and link management.
 
 **Creates:**
+
 - `provider_profiles` table - Stores provider account information
 - `provider_links` table - Tracks generated patient onboarding links
 - Row Level Security (RLS) policies for both tables
@@ -19,17 +20,42 @@ Initial database schema for provider authentication and link management.
 **Tables:**
 
 #### provider_profiles
+
 Extends Supabase auth.users with provider-specific information.
+
 - Automatically created when a user signs up
 - Contains name, organization, contact info, and settings
 - Protected by RLS - users can only access their own profile
 
 #### provider_links
+
 Stores information about generated provider links for tracking and analytics.
+
 - One-to-many relationship with provider_profiles
 - Contains link configuration, encoded URL, QR code URL
 - Tracks active status, expiration, and metadata (patient count, etc.)
 - Protected by RLS - providers can only access their own links
+
+### 006_onboarding_completions.sql
+
+Adds privacy-first onboarding completion tracking.
+
+**Creates:**
+
+- `onboarding_completions` table - Minimal table tracking when patients complete onboarding
+- RLS policies allowing unauthenticated INSERT (patients) and authenticated SELECT (providers)
+- Indexes for efficient completion counting
+
+**Tables:**
+
+#### onboarding_completions
+
+Tracks anonymous completion events (timestamp only, no PHI).
+
+- Foreign key to provider_links with CASCADE delete
+- Write-only for patients (unauthenticated INSERT allowed)
+- Providers can only view completions for their own links
+- Privacy-first: only stores timestamp and link reference
 
 ## Running Migrations
 
@@ -74,6 +100,7 @@ DROP TABLE IF EXISTS provider_profiles;
 ## Security
 
 All tables have Row Level Security (RLS) enabled. Policies ensure:
+
 - Providers can only view and modify their own data
 - No cross-provider data access
 - Automatic enforcement at the database level
@@ -81,6 +108,7 @@ All tables have Row Level Security (RLS) enabled. Policies ensure:
 ## Future Migrations
 
 When adding new migrations:
+
 1. Name them sequentially: `002_description.sql`, `003_description.sql`, etc.
 2. Always include both upgrade and rollback instructions
 3. Test thoroughly in a development environment first

@@ -92,11 +92,17 @@ export default function LinkPage() {
           return;
         }
 
-        const { config } = await response.json();
+        const { config, linkId } = await response.json();
 
         // Store config in sessionStorage temporarily (not localStorage yet)
         // It will be moved to localStorage only when onboarding completes in step 3
         sessionStorage.setItem('providerConfig', JSON.stringify(config));
+
+        // Store provider link ID for completion tracking
+        // This is needed to record when the patient completes onboarding
+        if (linkId) {
+          sessionStorage.setItem('providerLinkId', linkId);
+        }
 
         // Redirect to onboarding
         router.push('/onboarding');

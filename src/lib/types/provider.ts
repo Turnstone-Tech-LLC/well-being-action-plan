@@ -84,3 +84,14 @@ export interface ProviderLink {
     notes?: string;
   };
 }
+
+/**
+ * Onboarding completion record
+ * Tracks when a patient completes onboarding via a provider link
+ * Privacy-first: only stores timestamp and link reference (no PHI)
+ */
+export interface OnboardingCompletion {
+  id: string;
+  provider_link_id: string;
+  completed_at: Date;
+}

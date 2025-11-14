@@ -182,18 +182,40 @@ export default function OnboardingStep3Page() {
       await setUserConfig('patient', 'onboardingCompleted', true);
       await setUserConfig('patient', 'onboardingCompletedAt', new Date().toISOString());
 
-      // 6. Move provider config from sessionStorage to localStorage
+      // 6. Move provider config and link ID from sessionStorage to localStorage
       // This is the ONLY time we persist the provider config permanently
       const providerConfigSession = sessionStorage.getItem('providerConfig');
+      const providerLinkId = sessionStorage.getItem('providerLinkId');
+
       if (providerConfigSession) {
         localStorage.setItem('providerConfig', providerConfigSession);
       }
 
-      // 7. Clean up sessionStorage now that data is persisted
+      if (providerLinkId) {
+        localStorage.setItem('providerLinkId', providerLinkId);
+      }
+
+      // 7. Record completion with provider (fire and forget)
+      // This is privacy-first: only sends the link ID, no patient data
+      if (providerLinkId) {
+        try {
+          await fetch('/api/onboarding/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ providerLinkId }),
+          });
+        } catch (error) {
+          // Don't block onboarding if API call fails
+          console.warn('Failed to record completion with provider:', error);
+        }
+      }
+
+      // 8. Clean up sessionStorage now that data is persisted
       sessionStorage.removeItem('onboarding_preferredName');
       sessionStorage.removeItem('onboarding_selectedCopingStrategyIds');
       sessionStorage.removeItem('onboarding_selectedCopingStrategies');
       sessionStorage.removeItem('providerConfig');
+      sessionStorage.removeItem('providerLinkId');
 
       // Navigate to patient dashboard
       router.push('/dashboard');

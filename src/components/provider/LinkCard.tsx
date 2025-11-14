@@ -16,6 +16,7 @@ import { formatDistanceToNow, isPast } from 'date-fns';
 
 interface LinkCardProps {
   link: ProviderLink;
+  completionCount?: number;
   onClick?: (link: ProviderLink) => void;
   onEdit?: (link: ProviderLink) => void;
   onDelete?: (linkId: string) => void;
@@ -27,6 +28,7 @@ interface LinkCardProps {
 
 export function LinkCard({
   link,
+  completionCount,
   onClick,
   onEdit,
   onDelete,
@@ -92,8 +94,8 @@ export function LinkCard({
         {/* Metadata */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground">Patients Onboarded</p>
-            <p className="text-lg font-bold">{link.metadata?.patientCount || 0}</p>
+            <p className="text-xs font-semibold text-muted-foreground">Completions</p>
+            <p className="text-lg font-bold">{completionCount ?? 0}</p>
           </div>
           <div>
             <p className="text-xs font-semibold text-muted-foreground">Expires</p>

@@ -6,7 +6,12 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import type { ProviderProfile, ProviderLink, ProviderLinkConfig } from '@/lib/types/provider';
+import type {
+  ProviderProfile,
+  ProviderLink,
+  ProviderLinkConfig,
+  OnboardingCompletion,
+} from '@/lib/types/provider';
 import { generateUniqueSlug, normalizeSlug } from '@/lib/utils/slugGenerator';
 
 export class ProviderService {
@@ -317,6 +322,59 @@ export class ProviderService {
       patientCount,
       lastAccessedAt: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Get all onboarding completions for a specific provider link
+   * Returns completions sorted by most recent first
+   */
+  async getCompletionsForLink(linkId: string): Promise<OnboardingCompletion[]> {
+    const { data, error } = await this.supabase
+      .from('onboarding_completions')
+      .select('*')
+      .eq('provider_link_id', linkId)
+      .order('completed_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Get completion count for a specific provider link
+   */
+  async getCompletionCount(linkId: string): Promise<number> {
+    const { count, error } = await this.supabase
+      .from('onboarding_completions')
+      .select('*', { count: 'exact', head: true })
+      .eq('provider_link_id', linkId);
+
+    if (error) throw error;
+    return count || 0;
+  }
+
+  /**
+   * Get total completions across all links for a provider
+   */
+  async getTotalCompletions(providerId: string): Promise<number> {
+    // First get all link IDs for this provider
+    const { data: links, error: linksError } = await this.supabase
+      .from('provider_links')
+      .select('id')
+      .eq('provider_id', providerId);
+
+    if (linksError) throw linksError;
+    if (!links || links.length === 0) return 0;
+
+    const linkIds = links.map((link) => link.id);
+
+    // Count completions for all these links
+    const { count, error: countError } = await this.supabase
+      .from('onboarding_completions')
+      .select('*', { count: 'exact', head: true })
+      .in('provider_link_id', linkIds);
+
+    if (countError) throw countError;
+    return count || 0;
   }
 }
 
