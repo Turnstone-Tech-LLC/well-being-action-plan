@@ -75,10 +75,12 @@ export async function GET(
         }
       });
 
-    // Return provider configuration
+    // Return provider configuration and link ID
+    // Link ID is needed for tracking onboarding completions
     return NextResponse.json(
       {
         success: true,
+        linkId: link.id,
         config: link.link_config,
         metadata: {
           createdAt: link.created_at,

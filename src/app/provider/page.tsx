@@ -78,6 +78,7 @@ export default function ProviderDashboardPage() {
     totalPatients: 0,
     totalLinks: 0,
   });
+  const [completionCount, setCompletionCount] = React.useState(0);
   const [statsLoading, setStatsLoading] = React.useState(true);
   const [strategyCount, setStrategyCount] = React.useState(0);
   const [recentLinks, setRecentLinks] = React.useState<ProviderLink[]>([]);
@@ -90,6 +91,10 @@ export default function ProviderDashboardPage() {
       try {
         const stats = await providerService.getLinkStats(user.id);
         setLinkStats(stats);
+
+        // Load completion count from new onboarding_completions table
+        const completions = await providerService.getTotalCompletions(user.id);
+        setCompletionCount(completions);
 
         // Load recent links (top 5)
         const links = await providerService.getActiveLinks(user.id);
@@ -120,9 +125,9 @@ export default function ProviderDashboardPage() {
       bgColor: 'bg-[#489FDF]/10 dark:bg-[#489FDF]/20',
     },
     {
-      title: 'Patients',
-      value: statsLoading ? '...' : linkStats.totalPatients.toString(),
-      description: 'Using your plans',
+      title: 'Completions',
+      value: statsLoading ? '...' : completionCount.toString(),
+      description: 'Patients completed onboarding',
       icon: Users,
       color: 'text-green-zone',
       bgColor: 'bg-[#154734]/10 dark:bg-[#154734]/20',

@@ -17,6 +17,7 @@ export default function ProviderLinksPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [links, setLinks] = useState<ProviderLink[]>([]);
+  const [completionCounts, setCompletionCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
@@ -30,6 +31,28 @@ export default function ProviderLinksPage() {
     loadLinks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Load completion counts when links change
+  useEffect(() => {
+    const loadCompletions = async () => {
+      if (links.length === 0) return;
+
+      try {
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          links.map(async (link) => {
+            const count = await providerService.getCompletionCount(link.id);
+            counts[link.id] = count;
+          })
+        );
+        setCompletionCounts(counts);
+      } catch (err) {
+        console.error('Error loading completion counts:', err);
+      }
+    };
+
+    loadCompletions();
+  }, [links]);
 
   const loadLinks = async () => {
     try {
@@ -145,6 +168,7 @@ export default function ProviderLinksPage() {
     return (
       <LinkCard
         link={link}
+        completionCount={completionCounts[link.id]}
         onClick={(link) => router.push(`/provider/links/${link.id}`)}
         onEdit={() => setEditingSlug(link.id)}
         onDelete={() => handleDeleteLink(link.id)}
@@ -245,11 +269,11 @@ export default function ProviderLinksPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Completions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {links.reduce((sum, l) => sum + (l.metadata?.patientCount || 0), 0)}
+                {Object.values(completionCounts).reduce((sum, count) => sum + count, 0)}
               </div>
             </CardContent>
           </Card>

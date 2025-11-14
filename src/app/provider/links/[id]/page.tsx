@@ -4,10 +4,18 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { providerService } from '@/lib/services/providerService';
-import { ProviderLink } from '@/lib/types/provider';
+import { ProviderLink, OnboardingCompletion } from '@/lib/types/provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { ArrowLeft, Copy, Download, QrCode } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { QRCode as QRCodeComponent } from '@/components/provider/QRCode';
@@ -27,6 +35,7 @@ export default function LinkDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const { user } = useAuth();
   const [link, setLink] = useState<ProviderLink | null>(null);
+  const [completions, setCompletions] = useState<OnboardingCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -68,6 +77,22 @@ export default function LinkDetailPage({ params }: { params: Promise<{ id: strin
 
     loadLink();
   }, [id, user]);
+
+  // Load completions when link is loaded
+  useEffect(() => {
+    if (!link) return;
+
+    const loadCompletions = async () => {
+      try {
+        const data = await providerService.getCompletionsForLink(link.id);
+        setCompletions(data);
+      } catch (err) {
+        console.error('Error loading completions:', err);
+      }
+    };
+
+    loadCompletions();
+  }, [link]);
 
   if (loading) {
     return (
@@ -269,10 +294,42 @@ export default function LinkDetailPage({ params }: { params: Promise<{ id: strin
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground">Patients Onboarded</p>
-              <p className="text-sm font-bold">{link.metadata?.patientCount || 0}</p>
+              <p className="text-xs font-semibold text-muted-foreground">Completions</p>
+              <p className="text-sm font-bold">{completions.length}</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Onboarding Completions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Onboarding Completions ({completions.length})</CardTitle>
+          <CardDescription>Patients who completed onboarding using this link</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {completions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No completions yet</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Completed At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {completions.map((completion) => (
+                  <TableRow key={completion.id}>
+                    <TableCell>
+                      {formatDistanceToNow(new Date(completion.completed_at), {
+                        addSuffix: true,
+                      })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
