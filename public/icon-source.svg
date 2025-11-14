@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with theme color -->
+  <circle cx="256" cy="256" r="256" fill="#3b82f6"/>
+
+  <!-- Safe area circle (for maskable icons) -->
+  <circle cx="256" cy="256" r="200" fill="#2563eb"/>
+
+  <!-- Heart symbol representing well-being (centered and scaled for safe area) -->
+  <g transform="translate(256, 220)">
+    <!-- Left half of heart -->
+    <path d="M -80 0 Q -80 -50, -40 -50 Q 0 -50, 0 -10 L 0 60 L -60 0 Z" fill="#ffffff"/>
+    <!-- Right half of heart -->
+    <path d="M 80 0 Q 80 -50, 40 -50 Q 0 -50, 0 -10 L 0 60 L 60 0 Z" fill="#ffffff"/>
+  </g>
+
+  <!-- Plus sign overlay (wellness/healthcare symbol) -->
+  <g transform="translate(256, 330)">
+    <rect x="-40" y="-8" width="80" height="16" rx="4" fill="#ffffff"/>
+    <rect x="-8" y="-40" width="16" height="80" rx="4" fill="#ffffff"/>
+  </g>
+</svg>
