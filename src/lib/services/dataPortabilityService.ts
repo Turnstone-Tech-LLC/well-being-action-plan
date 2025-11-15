@@ -7,9 +7,6 @@
  * Privacy-First: Patient data never leaves the device.
  */
 
-/* eslint-disable no-undef */
-// Browser APIs (File, Blob, FileReader) are available in client-side code
-
 import { exportData, importData, type UserConfig } from '@/lib/db';
 import type { CheckIn } from '@/lib/types/check-in';
 import type { CopingStrategy } from '@/lib/types/coping-strategy';

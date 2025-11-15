@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { ZoneType } from '@/lib/types/zone';
 import { CopingStrategy } from '@/lib/types/coping-strategy';
 import { createCheckIn, getAllCopingStrategies } from '@/lib/db';
+import { getUserIdentity } from '@/lib/services/userIdentityService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, AlertTriangle, Check, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
 
 /**
  * Yellow Zone Check-In Screen
@@ -35,6 +37,18 @@ export default function YellowZoneCheckIn() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get user identity on mount
+  useEffect(() => {
+    getUserIdentity()
+      .then((identity) => setUserId(identity.userId))
+      .catch((err) => {
+        console.error('Failed to get user identity:', err);
+        setError('Unable to identify user. Please refresh the page.');
+      });
+  }, []);
 
   useEffect(() => {
     loadStrategies();
@@ -81,12 +95,18 @@ export default function YellowZoneCheckIn() {
   };
 
   const handleSaveCheckIn = async () => {
+    if (!userId) {
+      setError('User identity not established. Please refresh the page.');
+      return;
+    }
+
     setSaving(true);
+    setError(null);
 
     try {
       // Create check-in entry with engaged strategies
       await createCheckIn({
-        userId: 'default-user', // TODO: Replace with actual user ID from auth
+        userId,
         zone: ZoneType.Yellow,
         copingStrategyIds: Array.from(triedStrategies),
         notes: `Viewed ${viewedStrategies.size} strategies, tried ${triedStrategies.size}`,
@@ -94,13 +114,13 @@ export default function YellowZoneCheckIn() {
 
       setSaved(true);
 
-      // Navigate back to home after 2 seconds
+      // Navigate back to dashboard after 2 seconds
       setTimeout(() => {
-        router.push('/');
+        router.push('/dashboard');
       }, 2000);
     } catch (error) {
       console.error('Failed to save check-in:', error);
-      // In production, show error message to user
+      setError('Failed to save check-in. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -110,21 +130,31 @@ export default function YellowZoneCheckIn() {
     router.push('/check-in');
   };
 
+  const yellowColors = ZONE_COLORS[ZoneType.Yellow];
+
   if (saved) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-6">
-        <Card className="w-full max-w-2xl border-yellow-zone bg-[#FFD100]/5 dark:bg-[#FFD100]/15">
+        <Card
+          className={cn('w-full max-w-2xl border-2', yellowColors.border, yellowColors.background)}
+        >
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#FFD100]/10 dark:bg-[#FFD100]/20">
-              <Check className="h-10 w-10 text-[#B39D00] dark:text-[#FFE066]" />
+            <div
+              className={cn(
+                'mb-6 flex h-20 w-20 items-center justify-center rounded-full',
+                yellowColors.background
+              )}
+              aria-hidden="true"
+            >
+              <Check className={cn('h-10 w-10', yellowColors.text)} />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-[#B39D00] dark:text-[#FFE066]">
-              Check-In Saved!
-            </h2>
-            <p className="text-[#B39D00] dark:text-[#FFE066]">
-              You&apos;re taking important steps. Remember, reaching out for support is a sign of
-              strength.
-            </p>
+            <div role="status" aria-live="polite">
+              <h2 className={cn('mb-2 text-2xl font-bold', yellowColors.text)}>Check-In Saved!</h2>
+              <p className={yellowColors.text}>
+                You&apos;re taking important steps. Remember, reaching out for support is a sign of
+                strength.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </main>
@@ -148,22 +178,27 @@ export default function YellowZoneCheckIn() {
         </div>
 
         {/* Yellow Zone Indicator */}
-        <Card className="border-2 border-yellow-zone bg-[#FFD100]/5 dark:bg-[#FFD100]/15">
+        <Card className={cn('border-2', yellowColors.border, yellowColors.background)}>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#FFD100]/10 dark:bg-[#FFD100]/20">
-                <AlertTriangle className="h-12 w-12 text-[#B39D00] dark:text-[#FFE066]" />
+              <div
+                className={cn(
+                  'flex h-24 w-24 items-center justify-center rounded-full',
+                  yellowColors.background
+                )}
+              >
+                <AlertTriangle className={cn('h-12 w-12', yellowColors.text)} />
               </div>
             </div>
             <div className="mb-2 flex justify-center">
-              <Badge className="bg-[#FFD100]/10 text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]">
-                Yellow Zone
+              <Badge className={cn(yellowColors.background, yellowColors.text)}>
+                {getZoneLabel(ZoneType.Yellow)}
               </Badge>
             </div>
-            <CardTitle className="text-3xl text-[#B39D00] dark:text-[#FFE066]">
+            <CardTitle className={cn('text-3xl', yellowColors.text)}>
               You&apos;re Not Alone 🤝
             </CardTitle>
-            <CardDescription className="text-lg text-[#B39D00] dark:text-[#FFE066]">
+            <CardDescription className={cn('text-lg', yellowColors.text)}>
               It&apos;s okay to struggle. Let&apos;s explore some strategies that might help you
               feel better.
             </CardDescription>
@@ -185,8 +220,16 @@ export default function YellowZoneCheckIn() {
           </CardHeader>
           <CardContent className="space-y-3">
             {loading && (
-              <div className="flex items-center justify-center py-8">
-                <span className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent" />
+              <div
+                className="flex items-center justify-center py-8"
+                role="status"
+                aria-live="polite"
+              >
+                <span
+                  className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"
+                  aria-label="Loading coping strategies"
+                />
+                <span className="sr-only">Loading coping strategies...</span>
               </div>
             )}
             {!loading && strategies.length > 0 && (
@@ -248,8 +291,12 @@ export default function YellowZoneCheckIn() {
                             </Button>
                           )}
                           {hasTried && (
-                            <div className="flex items-center justify-center gap-2 rounded-lg bg-green-50 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
-                              <Check className="h-4 w-4" />
+                            <div
+                              className="flex items-center justify-center gap-2 rounded-lg bg-green-50 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300"
+                              role="status"
+                              aria-live="polite"
+                            >
+                              <Check className="h-4 w-4" aria-hidden="true" />
                               <span>Great job trying this strategy!</span>
                             </div>
                           )}
@@ -271,6 +318,17 @@ export default function YellowZoneCheckIn() {
           </CardContent>
         </Card>
 
+        {/* Error Message */}
+        {error && (
+          <Card className="border-red-500 bg-red-50 dark:bg-red-950/20">
+            <CardContent className="py-4">
+              <p className="text-center text-sm text-red-600 dark:text-red-400" role="alert">
+                {error}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Encouragement */}
         <Card className="bg-muted/50">
           <CardContent className="py-6">
@@ -288,15 +346,19 @@ export default function YellowZoneCheckIn() {
             disabled={saving}
             size="lg"
             className="flex-1 bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600"
+            aria-busy={saving}
           >
             {saving ? (
               <>
-                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span
+                  className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                  aria-hidden="true"
+                />
                 Saving...
               </>
             ) : (
               <>
-                <Check className="mr-2 h-5 w-5" />
+                <Check className="mr-2 h-5 w-5" aria-hidden="true" />
                 Save Check-In
               </>
             )}

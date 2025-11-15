@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   const loadProfile = useCallback(
-    async (userId: string) => {
+    async (userId: string, isMounted: { current: boolean }) => {
       try {
         const { data, error } = await supabase
           .from('provider_profiles')
@@ -46,15 +46,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq('id', userId)
           .single();
 
+        if (!isMounted.current) return;
+
         if (error) {
           console.error('Error loading profile:', error);
         } else {
           setProfile(data);
         }
       } catch (error) {
+        if (!isMounted.current) return;
         console.error('Error loading profile:', error);
       } finally {
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
     },
     [supabase]
@@ -62,13 +67,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load user and profile on mount
   useEffect(() => {
+    const isMounted = { current: true };
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted.current) return;
+
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadProfile(session.user.id);
+        loadProfile(session.user.id, isMounted);
       } else {
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
     });
 
@@ -76,16 +87,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted.current) return;
+
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadProfile(session.user.id);
+        loadProfile(session.user.id, isMounted);
       } else {
-        setProfile(null);
-        setLoading(false);
+        if (isMounted.current) {
+          setProfile(null);
+          setLoading(false);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted.current = false;
+      subscription.unsubscribe();
+    };
   }, [supabase, loadProfile]);
 
   const signIn = async (email: string, password: string) => {
@@ -119,16 +137,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (updates: Partial<ProviderProfile>) => {
     if (!user) return;
 
+    const isMounted = { current: true };
+
     try {
       const { error } = await supabase.from('provider_profiles').update(updates).eq('id', user.id);
 
       if (error) throw error;
 
       // Reload profile
-      await loadProfile(user.id);
+      await loadProfile(user.id, isMounted);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
+    } finally {
+      // Cleanup would be handled if this were in a component effect
+      isMounted.current = false;
     }
   };
 

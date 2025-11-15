@@ -33,115 +33,121 @@ export default function OnboardingStep2Page() {
 
   // Load coping strategies from provider config
   useEffect(() => {
-    try {
-      const config = getStoredProviderConfig();
+    const timeoutId = setTimeout(() => {
+      try {
+        const config = getStoredProviderConfig();
 
-      if (!config) {
-        setError('No provider configuration found. Please start from the beginning.');
+        if (!config) {
+          setError('No provider configuration found. Please start from the beginning.');
+          setLoading(false);
+          return;
+        }
+
+        setProviderName(config.provider.name);
+
+        // Get coping strategies from provider config
+        const providedStrategies = config.copingStrategies || [];
+
+        if (providedStrategies.length === 0) {
+          // If no strategies provided, use default set
+          const defaultStrategies: CopingStrategy[] = [
+            {
+              id: 'default-1',
+              title: 'Deep Breathing',
+              description:
+                'Take slow, deep breaths for 5 minutes. Inhale for 4 counts, hold for 4, exhale for 6.',
+              category: CopingStrategyCategory.Physical,
+            },
+            {
+              id: 'default-2',
+              title: 'Go for a Walk',
+              description: 'Take a short walk outside to clear your mind and get some fresh air.',
+              category: CopingStrategyCategory.Physical,
+            },
+            {
+              id: 'default-3',
+              title: 'Call a Friend',
+              description:
+                'Reach out to a trusted friend or family member for support and connection.',
+              category: CopingStrategyCategory.Social,
+            },
+            {
+              id: 'default-4',
+              title: 'Talk to Someone',
+              description: 'Share your feelings with someone you trust.',
+              category: CopingStrategyCategory.Social,
+            },
+            {
+              id: 'default-5',
+              title: 'Journaling',
+              description:
+                'Write down your thoughts and feelings in a journal to process emotions.',
+              category: CopingStrategyCategory.Emotional,
+            },
+            {
+              id: 'default-6',
+              title: 'Name Your Emotions',
+              description:
+                'Identify and label what you are feeling to better understand your emotions.',
+              category: CopingStrategyCategory.Emotional,
+            },
+            {
+              id: 'default-7',
+              title: 'Positive Affirmations',
+              description:
+                'Repeat positive statements to yourself to challenge negative thought patterns.',
+              category: CopingStrategyCategory.Cognitive,
+            },
+            {
+              id: 'default-8',
+              title: 'Reframe Negative Thoughts',
+              description:
+                'Challenge negative thinking by finding alternative, more balanced perspectives.',
+              category: CopingStrategyCategory.Cognitive,
+            },
+            {
+              id: 'default-9',
+              title: 'Listen to Music',
+              description: 'Put on calming or uplifting music to shift your emotional state.',
+              category: CopingStrategyCategory.Sensory,
+            },
+            {
+              id: 'default-10',
+              title: 'Use a Stress Ball',
+              description: 'Squeeze a stress ball or hold something textured to ground yourself.',
+              category: CopingStrategyCategory.Sensory,
+            },
+            {
+              id: 'default-11',
+              title: 'Creative Drawing',
+              description:
+                'Express yourself through art, doodling, or coloring to release tension.',
+              category: CopingStrategyCategory.Creative,
+            },
+            {
+              id: 'default-12',
+              title: 'Play an Instrument',
+              description: 'Make music as a form of creative expression and emotional release.',
+              category: CopingStrategyCategory.Creative,
+            },
+          ];
+          setStrategies(defaultStrategies);
+          // Pre-select all default strategies
+          setSelectedIds(new Set(defaultStrategies.map((s) => s.id)));
+        } else {
+          setStrategies(providedStrategies);
+          // Pre-select all provided strategies
+          setSelectedIds(new Set(providedStrategies.map((s) => s.id)));
+        }
+
         setLoading(false);
-        return;
+      } catch {
+        setError('Failed to load coping strategies. Please try again.');
+        setLoading(false);
       }
+    }, 0);
 
-      setProviderName(config.provider.name);
-
-      // Get coping strategies from provider config
-      const providedStrategies = config.copingStrategies || [];
-
-      if (providedStrategies.length === 0) {
-        // If no strategies provided, use default set
-        const defaultStrategies: CopingStrategy[] = [
-          {
-            id: 'default-1',
-            title: 'Deep Breathing',
-            description:
-              'Take slow, deep breaths for 5 minutes. Inhale for 4 counts, hold for 4, exhale for 6.',
-            category: CopingStrategyCategory.Physical,
-          },
-          {
-            id: 'default-2',
-            title: 'Go for a Walk',
-            description: 'Take a short walk outside to clear your mind and get some fresh air.',
-            category: CopingStrategyCategory.Physical,
-          },
-          {
-            id: 'default-3',
-            title: 'Call a Friend',
-            description:
-              'Reach out to a trusted friend or family member for support and connection.',
-            category: CopingStrategyCategory.Social,
-          },
-          {
-            id: 'default-4',
-            title: 'Talk to Someone',
-            description: 'Share your feelings with someone you trust.',
-            category: CopingStrategyCategory.Social,
-          },
-          {
-            id: 'default-5',
-            title: 'Journaling',
-            description: 'Write down your thoughts and feelings in a journal to process emotions.',
-            category: CopingStrategyCategory.Emotional,
-          },
-          {
-            id: 'default-6',
-            title: 'Name Your Emotions',
-            description:
-              'Identify and label what you are feeling to better understand your emotions.',
-            category: CopingStrategyCategory.Emotional,
-          },
-          {
-            id: 'default-7',
-            title: 'Positive Affirmations',
-            description:
-              'Repeat positive statements to yourself to challenge negative thought patterns.',
-            category: CopingStrategyCategory.Cognitive,
-          },
-          {
-            id: 'default-8',
-            title: 'Reframe Negative Thoughts',
-            description:
-              'Challenge negative thinking by finding alternative, more balanced perspectives.',
-            category: CopingStrategyCategory.Cognitive,
-          },
-          {
-            id: 'default-9',
-            title: 'Listen to Music',
-            description: 'Put on calming or uplifting music to shift your emotional state.',
-            category: CopingStrategyCategory.Sensory,
-          },
-          {
-            id: 'default-10',
-            title: 'Use a Stress Ball',
-            description: 'Squeeze a stress ball or hold something textured to ground yourself.',
-            category: CopingStrategyCategory.Sensory,
-          },
-          {
-            id: 'default-11',
-            title: 'Creative Drawing',
-            description: 'Express yourself through art, doodling, or coloring to release tension.',
-            category: CopingStrategyCategory.Creative,
-          },
-          {
-            id: 'default-12',
-            title: 'Play an Instrument',
-            description: 'Make music as a form of creative expression and emotional release.',
-            category: CopingStrategyCategory.Creative,
-          },
-        ];
-        setStrategies(defaultStrategies);
-        // Pre-select all default strategies
-        setSelectedIds(new Set(defaultStrategies.map((s) => s.id)));
-      } else {
-        setStrategies(providedStrategies);
-        // Pre-select all provided strategies
-        setSelectedIds(new Set(providedStrategies.map((s) => s.id)));
-      }
-
-      setLoading(false);
-    } catch {
-      setError('Failed to load coping strategies. Please try again.');
-      setLoading(false);
-    }
+    return () => clearTimeout(timeoutId);
   }, []);
 
   /**
@@ -272,7 +278,7 @@ export default function OnboardingStep2Page() {
         <div className="mb-4 text-center">
           <h2 className="text-2xl font-bold text-catamount-green">Well-Being Action Plan</h2>
           <p className="text-xs text-vermont-slate">
-            Developed in collaboration with The University of Vermont Children's Hospital
+            Developed in collaboration with The University of Vermont Children&apos;s Hospital
           </p>
         </div>
 

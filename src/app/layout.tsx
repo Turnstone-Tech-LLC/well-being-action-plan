@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { OfflineIndicator } from '@/components/OfflineIndicator';
-import { InstallPrompt } from '@/components/InstallPrompt';
 
 export const metadata: Metadata = {
   title: 'Well-Being Action Plan',
@@ -65,11 +63,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased">
-        <OfflineIndicator />
-        {children}
-        <InstallPrompt />
-      </body>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   );
 }

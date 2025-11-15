@@ -30,8 +30,8 @@ export default function OfflinePage() {
 
         {/* Heading */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">You're Offline</h1>
-          <p className="text-gray-600">It looks like you've lost your internet connection.</p>
+          <h1 className="text-3xl font-bold text-gray-900">You&apos;re Offline</h1>
+          <p className="text-gray-600">It looks like you&apos;ve lost your internet connection.</p>
         </div>
 
         {/* What Works Offline */}
@@ -139,8 +139,8 @@ export default function OfflinePage() {
         </div>
 
         <p className="text-sm text-gray-500">
-          Your data is saved locally on your device. Once you're back online, everything will sync
-          automatically.
+          Your data is saved locally on your device. Once you&apos;re back online, everything will
+          sync automatically.
         </p>
       </div>
     </div>

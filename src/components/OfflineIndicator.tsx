@@ -14,20 +14,29 @@ export function OfflineIndicator() {
 
   useEffect(() => {
     if (!isOnline) {
-      // Show offline banner immediately
-      setShowBanner(true);
-      setJustReconnected(false);
+      // Show offline banner immediately using setTimeout to avoid direct setState
+      const timer = setTimeout(() => {
+        setShowBanner(true);
+        setJustReconnected(false);
+      }, 0);
+
+      return () => clearTimeout(timer);
     } else if (showBanner && isOnline) {
       // Just reconnected - show success message briefly
-      setJustReconnected(true);
+      const reconnectTimer = setTimeout(() => {
+        setJustReconnected(true);
+      }, 0);
 
       // Hide success message after 3 seconds
-      const timer = setTimeout(() => {
+      const hideTimer = setTimeout(() => {
         setShowBanner(false);
         setJustReconnected(false);
       }, 3000);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(reconnectTimer);
+        clearTimeout(hideTimer);
+      };
     }
   }, [isOnline, showBanner]);
 
@@ -41,8 +50,8 @@ export function OfflineIndicator() {
       className={`fixed left-0 right-0 top-0 z-50 transform transition-transform duration-300 ${
         showBanner ? 'translate-y-0' : '-translate-y-full'
       }`}
-      role="status"
-      aria-live="polite"
+      role={justReconnected ? 'status' : 'alert'}
+      aria-live={justReconnected ? 'polite' : 'assertive'}
     >
       {justReconnected ? (
         // Back online banner (success)
@@ -82,7 +91,7 @@ export function OfflineIndicator() {
               />
             </svg>
             <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-              <p className="text-sm font-medium">You're offline.</p>
+              <p className="text-sm font-medium">You&apos;re offline.</p>
               <p className="text-sm opacity-90">
                 Your well-being plan and check-ins still work offline.
               </p>

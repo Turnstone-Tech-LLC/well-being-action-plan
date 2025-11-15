@@ -4,6 +4,7 @@ import tsparser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
+import nextPlugin from '@next/eslint-plugin-next';
 
 export default [
   {
@@ -15,11 +16,66 @@ export default [
       'build/**',
       '.vercel/**',
       '.cache/**',
+      'public/**',
       '*.config.js',
       '*.config.mjs',
     ],
   },
   js.configs.recommended,
+  {
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    plugins: {
+      '@next/next': nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+    },
+    languageOptions: {
+      globals: {
+        React: 'writable',
+        JSX: 'writable',
+        window: 'readonly',
+        document: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        navigator: 'readonly',
+        fetch: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        URLSearchParams: 'readonly',
+        URL: 'readonly',
+        btoa: 'readonly',
+        atob: 'readonly',
+        alert: 'readonly',
+        crypto: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLParagraphElement: 'readonly',
+        HTMLHeadingElement: 'readonly',
+        HTMLTableElement: 'readonly',
+        HTMLTableSectionElement: 'readonly',
+        HTMLTableRowElement: 'readonly',
+        HTMLTableCellElement: 'readonly',
+        HTMLTableCaptionElement: 'readonly',
+        Event: 'readonly',
+        File: 'readonly',
+        Blob: 'readonly',
+        FileReader: 'readonly',
+      },
+    },
+  },
   {
     files: ['scripts/**/*.{js,mjs}'],
     languageOptions: {
@@ -105,14 +161,14 @@ export default [
       '@typescript-eslint/no-non-null-assertion': 'warn',
 
       // React rules
-      'react/react-in-jsx-scope': 'off', // Not needed in Next.js
-      'react/prop-types': 'off', // Using TypeScript
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
       'react/self-closing-comp': 'warn',
       'react/jsx-curly-brace-presence': ['warn', { props: 'never', children: 'never' }],
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
 
-      // Accessibility rules - Critical for mental health application
+      // Accessibility rules
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/anchor-has-content': 'error',
       'jsx-a11y/anchor-is-valid': 'warn',
@@ -140,7 +196,7 @@ export default [
           allow: ['warn', 'error'],
         },
       ],
-      'no-unused-vars': 'off', // Using TypeScript version
+      'no-unused-vars': 'off',
       'no-var': 'error',
       'object-shorthand': 'warn',
       'prefer-template': 'warn',

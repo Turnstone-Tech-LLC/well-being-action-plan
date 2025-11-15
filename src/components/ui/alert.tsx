@@ -1,6 +1,3 @@
-/* eslint-disable no-undef */
-// Browser APIs (HTMLDivElement, HTMLParagraphElement, HTMLHeadingElement) are available in client-side code
-
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 

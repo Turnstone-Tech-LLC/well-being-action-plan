@@ -8,7 +8,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -78,6 +78,16 @@ export function WelcomeScreen({
   const [accessCode, setAccessCode] = useState(initialAccessCode);
   const [providerKey, setProviderKey] = useState('');
   const [providerKeyLoading, setProviderKeyLoading] = useState(false);
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,11 +98,17 @@ export function WelcomeScreen({
 
   const handleProviderKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Clear any existing timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+
     if (providerKey.trim() && onProviderKeySubmit) {
       setProviderKeyLoading(true);
       onProviderKeySubmit(providerKey.trim());
       // Reset loading state after a short delay (will be handled by parent)
-      setTimeout(() => setProviderKeyLoading(false), 500);
+      loadingTimeoutRef.current = setTimeout(() => setProviderKeyLoading(false), 500);
     }
   };
 

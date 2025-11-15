@@ -119,9 +119,14 @@ export function Flash({
         variantStyles[variant],
         className
       )}
-      role="alert"
+      role={variant === 'error' ? 'alert' : 'status'}
+      aria-live={variant === 'error' ? 'assertive' : 'polite'}
+      aria-atomic="true"
     >
-      <Icon className={cn('mt-0.5 h-5 w-5 flex-shrink-0', iconStyles[variant])} />
+      <Icon
+        className={cn('mt-0.5 h-5 w-5 flex-shrink-0', iconStyles[variant])}
+        aria-hidden="true"
+      />
       <p className="flex-1 text-sm font-medium">{message}</p>
       <button
         onClick={() => {
@@ -129,9 +134,9 @@ export function Flash({
           onDismiss?.();
         }}
         className="flex-shrink-0 text-current opacity-70 transition-opacity hover:opacity-100"
-        aria-label="Dismiss"
+        aria-label={`Dismiss ${variant} message`}
       >
-        <X className="h-4 w-4" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   );

@@ -5,9 +5,6 @@
  * Includes file upload, validation, preview, and confirmation.
  */
 
-/* eslint-disable no-undef */
-// Browser APIs (File, HTMLDivElement) are available in client-side code
-
 'use client';
 
 import * as React from 'react';
@@ -198,13 +195,22 @@ export function ImportDataDialog({
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
-              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-12 transition-colors hover:border-muted-foreground/50"
+              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-12 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:border-muted-foreground/50"
               onClick={handleBrowseClick}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleBrowseClick();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Drop your data file here or click to browse"
             >
               <Upload className="mb-4 h-12 w-12 text-muted-foreground" />
               <p className="mb-2 text-sm font-medium">Drop your data file here</p>
               <p className="mb-4 text-xs text-muted-foreground">or click to browse</p>
-              <Button type="button" variant="outline" size="sm">
+              <Button type="button" variant="outline" size="sm" tabIndex={-1}>
                 <FileJson className="mr-2 h-4 w-4" />
                 Select JSON File
               </Button>

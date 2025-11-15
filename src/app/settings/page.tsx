@@ -16,6 +16,9 @@ import { getUserConfig, setUserConfig, clearAllData } from '@/lib/db';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { exportDataToFile } from '@/lib/services/dataPortabilityService';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
+import { ZoneType } from '@/lib/types/zone';
+import { ZONE_COLORS } from '@/lib/utils/zoneUtils';
+import { cn } from '@/lib/utils';
 
 /**
  * Settings Page
@@ -38,7 +41,7 @@ export default function SettingsPage() {
   const [clearingData, setClearingData] = useState(false);
   const [exportingData, setExportingData] = useState(false);
 
-  const loadSettings = useCallback(async () => {
+  const _loadSettings = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -73,13 +76,62 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadSettingsWithCleanup = async () => {
+      try {
+        setLoading(true);
+
+        // Load patient name
+        const nameConfig = await getUserConfig('patient', 'preferredName');
+        if (!isMounted) return;
+        if (nameConfig && typeof nameConfig.value === 'string') {
+          setPatientName(nameConfig.value);
+        }
+
+        // Get notification permission status
+        const permission = getNotificationPermissionStatus();
+        if (!isMounted) return;
+        setPermissionStatus(permission);
+
+        // Get current notification settings
+        const enabled = await areNotificationsEnabled('patient');
+        if (!isMounted) return;
+        setNotificationsEnabled(enabled);
+
+        // Get scheduled time
+        const scheduledTime = await getScheduledNotificationTime('patient');
+        if (!isMounted) return;
+        if (scheduledTime) {
+          setNotificationTime(scheduledTime);
+        }
+
+        // Register service worker
+        await registerNotificationServiceWorker();
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('Failed to load settings:', err);
+        setError('Failed to load settings');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     // Only load settings if onboarding is complete
     if (!authLoading && isOnboardingComplete) {
-      loadSettings();
+      loadSettingsWithCleanup();
     }
-  }, [authLoading, isOnboardingComplete, loadSettings]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authLoading, isOnboardingComplete]);
 
   const handleEnableNotifications = async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     try {
       setError(null);
       setSaving(true);
@@ -111,7 +163,7 @@ export default function SettingsPage() {
 
         setNotificationsEnabled(true);
         setSuccess('Daily notifications enabled successfully!');
-        setTimeout(() => setSuccess(null), 3000);
+        timeoutId = setTimeout(() => setSuccess(null), 3000);
       } else {
         setError('Failed to enable notifications');
       }
@@ -121,9 +173,15 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   };
 
   const handleDisableNotifications = async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     try {
       setError(null);
       setSaving(true);
@@ -144,13 +202,17 @@ export default function SettingsPage() {
 
       setNotificationsEnabled(false);
       setSuccess('Daily notifications disabled');
-      setTimeout(() => setSuccess(null), 3000);
+      timeoutId = setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Failed to disable notifications:', err);
       setError('Failed to disable notifications');
     } finally {
       setSaving(false);
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   };
 
   const handleTimeChange = async (newTime: string) => {
@@ -175,7 +237,7 @@ export default function SettingsPage() {
           await setUserConfig('patient', 'notificationPreferences', updatedPrefs);
 
           setSuccess('Notification time updated successfully!');
-          setTimeout(() => setSuccess(null), 3000);
+          const _timeoutId = setTimeout(() => setSuccess(null), 3000);
         } else {
           setError('Failed to update notification time');
         }
@@ -183,10 +245,13 @@ export default function SettingsPage() {
         console.error('Failed to update time:', err);
         setError('Failed to update notification time');
       }
+      // Note: timeoutId cleanup happens when function exits or component unmounts
     }
   };
 
   const handleTestNotification = async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     try {
       setError(null);
 
@@ -213,7 +278,7 @@ export default function SettingsPage() {
             tag: 'test-notification',
           });
           setSuccess('Test notification sent!');
-          setTimeout(() => setSuccess(null), 3000);
+          timeoutId = setTimeout(() => setSuccess(null), 3000);
         } catch (notificationError) {
           console.error('Error showing notification:', notificationError);
           setError(
@@ -229,6 +294,10 @@ export default function SettingsPage() {
         `Failed to send test notification: ${err instanceof Error ? err.message : 'Unknown error'}`
       );
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   };
 
   const handleExportData = async () => {
@@ -272,8 +341,11 @@ export default function SettingsPage() {
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-morning-fog to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-catamount-green" />
+        <div className="text-center" role="status" aria-live="polite">
+          <div
+            className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-catamount-green"
+            aria-hidden="true"
+          />
           <p className="text-vermont-slate dark:text-[#A8D5FF]">
             {authLoading ? 'Checking authentication...' : 'Loading settings...'}
           </p>
@@ -294,7 +366,8 @@ export default function SettingsPage() {
         <div className="mb-8">
           <button
             onClick={() => router.push('/dashboard')}
-            className="mb-4 flex items-center gap-2 text-catamount-green hover:text-[#0F3428] dark:hover:text-[#7FD4B8]"
+            className="mb-4 flex items-center gap-2 rounded text-catamount-green hover:text-[#0F3428] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 dark:hover:text-[#7FD4B8]"
+            aria-label="Back to dashboard"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -314,14 +387,32 @@ export default function SettingsPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 rounded-lg border border-red-zone bg-[#DC582A]/10 p-4 text-red-zone dark:bg-[#DC582A]/20 dark:text-[#FF9B7F]">
+          <div
+            className={cn(
+              'mb-6 rounded-lg border p-4',
+              ZONE_COLORS[ZoneType.Red].border,
+              ZONE_COLORS[ZoneType.Red].background,
+              ZONE_COLORS[ZoneType.Red].text
+            )}
+            role="alert"
+            aria-live="assertive"
+          >
             {error}
           </div>
         )}
 
         {/* Success Message */}
         {success && (
-          <div className="mb-6 rounded-lg border border-green-zone bg-[#154734]/10 p-4 text-green-zone dark:bg-[#154734]/20 dark:text-[#7FD4B8]">
+          <div
+            className={cn(
+              'mb-6 rounded-lg border p-4',
+              ZONE_COLORS[ZoneType.Green].border,
+              ZONE_COLORS[ZoneType.Green].background,
+              ZONE_COLORS[ZoneType.Green].text
+            )}
+            role="status"
+            aria-live="polite"
+          >
             {success}
           </div>
         )}
@@ -337,7 +428,7 @@ export default function SettingsPage() {
                 <p className="font-medium text-catamount-green dark:text-[#7FD4B8]">
                   Permission Status
                 </p>
-                <p className="mt-1 text-sm text-vermont-slate dark:text-[#A8D5FF]">
+                <p className="mt-1 text-sm text-vermont-slate dark:text-[#A8D5FF]" role="status">
                   {permissionStatus === 'granted' && 'Notifications are allowed'}
                   {permissionStatus === 'denied' && 'Notifications are blocked'}
                   {permissionStatus === 'default' && 'Permission not yet requested'}
@@ -346,17 +437,35 @@ export default function SettingsPage() {
               </div>
               <div className="flex-shrink-0">
                 {permissionStatus === 'granted' && (
-                  <span className="inline-flex items-center rounded-full bg-[#154734]/10 px-3 py-1 text-sm font-medium text-green-zone dark:bg-[#154734]/30 dark:text-[#7FD4B8]">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium',
+                      ZONE_COLORS[ZoneType.Green].background,
+                      ZONE_COLORS[ZoneType.Green].text
+                    )}
+                  >
                     Enabled
                   </span>
                 )}
                 {permissionStatus === 'denied' && (
-                  <span className="inline-flex items-center rounded-full bg-[#DC582A]/10 px-3 py-1 text-sm font-medium text-red-zone dark:bg-[#DC582A]/30 dark:text-[#FF9B7F]">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium',
+                      ZONE_COLORS[ZoneType.Red].background,
+                      ZONE_COLORS[ZoneType.Red].text
+                    )}
+                  >
                     Blocked
                   </span>
                 )}
                 {permissionStatus === 'default' && (
-                  <span className="inline-flex items-center rounded-full bg-[#FFD100]/10 px-3 py-1 text-sm font-medium text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium',
+                      ZONE_COLORS[ZoneType.Yellow].background,
+                      ZONE_COLORS[ZoneType.Yellow].text
+                    )}
+                  >
                     Not Set
                   </span>
                 )}
@@ -381,6 +490,7 @@ export default function SettingsPage() {
                 role="switch"
                 aria-checked={notificationsEnabled}
                 aria-label="Toggle daily reminders"
+                aria-busy={saving}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   notificationsEnabled ? 'bg-catamount-green' : 'bg-gray-300'
                 } ${saving ? 'cursor-not-allowed opacity-50' : ''}`}
@@ -389,6 +499,7 @@ export default function SettingsPage() {
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                     notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
                   }`}
+                  aria-hidden="true"
                 />
               </button>
             </div>
@@ -401,7 +512,7 @@ export default function SettingsPage() {
                 Notification Time
               </label>
               <p className="mb-3 text-sm text-gray-600">
-                Choose what time you'd like to receive your daily check-in reminder
+                Choose what time you&apos;d like to receive your daily check-in reminder
               </p>
               <input
                 id="notification-time"
@@ -455,6 +566,7 @@ export default function SettingsPage() {
               onClick={handleExportData}
               disabled={exportingData}
               className="w-full rounded-lg bg-catamount-green px-4 py-2 text-white transition-colors hover:bg-[#0F3428] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-busy={exportingData}
             >
               {exportingData ? 'Exporting...' : 'Export Data'}
             </button>
@@ -463,7 +575,7 @@ export default function SettingsPage() {
           {/* Clear All Data */}
           <div>
             <div className="mb-3">
-              <p className="font-medium text-red-zone">Clear All Data</p>
+              <p className={cn('font-medium', ZONE_COLORS[ZoneType.Red].text)}>Clear All Data</p>
               <p className="mt-1 text-sm text-gray-600">
                 Permanently delete all your data from this device. This action cannot be undone.
               </p>
@@ -471,7 +583,13 @@ export default function SettingsPage() {
             <button
               onClick={() => setShowClearDataDialog(true)}
               disabled={clearingData}
-              className="w-full rounded-lg border-2 border-red-zone px-4 py-2 text-red-zone transition-colors hover:bg-red-zone hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(
+                'w-full rounded-lg border-2 px-4 py-2 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50',
+                ZONE_COLORS[ZoneType.Red].border,
+                ZONE_COLORS[ZoneType.Red].text,
+                ZONE_COLORS[ZoneType.Red].hover
+              )}
+              aria-busy={clearingData}
             >
               Clear All Data
             </button>
@@ -481,8 +599,8 @@ export default function SettingsPage() {
           <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
             <p className="text-sm text-blue-800">
               <strong>Privacy First:</strong> All your data is stored locally on this device only.
-              When you export data, it's saved as a file on your device. No data is sent to external
-              servers.
+              When you export data, it&apos;s saved as a file on your device. No data is sent to
+              external servers.
             </p>
           </div>
         </div>
@@ -492,7 +610,7 @@ export default function SettingsPage() {
           <h3 className="mb-2 font-medium text-blue-900">About Daily Check-Ins</h3>
           <p className="text-sm text-blue-800">
             Daily check-ins help you stay connected with your emotional well-being. Taking a moment
-            each day to reflect on how you're feeling can help you identify patterns, recognize
+            each day to reflect on how you&apos;re feeling can help you identify patterns, recognize
             triggers, and practice coping strategies before challenges become overwhelming.
           </p>
         </div>
@@ -516,7 +634,7 @@ export default function SettingsPage() {
             <li>• Consider exporting your data first as a backup</li>
             <li>• All your check-in history will be lost</li>
             <li>• All your coping strategies will be deleted</li>
-            <li>• You'll need a new access code to start over</li>
+            <li>• You&apos;ll need a new access code to start over</li>
           </ul>
         </div>
       </ConfirmationDialog>

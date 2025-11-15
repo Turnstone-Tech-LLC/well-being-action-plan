@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,9 +43,17 @@ export default function Home() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [providerKeyError, setProviderKeyError] = useState<string | null>(null);
   const [providerKeyFlashVisible, setProviderKeyFlashVisible] = useState(false);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     checkOnboardingAndRedirect();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -138,6 +146,11 @@ export default function Home() {
   };
 
   const handleProviderKeySubmit = (providerKey: string) => {
+    // Clear any existing timeout
+    if (flashTimeoutRef.current) {
+      clearTimeout(flashTimeoutRef.current);
+    }
+
     // Validate the provider key
     if (validateProviderKey(providerKey)) {
       // Valid key - enable provider mode and redirect
@@ -154,7 +167,7 @@ export default function Home() {
       setProviderKeyError('Invalid provider key. Please check and try again.');
       setProviderKeyFlashVisible(true);
       // Auto-hide error after 5 seconds
-      setTimeout(() => setProviderKeyFlashVisible(false), 5000);
+      flashTimeoutRef.current = setTimeout(() => setProviderKeyFlashVisible(false), 5000);
     }
   };
 
@@ -245,7 +258,7 @@ export default function Home() {
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold text-catamount-green">Well-Being Action Plan</h1>
         <p className="mt-2 text-sm text-vermont-slate">
-          Developed in collaboration with The University of Vermont Children's Hospital
+          Developed in collaboration with The University of Vermont Children&apos;s Hospital
         </p>
       </div>
 
