@@ -8,17 +8,25 @@
  * Architecture:
  * - Provider key is validated against NEXT_PUBLIC_PROVIDER_KEY environment variable
  * - Valid key sets localStorage flag (not IndexedDB, to keep patient data separate)
+ * - Provider mode flag is also stored in a cookie for server-side middleware access
+ * - Middleware checks cookie to enforce provider mode on /provider/* routes
  * - Client-side checks in provider layout redirect unauthorized access
  * - Supabase auth provides additional security layer for actual operations
  *
- * Privacy Note: Provider mode flag is stored in localStorage (client-side only),
- * never transmitted to servers or mixed with patient data in IndexedDB.
+ * Privacy Note: Provider mode flag is stored in localStorage (client-side only)
+ * and a non-httpOnly cookie (accessible to client-side code), never transmitted
+ * to servers or mixed with patient data in IndexedDB.
  */
 
 /**
  * localStorage key for provider mode flag
  */
 const PROVIDER_MODE_KEY = 'provider_mode';
+
+/**
+ * Cookie name for provider mode flag (used by middleware)
+ */
+const PROVIDER_MODE_COOKIE = 'provider_mode';
 
 /**
  * localStorage value when provider mode is enabled
@@ -65,7 +73,7 @@ export function validateProviderKey(key: string): boolean {
 }
 
 /**
- * Enable provider mode by setting localStorage flag
+ * Enable provider mode by setting localStorage flag and cookie
  *
  * @throws Error if localStorage is not available
  */
@@ -75,7 +83,14 @@ export function enableProviderMode(): void {
   }
 
   try {
+    // Set localStorage flag
     localStorage.setItem(PROVIDER_MODE_KEY, PROVIDER_MODE_ENABLED);
+
+    // Set cookie for middleware access (non-httpOnly so client can read it)
+    // Cookie expires in 30 days
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    document.cookie = `${PROVIDER_MODE_COOKIE}=${PROVIDER_MODE_ENABLED}; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax`;
   } catch (error) {
     console.error('Failed to enable provider mode:', error);
     throw new Error('Failed to enable provider mode. localStorage may be unavailable.');
@@ -83,7 +98,7 @@ export function enableProviderMode(): void {
 }
 
 /**
- * Revoke provider mode by removing localStorage flag
+ * Revoke provider mode by removing localStorage flag and cookie
  *
  * @throws Error if localStorage is not available
  */
@@ -93,10 +108,14 @@ export function revokeProviderMode(): void {
   }
 
   try {
+    // Remove localStorage flag
     localStorage.removeItem(PROVIDER_MODE_KEY);
+
+    // Remove cookie by setting expiry to past date
+    document.cookie = `${PROVIDER_MODE_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax`;
   } catch (error) {
     console.error('Failed to revoke provider mode:', error);
-    throw new Error('Failed to revoke provider mode. localStorage may be unavailable.');
+    throw new Error('Failed to revoke provider mode. localStorage or cookies may be unavailable.');
   }
 }
 
@@ -115,6 +134,37 @@ export function isProviderModeEnabled(): boolean {
     return flag === PROVIDER_MODE_ENABLED;
   } catch (error) {
     console.error('Failed to check provider mode:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if provider mode cookie is set (server-side check)
+ *
+ * @param cookieString - The cookie string from request headers
+ * @returns true if provider mode cookie is present and enabled
+ */
+export function isProviderModeCookieSet(cookieString?: string): boolean {
+  if (!cookieString) {
+    return false;
+  }
+
+  try {
+    // Parse cookies from the cookie string
+    const cookies = cookieString.split(';').reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        if (key && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    return cookies[PROVIDER_MODE_COOKIE] === PROVIDER_MODE_ENABLED;
+  } catch (error) {
+    console.error('Failed to parse provider mode cookie:', error);
     return false;
   }
 }

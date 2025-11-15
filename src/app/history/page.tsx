@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
+import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
 
 interface DayCheckIns {
   date: Date;
@@ -22,25 +23,6 @@ interface CalendarDay {
   isCurrentMonth: boolean;
   checkIns: CheckIn[];
 }
-
-// Zone color mappings for calendar display - UVM Brand Colors
-const zoneColors: Record<ZoneType, { bg: string; border: string; text: string }> = {
-  [ZoneType.Green]: {
-    bg: 'bg-[#154734]/10 dark:bg-[#154734]/30',
-    border: 'border-green-zone',
-    text: 'text-green-zone dark:text-[#7FD4B8]',
-  },
-  [ZoneType.Yellow]: {
-    bg: 'bg-[#FFD100]/10 dark:bg-[#FFD100]/20',
-    border: 'border-yellow-zone',
-    text: 'text-[#B39D00] dark:text-[#FFE066]',
-  },
-  [ZoneType.Red]: {
-    bg: 'bg-[#DC582A]/10 dark:bg-[#DC582A]/30',
-    border: 'border-red-zone',
-    text: 'text-red-zone dark:text-[#FF9B7F]',
-  },
-};
 
 /**
  * Mood History Page
@@ -58,6 +40,8 @@ export default function MoodHistoryPage() {
 
   // Fetch check-ins for the current month
   useEffect(() => {
+    let isMounted = true;
+
     const fetchCheckIns = async () => {
       // Only fetch if onboarding is complete
       if (!authLoading && isOnboardingComplete) {
@@ -78,16 +62,24 @@ export default function MoodHistoryPage() {
             endDate,
           });
 
+          if (!isMounted) return;
           setCheckIns(data);
         } catch (error) {
+          if (!isMounted) return;
           console.error('Error fetching check-ins:', error);
         } finally {
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+          }
         }
       }
     };
 
     fetchCheckIns();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentMonth, authLoading, isOnboardingComplete]);
 
   // Generate calendar days for the current month view
@@ -204,8 +196,11 @@ export default function MoodHistoryPage() {
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="text-center" role="status" aria-live="polite">
+          <div
+            className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"
+            aria-hidden="true"
+          />
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -312,8 +307,8 @@ export default function MoodHistoryPage() {
                           // Zone colors
                           dominantZone &&
                             day.isCurrentMonth && [
-                              zoneColors[dominantZone].bg,
-                              zoneColors[dominantZone].border,
+                              ZONE_COLORS[dominantZone].background,
+                              ZONE_COLORS[dominantZone].border,
                               'hover:opacity-90',
                             ],
                           // Selected state
@@ -325,7 +320,7 @@ export default function MoodHistoryPage() {
                           className={cn(
                             'text-sm font-medium',
                             !day.isCurrentMonth && 'text-muted-foreground/50',
-                            dominantZone && day.isCurrentMonth && zoneColors[dominantZone].text
+                            dominantZone && day.isCurrentMonth && ZONE_COLORS[dominantZone].text
                           )}
                         >
                           {day.date.getDate()}
@@ -398,8 +393,8 @@ export default function MoodHistoryPage() {
                       key={checkIn.id}
                       className={cn(
                         'rounded-lg border-2 p-4',
-                        zoneColors[checkIn.zone].bg,
-                        zoneColors[checkIn.zone].border
+                        ZONE_COLORS[checkIn.zone].background,
+                        ZONE_COLORS[checkIn.zone].border
                       )}
                     >
                       <div className="flex items-start justify-between">
@@ -409,10 +404,10 @@ export default function MoodHistoryPage() {
                               variant="outline"
                               className={cn(
                                 'text-xs font-semibold uppercase',
-                                zoneColors[checkIn.zone].text
+                                ZONE_COLORS[checkIn.zone].text
                               )}
                             >
-                              {checkIn.zone} Zone
+                              {getZoneLabel(checkIn.zone)}
                             </Badge>
                             <span className="text-sm text-muted-foreground">
                               {new Date(checkIn.timestamp).toLocaleTimeString('default', {
@@ -425,7 +420,7 @@ export default function MoodHistoryPage() {
                           {checkIn.moodRating && (
                             <div className="text-sm">
                               <span className="font-medium">Mood Rating:</span>{' '}
-                              <span className={zoneColors[checkIn.zone].text}>
+                              <span className={ZONE_COLORS[checkIn.zone].text}>
                                 {checkIn.moodRating}/10
                               </span>
                             </div>

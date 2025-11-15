@@ -27,13 +27,42 @@ export default function ProviderLinksPage() {
   // Load links on mount
   // Note: user is guaranteed to exist due to middleware protection on /provider/* routes
   useEffect(() => {
-    if (!user) return;
-    loadLinks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let isMounted = true;
+
+    const loadLinksWithCleanup = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        if (!user) {
+          throw new Error('User session not found');
+        }
+        const allLinks = await providerService.getAllLinks(user.id);
+        if (!isMounted) return;
+        setLinks(allLinks);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('Error loading links:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load links');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (user) {
+      loadLinksWithCleanup();
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   // Load completion counts when links change
   useEffect(() => {
+    let isMounted = true;
+
     const loadCompletions = async () => {
       if (links.length === 0) return;
 
@@ -45,13 +74,19 @@ export default function ProviderLinksPage() {
             counts[link.id] = count;
           })
         );
+        if (!isMounted) return;
         setCompletionCounts(counts);
       } catch (err) {
+        if (!isMounted) return;
         console.error('Error loading completion counts:', err);
       }
     };
 
     loadCompletions();
+
+    return () => {
+      isMounted = false;
+    };
   }, [links]);
 
   const loadLinks = async () => {

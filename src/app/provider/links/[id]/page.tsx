@@ -51,10 +51,14 @@ export default function LinkDetailPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     if (!id || !user) return;
 
+    let isMounted = true;
+
     const loadLink = async () => {
       try {
         setLoading(true);
         const linkData = await providerService.getLinkById(id);
+
+        if (!isMounted) return;
 
         if (!linkData) {
           setError('Link not found');
@@ -68,30 +72,45 @@ export default function LinkDetailPage({ params }: { params: Promise<{ id: strin
 
         setLink(linkData);
       } catch (err) {
+        if (!isMounted) return;
         console.error('Error loading link:', err);
         setError(err instanceof Error ? err.message : 'Failed to load link');
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadLink();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id, user]);
 
   // Load completions when link is loaded
   useEffect(() => {
     if (!link) return;
 
+    let isMounted = true;
+
     const loadCompletions = async () => {
       try {
         const data = await providerService.getCompletionsForLink(link.id);
+        if (!isMounted) return;
         setCompletions(data);
       } catch (err) {
+        if (!isMounted) return;
         console.error('Error loading completions:', err);
       }
     };
 
     loadCompletions();
+
+    return () => {
+      isMounted = false;
+    };
   }, [link]);
 
   if (loading) {
@@ -125,13 +144,19 @@ export default function LinkDetailPage({ params }: { params: Promise<{ id: strin
   const shareableUrl = `${baseUrl}/link/${link.slug}`;
 
   const handleCopyUrl = async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     try {
       await navigator.clipboard.writeText(shareableUrl);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      timeoutId = setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy URL:', err);
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   };
 
   const handleDownloadQR = () => {

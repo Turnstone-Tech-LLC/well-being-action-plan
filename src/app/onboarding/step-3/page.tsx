@@ -233,7 +233,7 @@ export default function OnboardingStep3Page() {
         <div className="mb-4 text-center">
           <h2 className="text-2xl font-bold text-catamount-green">Well-Being Action Plan</h2>
           <p className="text-xs text-vermont-slate">
-            Developed in collaboration with The University of Vermont Children's Hospital
+            Developed in collaboration with The University of Vermont Children&apos;s Hospital
           </p>
         </div>
 

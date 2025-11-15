@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { getPatientConfig, updatePatientConfig } from '@/lib/db';
 
 // BeforeInstallPromptEvent is not in TypeScript lib.dom.d.ts yet
-// eslint-disable-next-line no-undef
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -22,17 +21,23 @@ export function InstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     // Check if running in standalone mode (already installed)
     const checkStandalone = () => {
       const standalone = window.matchMedia('(display-mode: standalone)').matches;
-      setIsStandalone(standalone);
+      if (isMounted) {
+        setIsStandalone(standalone);
+      }
     };
 
     // Detect iOS
     const checkIOS = () => {
       const userAgent = window.navigator.userAgent.toLowerCase();
       const iOS = /iphone|ipad|ipod/.test(userAgent);
-      setIsIOS(iOS);
+      if (isMounted) {
+        setIsIOS(iOS);
+      }
     };
 
     checkStandalone();
@@ -42,13 +47,16 @@ export function InstallPrompt() {
     const checkDismissalStatus = async () => {
       try {
         const config = await getPatientConfig();
+        if (!isMounted) return;
+
         const dismissed = config.pwaInstallDismissed ?? false;
 
         // Only show if not dismissed and not in standalone mode
-        if (!dismissed && !isStandalone) {
+        if (!dismissed && !isStandalone && isMounted) {
           setShowPrompt(true);
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error('Error checking PWA install dismissal status:', error);
       }
     };
@@ -56,18 +64,20 @@ export function InstallPrompt() {
     checkDismissalStatus();
 
     // Listen for the beforeinstallprompt event (Chromium browsers)
-    // eslint-disable-next-line no-undef
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the default browser install prompt
       e.preventDefault();
 
-      // Store the event for later use
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      if (isMounted) {
+        // Store the event for later use
+        setDeferredPrompt(e as BeforeInstallPromptEvent);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
+      isMounted = false;
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, [isStandalone]);
@@ -141,7 +151,7 @@ export function InstallPrompt() {
               >
                 <path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.11 0-2-.9-2-2V10c0-1.11.89-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .89 2 2z" />
               </svg>{' '}
-              then "Add to Home Screen"
+              then &quot;Add to Home Screen&quot;
             </p>
           </div>
           <button

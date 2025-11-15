@@ -85,28 +85,40 @@ export default function ProviderDashboardPage() {
 
   // Load link statistics and recent links
   React.useEffect(() => {
+    let isMounted = true;
+
     const loadStats = async () => {
       if (!user) return;
 
       try {
         const stats = await providerService.getLinkStats(user.id);
+        if (!isMounted) return;
         setLinkStats(stats);
 
         // Load completion count from new onboarding_completions table
         const completions = await providerService.getTotalCompletions(user.id);
+        if (!isMounted) return;
         setCompletionCount(completions);
 
         // Load recent links (top 5)
         const links = await providerService.getActiveLinks(user.id);
+        if (!isMounted) return;
         setRecentLinks(links.slice(0, 5));
       } catch (error) {
+        if (!isMounted) return;
         console.error('Error loading stats:', error);
       } finally {
-        setStatsLoading(false);
+        if (isMounted) {
+          setStatsLoading(false);
+        }
       }
     };
 
     loadStats();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   // Load strategy count from default strategies
@@ -306,8 +318,8 @@ export default function ProviderDashboardPage() {
                       </p>
                       {link.link_config.customMessage && (
                         <p className="text-xs text-muted-foreground">
-                          "{link.link_config.customMessage.substring(0, 60)}
-                          {link.link_config.customMessage.length > 60 ? '...' : ''}"
+                          &quot;{link.link_config.customMessage.substring(0, 60)}
+                          {link.link_config.customMessage.length > 60 ? '...' : ''}&quot;
                         </p>
                       )}
                     </div>
@@ -335,8 +347,17 @@ export default function ProviderDashboardPage() {
             return (
               <Card
                 key={resource.title}
-                className="cursor-pointer transition-all hover:shadow-lg"
+                className="cursor-pointer transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 onClick={() => window.open(resource.href, '_blank')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.open(resource.href, '_blank');
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${resource.title} in new tab`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">

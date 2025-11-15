@@ -77,9 +77,29 @@ export function LinkCard({
     );
   };
 
+  const handleKeyDown = onClick
+    ? (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(link);
+        }
+      }
+    : undefined;
+
   return (
     <Card className={onClick ? 'cursor-pointer transition-shadow hover:shadow-md' : ''}>
-      <CardHeader onClick={() => onClick?.(link)}>
+      <CardHeader
+        onClick={() => onClick?.(link)}
+        onKeyDown={handleKeyDown}
+        tabIndex={onClick ? 0 : undefined}
+        role={onClick ? 'button' : undefined}
+        className={
+          onClick
+            ? 'rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+            : ''
+        }
+        aria-label={onClick ? `View details for link ${link.slug}` : undefined}
+      >
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="font-mono text-lg">{link.slug}</CardTitle>

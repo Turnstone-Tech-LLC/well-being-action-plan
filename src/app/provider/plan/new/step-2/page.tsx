@@ -53,19 +53,23 @@ function PlanBuilderStep2Content() {
 
   // Load plan ID and validate
   useEffect(() => {
-    const storedPlanId = sessionStorage.getItem('currentPlanId');
+    const timeoutId = setTimeout(() => {
+      const storedPlanId = sessionStorage.getItem('currentPlanId');
 
-    if (planIdFromUrl) {
-      sessionStorage.setItem('currentPlanId', planIdFromUrl);
-      setPlanId(planIdFromUrl);
-      setLoading(false);
-    } else if (storedPlanId) {
-      setPlanId(storedPlanId);
-      setLoading(false);
-    } else {
-      setError('No action plan found. Please start from step 1.');
-      setLoading(false);
-    }
+      if (planIdFromUrl) {
+        sessionStorage.setItem('currentPlanId', planIdFromUrl);
+        setPlanId(planIdFromUrl);
+        setLoading(false);
+      } else if (storedPlanId) {
+        setPlanId(storedPlanId);
+        setLoading(false);
+      } else {
+        setError('No action plan found. Please start from step 1.');
+        setLoading(false);
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [planIdFromUrl]);
 
   /**

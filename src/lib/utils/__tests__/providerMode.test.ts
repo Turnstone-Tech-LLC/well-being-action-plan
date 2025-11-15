@@ -6,6 +6,7 @@ import {
   isProviderModeEnabled,
   getProviderModeStatus,
   getProviderKeyFromEnv,
+  isProviderModeCookieSet,
 } from '../providerMode';
 
 describe('Provider Mode Utilities', () => {
@@ -141,6 +142,41 @@ describe('Provider Mode Utilities', () => {
       const status = getProviderModeStatus();
       // isConfigured depends on environment
       expect(typeof status.isConfigured).toBe('boolean');
+    });
+  });
+
+  describe('isProviderModeCookieSet', () => {
+    it('should return false for empty cookie string', () => {
+      expect(isProviderModeCookieSet('')).toBe(false);
+    });
+
+    it('should return false for undefined cookie string', () => {
+      expect(isProviderModeCookieSet(undefined)).toBe(false);
+    });
+
+    it('should return false when provider_mode cookie is not present', () => {
+      const cookieString = 'other_cookie=value; another_cookie=value2';
+      expect(isProviderModeCookieSet(cookieString)).toBe(false);
+    });
+
+    it('should return true when provider_mode cookie is set to enabled', () => {
+      const cookieString = 'provider_mode=enabled; other_cookie=value';
+      expect(isProviderModeCookieSet(cookieString)).toBe(true);
+    });
+
+    it('should return false when provider_mode cookie is set to different value', () => {
+      const cookieString = 'provider_mode=disabled; other_cookie=value';
+      expect(isProviderModeCookieSet(cookieString)).toBe(false);
+    });
+
+    it('should handle cookies with spaces', () => {
+      const cookieString = 'provider_mode=enabled ; other_cookie=value';
+      expect(isProviderModeCookieSet(cookieString)).toBe(true);
+    });
+
+    it('should handle multiple cookies with provider_mode in the middle', () => {
+      const cookieString = 'cookie1=value1; provider_mode=enabled; cookie2=value2';
+      expect(isProviderModeCookieSet(cookieString)).toBe(true);
     });
   });
 

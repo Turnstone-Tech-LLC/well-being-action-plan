@@ -75,59 +75,64 @@ export function PlanUrlLoader({
     // Only run once on mount
     if (loadStatus !== 'idle') return;
 
-    setLoadStatus('loading');
+    // Use setTimeout to avoid setState directly in effect
+    const timer = setTimeout(() => {
+      setLoadStatus('loading');
 
-    if (debug) {
-      console.log('[PlanUrlLoader] Checking URL for plan configuration...');
-    }
-
-    // Extract plan from URL
-    const result = extractConfigFromCurrentUrl();
-
-    if (result.success) {
       if (debug) {
-        console.log('[PlanUrlLoader] Successfully loaded plan:', result.data);
+        console.log('[PlanUrlLoader] Checking URL for plan configuration...');
       }
 
-      setLoadStatus('loaded');
+      // Extract plan from URL
+      const result = extractConfigFromCurrentUrl();
 
-      // Notify parent component
-      onPlanLoaded?.(result.data);
+      if (result.success) {
+        if (debug) {
+          console.log('[PlanUrlLoader] Successfully loaded plan:', result.data);
+        }
 
-      // Clear URL parameter if requested
-      if (clearUrlAfterLoad && typeof window !== 'undefined') {
-        try {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('plan');
-          window.history.replaceState({}, '', url.toString());
+        setLoadStatus('loaded');
 
-          if (debug) {
-            console.log('[PlanUrlLoader] Cleared plan parameter from URL');
+        // Notify parent component
+        onPlanLoaded?.(result.data);
+
+        // Clear URL parameter if requested
+        if (clearUrlAfterLoad && typeof window !== 'undefined') {
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('plan');
+            window.history.replaceState({}, '', url.toString());
+
+            if (debug) {
+              console.log('[PlanUrlLoader] Cleared plan parameter from URL');
+            }
+          } catch (error) {
+            console.error('[PlanUrlLoader] Failed to clear URL parameter:', error);
           }
-        } catch (error) {
-          console.error('[PlanUrlLoader] Failed to clear URL parameter:', error);
         }
-      }
-    } else {
-      // Only treat as error if there was actually a plan parameter that failed to decode
-      // If there's no plan parameter, this is normal and not an error
-      const urlHasPlanParam =
-        typeof window !== 'undefined' && new URL(window.location.href).searchParams.has('plan');
-
-      if (urlHasPlanParam) {
-        if (debug) {
-          console.error('[PlanUrlLoader] Failed to load plan:', result.error);
-        }
-
-        setLoadStatus('error');
-        onError?.(result.error);
       } else {
-        if (debug) {
-          console.log('[PlanUrlLoader] No plan parameter found in URL');
+        // Only treat as error if there was actually a plan parameter that failed to decode
+        // If there's no plan parameter, this is normal and not an error
+        const urlHasPlanParam =
+          typeof window !== 'undefined' && new URL(window.location.href).searchParams.has('plan');
+
+        if (urlHasPlanParam) {
+          if (debug) {
+            console.error('[PlanUrlLoader] Failed to load plan:', result.error);
+          }
+
+          setLoadStatus('error');
+          onError?.(result.error);
+        } else {
+          if (debug) {
+            console.log('[PlanUrlLoader] No plan parameter found in URL');
+          }
+          setLoadStatus('idle');
         }
-        setLoadStatus('idle');
       }
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [loadStatus, onPlanLoaded, onError, clearUrlAfterLoad, debug]);
 
   // This component doesn't render anything
@@ -160,33 +165,38 @@ export function usePlanFromUrl(options?: { clearUrlAfterLoad?: boolean; autoLoad
   useEffect(() => {
     if (!autoLoad) return;
 
-    const result = extractConfigFromCurrentUrl();
+    // Use setTimeout to avoid setState directly in effect
+    const timer = setTimeout(() => {
+      const result = extractConfigFromCurrentUrl();
 
-    if (result.success) {
-      setLoadedPlan(result.data);
-      setError(null);
+      if (result.success) {
+        setLoadedPlan(result.data);
+        setError(null);
 
-      // Clear URL parameter if requested
-      if (clearUrlAfterLoad && typeof window !== 'undefined') {
-        try {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('plan');
-          window.history.replaceState({}, '', url.toString());
-        } catch (err) {
-          console.error('Failed to clear URL parameter:', err);
+        // Clear URL parameter if requested
+        if (clearUrlAfterLoad && typeof window !== 'undefined') {
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('plan');
+            window.history.replaceState({}, '', url.toString());
+          } catch (err) {
+            console.error('Failed to clear URL parameter:', err);
+          }
+        }
+      } else {
+        // Only set error if there was actually a plan parameter
+        const urlHasPlanParam =
+          typeof window !== 'undefined' && new URL(window.location.href).searchParams.has('plan');
+
+        if (urlHasPlanParam) {
+          setError(result.error);
         }
       }
-    } else {
-      // Only set error if there was actually a plan parameter
-      const urlHasPlanParam =
-        typeof window !== 'undefined' && new URL(window.location.href).searchParams.has('plan');
 
-      if (urlHasPlanParam) {
-        setError(result.error);
-      }
-    }
+      setIsLoading(false);
+    }, 0);
 
-    setIsLoading(false);
+    return () => clearTimeout(timer);
   }, [autoLoad, clearUrlAfterLoad]);
 
   const reload = () => {

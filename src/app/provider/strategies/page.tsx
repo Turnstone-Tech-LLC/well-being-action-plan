@@ -144,7 +144,8 @@ export default function ProviderStrategiesPage() {
             well-being action plans.
           </p>
           <p className="text-xs text-muted-foreground">
-            Strategies are organized by category and can be customized for each patient's needs.
+            Strategies are organized by category and can be customized for each patient&apos;s
+            needs.
           </p>
         </CardContent>
       </Card>

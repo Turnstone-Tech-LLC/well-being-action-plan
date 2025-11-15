@@ -22,10 +22,11 @@ import {
   Info,
 } from 'lucide-react';
 import { getUserConfig, getCheckInsByUser, getAllCopingStrategies } from '@/lib/db';
+import { getUserIdentity } from '@/lib/services/userIdentityService';
+import { getZoneColors, getZoneLabel } from '@/lib/utils/zoneUtils';
 import type { ProviderLinkConfig } from '@/lib/types';
 import type { CheckIn } from '@/lib/types/check-in';
 import type { CopingStrategy } from '@/lib/types/coping-strategy';
-import { ZoneType } from '@/lib/types/zone';
 import { initializeNotificationScheduling } from '@/lib/services/notificationService';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 
@@ -41,15 +42,24 @@ function SessionMessage() {
     // Check for session message in URL params
     const message = searchParams.get('message');
     if (message === 'session_exists') {
-      setShowSessionMessage(true);
+      // Use setTimeout to avoid setState directly in effect
+      const immediateTimer = setTimeout(() => {
+        setShowSessionMessage(true);
+      }, 0);
+
       // Clear the message from URL after 5 seconds
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setShowSessionMessage(false);
         // Remove the message param from URL
         const url = new URL(window.location.href);
         url.searchParams.delete('message');
         window.history.replaceState({}, '', url.toString());
       }, 5000);
+
+      return () => {
+        clearTimeout(immediateTimer);
+        clearTimeout(timer);
+      };
     }
   }, [searchParams]);
 
@@ -58,8 +68,12 @@ function SessionMessage() {
   }
 
   return (
-    <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+    <Alert
+      className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950"
+      role="status"
+      aria-live="polite"
+    >
+      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
       <AlertDescription className="text-blue-800 dark:text-blue-200">
         You already have an active session. Your existing well-being plan is loaded below.
       </AlertDescription>
@@ -87,71 +101,21 @@ export default function DashboardPage() {
   // Patient authentication - redirects to onboarding if not complete
   const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
   const [loading, setLoading] = useState(true);
+  const [_userId, setUserId] = useState<string | null>(null);
   const [patientName, setPatientName] = useState<string>('');
   const [providerConfig, setProviderConfig] = useState<ProviderLinkConfig | null>(null);
   const [todayCheckIns, setTodayCheckIns] = useState<CheckIn[]>([]);
   const [checkInStreak, setCheckInStreak] = useState(0);
   const [copingStrategies, setCopingStrategies] = useState<CopingStrategy[]>([]);
-
-  useEffect(() => {
-    // Only load dashboard data if onboarding is complete
-    if (!authLoading && isOnboardingComplete) {
-      loadDashboardData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, isOnboardingComplete]);
-
-  const loadDashboardData = async () => {
-    try {
-      // Load patient name from userConfig
-      const nameConfig = await getUserConfig('patient', 'preferredName');
-      if (nameConfig && typeof nameConfig.value === 'string') {
-        setPatientName(nameConfig.value);
-      }
-
-      // Load provider config from localStorage
-      const providerConfigJson = localStorage.getItem('providerConfig');
-      if (providerConfigJson) {
-        setProviderConfig(JSON.parse(providerConfigJson));
-      }
-
-      // Prepare date ranges for today's check-ins
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      // Load data in parallel for faster performance
-      const [checkIns, streak, strategies] = await Promise.all([
-        getCheckInsByUser('default-user', {
-          startDate: today,
-          endDate: tomorrow,
-        }),
-        calculateStreak(),
-        getAllCopingStrategies({ limit: 6 }),
-      ]);
-
-      setTodayCheckIns(checkIns);
-      setCheckInStreak(streak);
-      setCopingStrategies(strategies);
-
-      // Initialize notification scheduling
-      await initializeNotificationScheduling('patient');
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Calculate consecutive days of check-ins
    */
-  const calculateStreak = async (): Promise<number> => {
+  const calculateStreak = async (currentUserId: string): Promise<number> => {
     try {
       // Get all check-ins sorted by date
-      const allCheckIns = await getCheckInsByUser('default-user', { limit: 365 });
+      const allCheckIns = await getCheckInsByUser(currentUserId, { limit: 365 });
 
       if (allCheckIns.length === 0) return 0;
 
@@ -180,6 +144,74 @@ export default function DashboardPage() {
     }
   };
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboardData = async () => {
+      try {
+        // Get user identity
+        const identity = await getUserIdentity();
+        if (!isMounted) return;
+        setUserId(identity.userId); // Store for future use
+
+        // Load patient name from userConfig
+        const nameConfig = await getUserConfig(identity.userId, 'preferredName');
+        if (!isMounted) return;
+        if (nameConfig && typeof nameConfig.value === 'string') {
+          setPatientName(nameConfig.value);
+        }
+
+        // Load provider config from localStorage
+        const providerConfigJson = localStorage.getItem('providerConfig');
+        if (providerConfigJson && isMounted) {
+          setProviderConfig(JSON.parse(providerConfigJson));
+        }
+
+        // Prepare date ranges for today's check-ins
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Load data in parallel for faster performance
+        const [checkIns, streak, strategies] = await Promise.all([
+          getCheckInsByUser(identity.userId, {
+            startDate: today,
+            endDate: tomorrow,
+          }),
+          calculateStreak(identity.userId),
+          getAllCopingStrategies({ limit: 6 }),
+        ]);
+
+        if (!isMounted) return;
+        setTodayCheckIns(checkIns);
+        setCheckInStreak(streak);
+        setCopingStrategies(strategies);
+
+        // Initialize notification scheduling
+        await initializeNotificationScheduling('patient');
+
+        if (isMounted) {
+          setLoading(false);
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Error loading dashboard data:', error);
+        setError('Failed to load dashboard data. Please refresh the page.');
+        setLoading(false);
+      }
+    };
+
+    // Only load dashboard data if onboarding is complete
+    if (!authLoading && isOnboardingComplete) {
+      loadDashboardData();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authLoading, isOnboardingComplete]);
+
   const handleCheckIn = () => {
     router.push('/check-in');
   };
@@ -192,38 +224,15 @@ export default function DashboardPage() {
     router.push('/settings');
   };
 
-  const getZoneColor = (zone: ZoneType) => {
-    switch (zone) {
-      case ZoneType.Green:
-        return 'bg-[#154734]/10 text-green-zone dark:bg-[#154734]/30 dark:text-[#7FD4B8]';
-      case ZoneType.Yellow:
-        return 'bg-[#FFD100]/10 text-[#B39D00] dark:bg-[#FFD100]/20 dark:text-[#FFE066]';
-      case ZoneType.Red:
-        return 'bg-[#DC582A]/10 text-red-zone dark:bg-[#DC582A]/30 dark:text-[#FF9B7F]';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200';
-    }
-  };
-
-  const getZoneLabel = (zone: ZoneType) => {
-    switch (zone) {
-      case ZoneType.Green:
-        return '✓ Green Zone';
-      case ZoneType.Yellow:
-        return '⚠ Yellow Zone';
-      case ZoneType.Red:
-        return '🆘 Red Zone';
-      default:
-        return zone;
-    }
-  };
-
   // Show loading state while checking authentication or loading data
   if (authLoading || loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="text-center" role="status" aria-live="polite">
+          <div
+            className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"
+            aria-hidden="true"
+          />
           <p className="text-muted-foreground">
             {authLoading ? 'Checking authentication...' : 'Loading your dashboard...'}
           </p>
@@ -241,11 +250,23 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-morning-fog to-[#F0F8FF] p-4 dark:from-gray-900 dark:to-gray-800 md:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
+        {/* Error Message */}
+        {error && (
+          <Alert
+            className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950"
+            role="alert"
+            aria-live="assertive"
+          >
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" aria-hidden="true" />
+            <AlertDescription className="text-red-800 dark:text-red-200">{error}</AlertDescription>
+          </Alert>
+        )}
+
         {/* UVM Branding Header */}
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-catamount-green">Well-Being Action Plan</h2>
           <p className="text-xs text-vermont-slate">
-            Developed in collaboration with The University of Vermont Children's Hospital
+            Developed in collaboration with The University of Vermont Children&apos;s Hospital
           </p>
         </div>
 
@@ -283,10 +304,14 @@ export default function DashboardPage() {
 
         {/* Check-in Streak Card */}
         {checkInStreak > 0 && (
-          <Card className="border-uvm-gold bg-gradient-to-r from-[#FFD100]/10 to-[#FFD100]/5 dark:border-[#FFD100]/30 dark:from-[#FFD100]/15 dark:to-[#FFD100]/5">
+          <Card
+            className="border-uvm-gold bg-gradient-to-r from-[#FFD100]/10 to-[#FFD100]/5 dark:border-[#FFD100]/30 dark:from-[#FFD100]/15 dark:to-[#FFD100]/5"
+            role="status"
+            aria-live="polite"
+          >
             <CardContent className="flex items-center gap-4 py-4">
               <div className="rounded-full bg-[#FFD100]/20 p-3 dark:bg-[#FFD100]/30">
-                <Flame className="h-6 w-6 text-[#B39D00] dark:text-[#FFE066]" />
+                <Flame className="h-6 w-6 text-[#B39D00] dark:text-[#FFE066]" aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground">Check-in Streak</p>
@@ -337,8 +362,8 @@ export default function DashboardPage() {
                   className="flex items-center justify-between rounded-lg border p-3"
                 >
                   <div className="flex items-center gap-3">
-                    <Badge className={getZoneColor(checkIn.zone)} variant="secondary">
-                      {getZoneLabel(checkIn.zone)}
+                    <Badge className={getZoneColors(checkIn.zone)} variant="secondary">
+                      {getZoneLabel(checkIn.zone, 'full')}
                     </Badge>
                     {checkIn.notes && (
                       <p className="text-sm text-muted-foreground">{checkIn.notes}</p>
@@ -430,40 +455,46 @@ export default function DashboardPage() {
 
         {/* Quick Links */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Card
-            className="cursor-pointer transition-all hover:shadow-lg"
-            onClick={handleViewHistory}
-          >
-            <CardContent className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <Calendar className="h-5 w-5 text-primary" />
+          <Card className="transition-all hover:shadow-lg">
+            <button
+              className="w-full rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onClick={handleViewHistory}
+              aria-label="View mood history and progress over time"
+            >
+              <CardContent className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Mood History</p>
+                    <p className="text-xs text-muted-foreground">View your progress over time</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold">Mood History</p>
-                  <p className="text-xs text-muted-foreground">View your progress over time</p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </CardContent>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </button>
           </Card>
 
-          <Card
-            className="cursor-pointer transition-all hover:shadow-lg"
-            onClick={() => router.push('/check-in')}
-          >
-            <CardContent className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
-                  <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <Card className="transition-all hover:shadow-lg">
+            <button
+              className="w-full rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onClick={() => router.push('/check-in')}
+              aria-label="Start wellness check-in to track how you're feeling"
+            >
+              <CardContent className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
+                    <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Wellness Check-in</p>
+                    <p className="text-xs text-muted-foreground">Track how you&apos;re feeling</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold">Wellness Check-in</p>
-                  <p className="text-xs text-muted-foreground">Track how you&apos;re feeling</p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </CardContent>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </button>
           </Card>
         </div>
 

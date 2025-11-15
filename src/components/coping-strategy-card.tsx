@@ -61,15 +61,29 @@ const CopingStrategyCard = React.forwardRef<React.ElementRef<'div'>, CopingStrat
       onMenuClick?.(strategy.id);
     };
 
+    const handleKeyDown = onClick
+      ? (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }
+      : undefined;
+
     return (
       <Card
         ref={ref}
         className={cn(
           'transition-all duration-200',
-          onClick && 'cursor-pointer hover:scale-[1.02] hover:shadow-md',
+          onClick &&
+            'cursor-pointer hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
           className
         )}
         onClick={onClick}
+        onKeyDown={handleKeyDown}
+        tabIndex={onClick ? 0 : undefined}
+        role={onClick ? 'button' : undefined}
+        aria-label={onClick ? `View coping strategy: ${strategy.title}` : undefined}
         {...props}
       >
         <CardHeader className={compact ? 'pb-2' : undefined}>

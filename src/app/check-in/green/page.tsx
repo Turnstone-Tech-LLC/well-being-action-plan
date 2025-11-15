@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ZoneType } from '@/lib/types/zone';
 import { createCheckIn } from '@/lib/db';
+import { getUserIdentity } from '@/lib/services/userIdentityService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, CircleCheck, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
 
 /**
  * Green Zone Check-In Screen
@@ -29,6 +31,8 @@ export default function GreenZoneCheckIn() {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Sub-zones for Green mood (1-3 scale, all positive)
   const moodOptions = [
@@ -37,26 +41,42 @@ export default function GreenZoneCheckIn() {
     { value: 10, label: 'Excellent', emoji: '🌟' },
   ];
 
+  // Get user identity on mount
+  useEffect(() => {
+    getUserIdentity()
+      .then((identity) => setUserId(identity.userId))
+      .catch((err) => {
+        console.error('Failed to get user identity:', err);
+        setError('Unable to identify user. Please refresh the page.');
+      });
+  }, []);
+
   const handleSaveCheckIn = async () => {
+    if (!userId) {
+      setError('User identity not established. Please refresh the page.');
+      return;
+    }
+
     setSaving(true);
+    setError(null);
 
     try {
-      // Create check-in entry with user ID (in a real app, this would come from auth)
+      // Create check-in entry with unique user ID
       await createCheckIn({
-        userId: 'default-user', // TODO: Replace with actual user ID from auth
+        userId,
         zone: ZoneType.Green,
         moodRating: selectedMood || 9, // Default to "Great" if not specified
       });
 
       setSaved(true);
 
-      // Navigate back to home after 2 seconds
+      // Navigate back to dashboard after 2 seconds
       setTimeout(() => {
-        router.push('/');
+        router.push('/dashboard');
       }, 2000);
     } catch (error) {
       console.error('Failed to save check-in:', error);
-      // In a production app, show an error message to the user
+      setError('Failed to save check-in. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -66,20 +86,30 @@ export default function GreenZoneCheckIn() {
     router.push('/check-in');
   };
 
+  const greenColors = ZONE_COLORS[ZoneType.Green];
+
   if (saved) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-6">
-        <Card className="w-full max-w-2xl border-green-zone bg-[#154734]/5 dark:bg-[#154734]/20">
+        <Card
+          className={cn('w-full max-w-2xl border-2', greenColors.border, greenColors.background)}
+        >
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#154734]/10 dark:bg-[#154734]/30">
-              <Check className="h-10 w-10 text-green-zone dark:text-[#7FD4B8]" />
+            <div
+              className={cn(
+                'mb-6 flex h-20 w-20 items-center justify-center rounded-full',
+                greenColors.background
+              )}
+              aria-hidden="true"
+            >
+              <Check className={cn('h-10 w-10', greenColors.text)} />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-green-zone dark:text-[#7FD4B8]">
-              Check-In Saved!
-            </h2>
-            <p className="text-green-zone dark:text-[#7FD4B8]">
-              Great to hear you&apos;re doing well. Keep up the positive momentum!
-            </p>
+            <div role="status" aria-live="polite">
+              <h2 className={cn('mb-2 text-2xl font-bold', greenColors.text)}>Check-In Saved!</h2>
+              <p className={greenColors.text}>
+                Great to hear you&apos;re doing well. Keep up the positive momentum!
+              </p>
+            </div>
           </CardContent>
         </Card>
       </main>
@@ -103,22 +133,27 @@ export default function GreenZoneCheckIn() {
         </div>
 
         {/* Green Zone Indicator */}
-        <Card className="border-2 border-green-zone bg-[#154734]/5 dark:bg-[#154734]/20">
+        <Card className={cn('border-2', greenColors.border, greenColors.background)}>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#154734]/10 dark:bg-[#154734]/30">
-                <CircleCheck className="h-12 w-12 text-green-zone dark:text-[#7FD4B8]" />
+              <div
+                className={cn(
+                  'flex h-24 w-24 items-center justify-center rounded-full',
+                  greenColors.background
+                )}
+              >
+                <CircleCheck className={cn('h-12 w-12', greenColors.text)} />
               </div>
             </div>
             <div className="mb-2 flex justify-center">
-              <Badge className="bg-[#154734]/10 text-green-zone dark:bg-[#154734]/30 dark:text-[#7FD4B8]">
-                Green Zone
+              <Badge className={cn(greenColors.background, greenColors.text)}>
+                {getZoneLabel(ZoneType.Green)}
               </Badge>
             </div>
-            <CardTitle className="text-3xl text-green-zone dark:text-[#7FD4B8]">
+            <CardTitle className={cn('text-3xl', greenColors.text)}>
               You&apos;re Doing Great! 🌱
             </CardTitle>
-            <CardDescription className="text-lg text-green-zone dark:text-[#7FD4B8]">
+            <CardDescription className={cn('text-lg', greenColors.text)}>
               It&apos;s wonderful to see you in a positive place. Keep nurturing your well-being!
             </CardDescription>
           </CardHeader>
@@ -139,7 +174,7 @@ export default function GreenZoneCheckIn() {
                   className={cn(
                     'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all hover:scale-105',
                     selectedMood === option.value
-                      ? 'border-green-zone bg-[#154734]/5 dark:bg-[#154734]/20'
+                      ? cn(greenColors.border, greenColors.background)
                       : 'border-border hover:border-green-zone/50'
                   )}
                   aria-label={`Select ${option.label} mood`}
@@ -158,6 +193,17 @@ export default function GreenZoneCheckIn() {
           </CardContent>
         </Card>
 
+        {/* Error Message */}
+        {error && (
+          <Card className="border-red-500 bg-red-50 dark:bg-red-950/20">
+            <CardContent className="py-4">
+              <p className="text-center text-sm text-red-600 dark:text-red-400" role="alert">
+                {error}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Positive Affirmation */}
         <Card className="bg-muted/50">
           <CardContent className="py-6">
@@ -175,15 +221,19 @@ export default function GreenZoneCheckIn() {
             disabled={saving}
             size="lg"
             className="flex-1 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+            aria-busy={saving}
           >
             {saving ? (
               <>
-                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span
+                  className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                  aria-hidden="true"
+                />
                 Saving...
               </>
             ) : (
               <>
-                <Check className="mr-2 h-5 w-5" />
+                <Check className="mr-2 h-5 w-5" aria-hidden="true" />
                 Save Check-In
               </>
             )}

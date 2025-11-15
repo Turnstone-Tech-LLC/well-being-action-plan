@@ -61,17 +61,24 @@ const withPWA = withPWAInit({
       },
     ],
   },
-  fallbacks: {
-    document: '/offline',
-  },
 });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Empty turbopack config to silence webpack config warning
-  turbopack: {},
+  staticPageGenerationTimeout: 120,
+  typescript: {
+    // Allow build to succeed even with type errors
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    // Allow build to succeed even with ESLint errors
+    ignoreDuringBuilds: false,
+  },
+  // Skip static generation for error pages to work around Next.js 15 issue
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
 };
 
 export default withPWA(nextConfig);
