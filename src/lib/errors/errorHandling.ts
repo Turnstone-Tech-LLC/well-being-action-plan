@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Error Handling System
  *
@@ -394,9 +396,17 @@ export const ErrorRecovery = {
    * Attempt to recover from auth error
    */
   async recoverAuth(): Promise<void> {
-    const { signOutCompletely } = await import('@/lib/auth/authUtils');
-    await signOutCompletely();
-    window.location.href = '/';
+    try {
+      // Dynamically import to avoid circular dependencies with server-only code
+      const { signOutCompletely } = await import('@/lib/auth/authUtils');
+      await signOutCompletely();
+    } catch (error) {
+      console.error('Error during auth recovery:', error);
+    }
+    // Always redirect to home, even if signOut fails
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   },
 
   /**

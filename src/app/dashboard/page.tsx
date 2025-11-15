@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   Heart,
   Flame,
@@ -96,7 +97,7 @@ function SessionMessage() {
  *
  * Protected Route: Requires completed onboarding
  */
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   // Patient authentication - redirects to onboarding if not complete
   const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
@@ -516,8 +517,11 @@ export default function DashboardPage() {
                 className="flex-1 border-red-zone bg-white hover:bg-[#DC582A]/5 dark:border-[#DC582A]/50 dark:bg-[#DC582A]/10"
                 asChild
               >
-                <a href="tel:988">
-                  <Phone className="mr-2 h-4 w-4" />
+                <a
+                  href="tel:988"
+                  aria-label="Call 988 Suicide and Crisis Lifeline - Free, confidential support 24/7"
+                >
+                  <Phone className="mr-2 h-4 w-4" aria-hidden="true" />
                   Call 988 - Suicide & Crisis Lifeline
                 </a>
               </Button>
@@ -526,7 +530,10 @@ export default function DashboardPage() {
                 className="flex-1 border-red-zone bg-white hover:bg-[#DC582A]/5 dark:border-[#DC582A]/50 dark:bg-[#DC582A]/10"
                 asChild
               >
-                <a href="sms:741741">
+                <a
+                  href="sms:741741"
+                  aria-label="Text 741741 Crisis Text Line - Free, confidential support 24/7"
+                >
                   <span role="img" aria-label="SMS message" className="mr-2">
                     💬
                   </span>
@@ -551,5 +558,16 @@ export default function DashboardPage() {
         </Card>
       </div>
     </main>
+  );
+}
+
+/**
+ * Wrapped with ErrorBoundary to catch and handle rendering errors
+ */
+export default function DashboardPage() {
+  return (
+    <ErrorBoundary>
+      <DashboardContent />
+    </ErrorBoundary>
   );
 }

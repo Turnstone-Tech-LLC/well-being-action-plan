@@ -109,13 +109,21 @@ export default function OfflinePage() {
           <div className="space-y-2 text-left">
             <div className="rounded bg-white p-3 shadow-sm">
               <p className="font-semibold text-gray-900">988 Suicide & Crisis Lifeline</p>
-              <a href="tel:988" className="text-blue-600 hover:underline">
+              <a
+                href="tel:988"
+                className="text-blue-600 hover:underline"
+                aria-label="Call 988 Suicide and Crisis Lifeline - Free, confidential support 24/7"
+              >
                 Call or text 988
               </a>
             </div>
             <div className="rounded bg-white p-3 shadow-sm">
               <p className="font-semibold text-gray-900">Crisis Text Line</p>
-              <a href="sms:741741" className="text-blue-600 hover:underline">
+              <a
+                href="sms:741741"
+                className="text-blue-600 hover:underline"
+                aria-label="Text 741741 Crisis Text Line - Free, confidential support 24/7"
+              >
                 Text HOME to 741741
               </a>
             </div>

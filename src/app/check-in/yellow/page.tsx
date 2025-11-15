@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, AlertTriangle, Check, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 /**
  * Yellow Zone Check-In Screen
@@ -28,7 +30,7 @@ import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
  * - Encouraging, supportive messaging
  * - Tracks user engagement with strategies (views and usage)
  */
-export default function YellowZoneCheckIn() {
+function YellowZoneCheckInContent() {
   const router = useRouter();
   const [strategies, setStrategies] = useState<CopingStrategy[]>([]);
   const [expandedStrategyId, setExpandedStrategyId] = useState<string | null>(null);
@@ -163,6 +165,7 @@ export default function YellowZoneCheckIn() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 py-12">
+      <OfflineIndicator />
       <div className="w-full max-w-2xl space-y-6">
         {/* Header with Back Button */}
         <div className="flex items-center gap-3">
@@ -369,5 +372,16 @@ export default function YellowZoneCheckIn() {
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * Wrapped with ErrorBoundary to catch and handle rendering errors
+ */
+export default function YellowZoneCheckIn() {
+  return (
+    <ErrorBoundary>
+      <YellowZoneCheckInContent />
+    </ErrorBoundary>
   );
 }

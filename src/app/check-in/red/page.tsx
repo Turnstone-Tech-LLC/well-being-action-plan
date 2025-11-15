@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, AlertCircle, Phone, MessageSquare, Check, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 /**
  * Red Zone Check-In Screen
@@ -28,7 +30,7 @@ import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
  * - Calming color palette
  * - Tested on iOS and Android platforms
  */
-export default function RedZoneCheckIn() {
+function RedZoneCheckInContent() {
   const router = useRouter();
   const [showBreathing, setShowBreathing] = useState(false);
   const [isSafe, setIsSafe] = useState(false);
@@ -136,6 +138,7 @@ export default function RedZoneCheckIn() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#DC582A]/10 to-white p-6 py-12 dark:from-[#DC582A]/20 dark:to-background">
+      <OfflineIndicator />
       <div className="w-full max-w-2xl space-y-6">
         {/* Header with Back Button */}
         <div className="flex items-center gap-3">
@@ -205,8 +208,10 @@ export default function RedZoneCheckIn() {
                 redColors.textContrast,
                 redColors.hover
               )}
+              aria-label="Call 988 Suicide and Crisis Lifeline - Free, confidential support 24/7"
+              role="link"
             >
-              <Phone className="mr-3 h-6 w-6" />
+              <Phone className="mr-3 h-6 w-6" aria-hidden="true" />
               <div className="flex flex-col items-start">
                 <span className="font-bold">Call 988</span>
                 <span className="text-xs font-normal opacity-90">Suicide & Crisis Lifeline</span>
@@ -219,8 +224,10 @@ export default function RedZoneCheckIn() {
               size="lg"
               variant="outline"
               className={cn('w-full border-2 text-lg', redColors.border, redColors.hover)}
+              aria-label="Text 741741 Crisis Text Line - Free, confidential support 24/7"
+              role="link"
             >
-              <MessageSquare className="mr-3 h-6 w-6" />
+              <MessageSquare className="mr-3 h-6 w-6" aria-hidden="true" />
               <div className="flex flex-col items-start">
                 <span className="font-bold">Text 741741</span>
                 <span className="text-xs font-normal opacity-90">Crisis Text Line</span>
@@ -328,5 +335,16 @@ export default function RedZoneCheckIn() {
         </Card>
       </div>
     </main>
+  );
+}
+
+/**
+ * Wrapped with ErrorBoundary to catch and handle rendering errors
+ */
+export default function RedZoneCheckIn() {
+  return (
+    <ErrorBoundary>
+      <RedZoneCheckInContent />
+    </ErrorBoundary>
   );
 }
