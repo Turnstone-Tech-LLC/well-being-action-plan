@@ -22,7 +22,6 @@
  */
 
 import { z } from 'zod';
-import pako from 'pako';
 import { ZoneType } from '../types/zone';
 
 // ============================================================================
@@ -113,11 +112,11 @@ export const MAX_URL_LENGTH = 2000;
  *   zoneStrategies: [...],
  *   config: { enableNotifications: true, ... }
  * };
- * const encoded = encodePlanConfig(config);
+ * const encoded = await encodePlanConfig(config);
  * // Returns: "eJyLjgUAARUAuQ..."
  * ```
  */
-export function encodePlanConfig(config: ShareablePlanConfig): string {
+export async function encodePlanConfig(config: ShareablePlanConfig): Promise<string> {
   try {
     // Validate the input against schema
     ShareablePlanConfigSchema.parse(config);
@@ -127,6 +126,9 @@ export function encodePlanConfig(config: ShareablePlanConfig): string {
 
     // Convert string to Uint8Array for compression
     const uint8Array = new TextEncoder().encode(jsonString);
+
+    // Dynamically import pako only when needed (reduces initial bundle size by ~45KB)
+    const { default: pako } = await import('pako');
 
     // Compress using gzip
     const compressed = pako.gzip(uint8Array);
@@ -157,7 +159,7 @@ export function encodePlanConfig(config: ShareablePlanConfig): string {
  *
  * @example
  * ```typescript
- * const result = decodePlanConfig("eJyLjgUAARUAuQ...");
+ * const result = await decodePlanConfig("eJyLjgUAARUAuQ...");
  * if (result.success) {
  *   console.log(result.data.title);
  * } else {
@@ -165,7 +167,9 @@ export function encodePlanConfig(config: ShareablePlanConfig): string {
  * }
  * ```
  */
-export function decodePlanConfig(encoded: string): DecodeResult<ShareablePlanConfig> {
+export async function decodePlanConfig(
+  encoded: string
+): Promise<DecodeResult<ShareablePlanConfig>> {
   try {
     // Validate input
     if (!encoded || typeof encoded !== 'string') {
@@ -187,6 +191,9 @@ export function decodePlanConfig(encoded: string): DecodeResult<ShareablePlanCon
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
+
+    // Dynamically import pako only when needed (reduces initial bundle size by ~45KB)
+    const { default: pako } = await import('pako');
 
     // Decompress
     const decompressed = pako.ungzip(bytes);
@@ -235,8 +242,11 @@ export function decodePlanConfig(encoded: string): DecodeResult<ShareablePlanCon
  * // Returns: "https://myapp.com?plan=eJyLjgUAARUAuQ..."
  * ```
  */
-export function generateShareableUrl(config: ShareablePlanConfig, baseUrl?: string): string {
-  const encoded = encodePlanConfig(config);
+export async function generateShareableUrl(
+  config: ShareablePlanConfig,
+  baseUrl?: string
+): Promise<string> {
+  const encoded = await encodePlanConfig(config);
 
   // Use provided baseUrl or current location
   const base = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -270,7 +280,7 @@ export function generateShareableUrl(config: ShareablePlanConfig, baseUrl?: stri
  *
  * @example
  * ```typescript
- * const result = extractConfigFromUrl("https://myapp.com?plan=eJyLjgUAARUAuQ...");
+ * const result = await extractConfigFromUrl("https://myapp.com?plan=eJyLjgUAARUAuQ...");
  * if (result.success) {
  *   console.log("Loaded plan:", result.data.title);
  * } else {
@@ -278,7 +288,9 @@ export function generateShareableUrl(config: ShareablePlanConfig, baseUrl?: stri
  * }
  * ```
  */
-export function extractConfigFromUrl(url: string | URL): DecodeResult<ShareablePlanConfig> {
+export async function extractConfigFromUrl(
+  url: string | URL
+): Promise<DecodeResult<ShareablePlanConfig>> {
   try {
     const urlObj = typeof url === 'string' ? new URL(url) : url;
     const encoded = urlObj.searchParams.get(PLAN_PARAM_NAME);
@@ -290,7 +302,7 @@ export function extractConfigFromUrl(url: string | URL): DecodeResult<ShareableP
       };
     }
 
-    return decodePlanConfig(encoded);
+    return await decodePlanConfig(encoded);
   } catch (error) {
     return {
       success: false,
@@ -308,13 +320,13 @@ export function extractConfigFromUrl(url: string | URL): DecodeResult<ShareableP
  * @example
  * ```typescript
  * // In browser with URL: https://myapp.com?plan=eJyLjgUAARUAuQ...
- * const result = extractConfigFromCurrentUrl();
+ * const result = await extractConfigFromCurrentUrl();
  * if (result.success) {
  *   console.log("Loaded plan from URL:", result.data.title);
  * }
  * ```
  */
-export function extractConfigFromCurrentUrl(): DecodeResult<ShareablePlanConfig> {
+export async function extractConfigFromCurrentUrl(): Promise<DecodeResult<ShareablePlanConfig>> {
   if (typeof window === 'undefined') {
     return {
       success: false,
@@ -322,7 +334,7 @@ export function extractConfigFromCurrentUrl(): DecodeResult<ShareablePlanConfig>
     };
   }
 
-  return extractConfigFromUrl(window.location.href);
+  return await extractConfigFromUrl(window.location.href);
 }
 
 /**
@@ -334,15 +346,18 @@ export function extractConfigFromCurrentUrl(): DecodeResult<ShareablePlanConfig>
  *
  * @example
  * ```typescript
- * const length = estimateUrlLength(config);
+ * const length = await estimateUrlLength(config);
  * if (length > MAX_URL_LENGTH) {
  *   console.warn("Plan may be too large to share via URL");
  * }
  * ```
  */
-export function estimateUrlLength(config: ShareablePlanConfig, baseUrl?: string): number {
+export async function estimateUrlLength(
+  config: ShareablePlanConfig,
+  baseUrl?: string
+): Promise<number> {
   try {
-    const url = generateShareableUrl(config, baseUrl);
+    const url = await generateShareableUrl(config, baseUrl);
     return url.length;
   } catch {
     return -1; // Return -1 if estimation fails
@@ -358,23 +373,23 @@ export function estimateUrlLength(config: ShareablePlanConfig, baseUrl?: string)
  *
  * @example
  * ```typescript
- * const check = canShareViaUrl(config);
+ * const check = await canShareViaUrl(config);
  * if (!check.canShare) {
  *   console.error(check.reason);
  * }
  * ```
  */
-export function canShareViaUrl(
+export async function canShareViaUrl(
   config: ShareablePlanConfig,
   baseUrl?: string
-): {
+): Promise<{
   canShare: boolean;
   estimatedLength: number;
   reason?: string;
-} {
+}> {
   try {
     ShareablePlanConfigSchema.parse(config);
-    const length = estimateUrlLength(config, baseUrl);
+    const length = await estimateUrlLength(config, baseUrl);
 
     if (length === -1) {
       return {

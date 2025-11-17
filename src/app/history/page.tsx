@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 interface DayCheckIns {
   date: Date;
@@ -29,7 +31,7 @@ interface CalendarDay {
  *
  * Protected Route: Requires completed onboarding
  */
-export default function MoodHistoryPage() {
+function MoodHistoryContent() {
   const router = useRouter();
   // Patient authentication - redirects to onboarding if not complete
   const { loading: authLoading, isOnboardingComplete } = usePatientAuth();
@@ -214,6 +216,7 @@ export default function MoodHistoryPage() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+      <OfflineIndicator />
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -475,5 +478,16 @@ export default function MoodHistoryPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Wrapped with ErrorBoundary to catch and handle rendering errors
+ */
+export default function MoodHistoryPage() {
+  return (
+    <ErrorBoundary>
+      <MoodHistoryContent />
+    </ErrorBoundary>
   );
 }

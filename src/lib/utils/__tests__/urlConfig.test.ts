@@ -63,21 +63,21 @@ describe('URL Config - Basic Encoding and Decoding', () => {
     },
   };
 
-  it('should encode a plan configuration into a string', () => {
-    const encoded = encodePlanConfig(sampleConfig);
+  it('should encode a plan configuration into a string', async () => {
+    const encoded = await encodePlanConfig(sampleConfig);
     expect(encoded).toBeTruthy();
     expect(typeof encoded).toBe('string');
     expect(encoded.length).toBeGreaterThan(0);
   });
 
-  it('should produce URL-safe base64 (no +, /, =)', () => {
-    const encoded = encodePlanConfig(sampleConfig);
+  it('should produce URL-safe base64 (no +, /, =)', async () => {
+    const encoded = await encodePlanConfig(sampleConfig);
     expect(encoded).not.toMatch(/[+/=]/);
   });
 
-  it('should decode an encoded configuration', () => {
-    const encoded = encodePlanConfig(sampleConfig);
-    const result = decodePlanConfig(encoded);
+  it('should decode an encoded configuration', async () => {
+    const encoded = await encodePlanConfig(sampleConfig);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -88,9 +88,9 @@ describe('URL Config - Basic Encoding and Decoding', () => {
     }
   });
 
-  it('should maintain data integrity through encode/decode cycle', () => {
-    const encoded = encodePlanConfig(sampleConfig);
-    const result = decodePlanConfig(encoded);
+  it('should maintain data integrity through encode/decode cycle', async () => {
+    const encoded = await encodePlanConfig(sampleConfig);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -98,7 +98,7 @@ describe('URL Config - Basic Encoding and Decoding', () => {
     }
   });
 
-  it('should handle minimal configuration', () => {
+  it('should handle minimal configuration', async () => {
     const minimalConfig: ShareablePlanConfig = {
       title: 'Minimal Plan',
       zoneStrategies: [],
@@ -109,8 +109,8 @@ describe('URL Config - Basic Encoding and Decoding', () => {
       },
     };
 
-    const encoded = encodePlanConfig(minimalConfig);
-    const result = decodePlanConfig(encoded);
+    const encoded = await encodePlanConfig(minimalConfig);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -118,7 +118,7 @@ describe('URL Config - Basic Encoding and Decoding', () => {
     }
   });
 
-  it('should handle unicode characters in strings', () => {
+  it('should handle unicode characters in strings', async () => {
     const unicodeConfig: ShareablePlanConfig = {
       title: 'Plan with 表情符號 and émojis 🌟',
       description: 'Testing unicode: こんにちは 世界 🌍',
@@ -130,8 +130,8 @@ describe('URL Config - Basic Encoding and Decoding', () => {
       },
     };
 
-    const encoded = encodePlanConfig(unicodeConfig);
-    const result = decodePlanConfig(encoded);
+    const encoded = await encodePlanConfig(unicodeConfig);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -142,16 +142,16 @@ describe('URL Config - Basic Encoding and Decoding', () => {
 });
 
 describe('URL Config - Validation and Error Handling', () => {
-  it('should reject invalid configuration (missing required fields)', () => {
+  it('should reject invalid configuration (missing required fields)', async () => {
     const invalidConfig = {
       description: 'Missing title',
       zoneStrategies: [],
     } as unknown as ShareablePlanConfig;
 
-    expect(() => encodePlanConfig(invalidConfig)).toThrow();
+    await expect(encodePlanConfig(invalidConfig)).rejects.toThrow();
   });
 
-  it('should reject invalid zone type', () => {
+  it('should reject invalid zone type', async () => {
     const invalidZoneConfig = {
       title: 'Invalid Zone Plan',
       zoneStrategies: [
@@ -168,37 +168,37 @@ describe('URL Config - Validation and Error Handling', () => {
       },
     } as ShareablePlanConfig;
 
-    expect(() => encodePlanConfig(invalidZoneConfig)).toThrow();
+    await expect(encodePlanConfig(invalidZoneConfig)).rejects.toThrow();
   });
 
-  it('should return error for invalid encoded string', () => {
-    const result = decodePlanConfig('invalid-base64-string');
+  it('should return error for invalid encoded string', async () => {
+    const result = await decodePlanConfig('invalid-base64-string');
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toBeTruthy();
     }
   });
 
-  it('should return error for empty string', () => {
-    const result = decodePlanConfig('');
+  it('should return error for empty string', async () => {
+    const result = await decodePlanConfig('');
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toContain('Invalid input');
     }
   });
 
-  it('should return error for malformed JSON', () => {
+  it('should return error for malformed JSON', async () => {
     // Create a base64 string that decodes to invalid JSON
     const invalidJson = btoa('not valid json{]')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=/g, '');
 
-    const result = decodePlanConfig(invalidJson);
+    const result = await decodePlanConfig(invalidJson);
     expect(result.success).toBe(false);
   });
 
-  it('should validate against schema after decoding', () => {
+  it('should validate against schema after decoding', async () => {
     const validConfig: ShareablePlanConfig = {
       title: 'Valid Plan',
       zoneStrategies: [],
@@ -209,12 +209,12 @@ describe('URL Config - Validation and Error Handling', () => {
       },
     };
 
-    const encoded = encodePlanConfig(validConfig);
+    const encoded = await encodePlanConfig(validConfig);
 
     // Manually corrupt the data by decoding, modifying, and re-encoding
     const corrupted = `${encoded}corrupt`;
 
-    const result = decodePlanConfig(corrupted);
+    const result = await decodePlanConfig(corrupted);
     expect(result.success).toBe(false);
   });
 });
@@ -230,15 +230,15 @@ describe('URL Config - URL Generation', () => {
     },
   };
 
-  it('should generate a complete URL with plan parameter', () => {
-    const url = generateShareableUrl(testConfig, 'https://example.com');
+  it('should generate a complete URL with plan parameter', async () => {
+    const url = await generateShareableUrl(testConfig, 'https://example.com');
     expect(url).toContain('https://example.com');
     expect(url).toContain(`${PLAN_PARAM_NAME}=`);
   });
 
-  it('should extract config from a generated URL', () => {
-    const url = generateShareableUrl(testConfig, 'https://example.com');
-    const result = extractConfigFromUrl(url);
+  it('should extract config from a generated URL', async () => {
+    const url = await generateShareableUrl(testConfig, 'https://example.com');
+    const result = await extractConfigFromUrl(url);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -246,9 +246,9 @@ describe('URL Config - URL Generation', () => {
     }
   });
 
-  it('should maintain data integrity through URL generation and extraction', () => {
-    const url = generateShareableUrl(testConfig, 'https://example.com');
-    const result = extractConfigFromUrl(url);
+  it('should maintain data integrity through URL generation and extraction', async () => {
+    const url = await generateShareableUrl(testConfig, 'https://example.com');
+    const result = await extractConfigFromUrl(url);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -256,9 +256,9 @@ describe('URL Config - URL Generation', () => {
     }
   });
 
-  it('should return error when plan parameter is missing', () => {
+  it('should return error when plan parameter is missing', async () => {
     const url = 'https://example.com?other=param';
-    const result = extractConfigFromUrl(url);
+    const result = await extractConfigFromUrl(url);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -266,26 +266,26 @@ describe('URL Config - URL Generation', () => {
     }
   });
 
-  it('should handle URLs with multiple query parameters', () => {
-    const url = generateShareableUrl(testConfig, 'https://example.com?foo=bar');
+  it('should handle URLs with multiple query parameters', async () => {
+    const url = await generateShareableUrl(testConfig, 'https://example.com?foo=bar');
     expect(url).toContain('foo=bar');
     expect(url).toContain(`${PLAN_PARAM_NAME}=`);
 
-    const result = extractConfigFromUrl(url);
+    const result = await extractConfigFromUrl(url);
     expect(result.success).toBe(true);
   });
 
-  it('should handle URLs with hash fragments', () => {
+  it('should handle URLs with hash fragments', async () => {
     const baseUrl = 'https://example.com#section';
-    const url = generateShareableUrl(testConfig, baseUrl);
-    const result = extractConfigFromUrl(url);
+    const url = await generateShareableUrl(testConfig, baseUrl);
+    const result = await extractConfigFromUrl(url);
 
     expect(result.success).toBe(true);
   });
 });
 
 describe('URL Config - Size Estimation and Validation', () => {
-  it('should estimate URL length', () => {
+  it('should estimate URL length', async () => {
     const testConfig: ShareablePlanConfig = {
       title: 'Test Plan',
       zoneStrategies: [],
@@ -296,12 +296,12 @@ describe('URL Config - Size Estimation and Validation', () => {
       },
     };
 
-    const length = estimateUrlLength(testConfig, 'https://example.com');
+    const length = await estimateUrlLength(testConfig, 'https://example.com');
     expect(length).toBeGreaterThan(0);
     expect(typeof length).toBe('number');
   });
 
-  it('should validate if plan can be shared', () => {
+  it('should validate if plan can be shared', async () => {
     const smallConfig: ShareablePlanConfig = {
       title: 'Small Plan',
       zoneStrategies: [],
@@ -312,13 +312,13 @@ describe('URL Config - Size Estimation and Validation', () => {
       },
     };
 
-    const result = canShareViaUrl(smallConfig, 'https://example.com');
+    const result = await canShareViaUrl(smallConfig, 'https://example.com');
     expect(result.canShare).toBe(true);
     expect(result.estimatedLength).toBeGreaterThan(0);
     expect(result.estimatedLength).toBeLessThan(MAX_URL_LENGTH);
   });
 
-  it('should detect when plan is too large', () => {
+  it('should detect when plan is too large', async () => {
     // Create a very large config that might exceed URL limits
     const largeConfig: ShareablePlanConfig = {
       title: 'Very Large Plan',
@@ -344,7 +344,7 @@ describe('URL Config - Size Estimation and Validation', () => {
       },
     };
 
-    const result = canShareViaUrl(largeConfig, 'https://example.com');
+    const result = await canShareViaUrl(largeConfig, 'https://example.com');
     expect(result.estimatedLength).toBeGreaterThan(0);
 
     if (!result.canShare) {
@@ -353,20 +353,20 @@ describe('URL Config - Size Estimation and Validation', () => {
     }
   });
 
-  it('should return false for invalid configuration', () => {
+  it('should return false for invalid configuration', async () => {
     const invalidConfig = {
       // Missing required title field
       zoneStrategies: [],
     } as unknown as ShareablePlanConfig;
 
-    const result = canShareViaUrl(invalidConfig);
+    const result = await canShareViaUrl(invalidConfig);
     expect(result.canShare).toBe(false);
     expect(result.reason).toContain('Invalid configuration');
   });
 });
 
 describe('URL Config - Compression Effectiveness', () => {
-  it('should produce smaller output with compression', () => {
+  it('should produce smaller output with compression', async () => {
     const config: ShareablePlanConfig = {
       title: 'Plan with repetitive data',
       description: 'test '.repeat(100), // Repetitive data compresses well
@@ -380,7 +380,7 @@ describe('URL Config - Compression Effectiveness', () => {
     };
 
     const jsonString = JSON.stringify(config);
-    const encoded = encodePlanConfig(config);
+    const encoded = await encodePlanConfig(config);
 
     // Compressed base64 should be smaller than original JSON
     // (though base64 adds ~33% overhead, compression should offset this for repetitive data)
@@ -392,7 +392,7 @@ describe('URL Config - Compression Effectiveness', () => {
 });
 
 describe('URL Config - Edge Cases', () => {
-  it('should handle empty arrays', () => {
+  it('should handle empty arrays', async () => {
     const config: ShareablePlanConfig = {
       title: 'Empty Arrays Plan',
       zoneStrategies: [
@@ -410,8 +410,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodePlanConfig(config);
-    const result = decodePlanConfig(encoded);
+    const encoded = await encodePlanConfig(config);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -420,7 +420,7 @@ describe('URL Config - Edge Cases', () => {
     }
   });
 
-  it('should handle optional fields being undefined', () => {
+  it('should handle optional fields being undefined', async () => {
     const config: ShareablePlanConfig = {
       title: 'Minimal Optional Fields',
       // description is optional - omitted
@@ -442,8 +442,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodePlanConfig(config);
-    const result = decodePlanConfig(encoded);
+    const encoded = await encodePlanConfig(config);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -452,7 +452,7 @@ describe('URL Config - Edge Cases', () => {
     }
   });
 
-  it('should handle special characters in strings', () => {
+  it('should handle special characters in strings', async () => {
     const config: ShareablePlanConfig = {
       title: 'Special chars: <>&"\'`',
       description: 'Newlines\nand\ttabs\rand\fother\bescapes',
@@ -464,8 +464,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodePlanConfig(config);
-    const result = decodePlanConfig(encoded);
+    const encoded = await encodePlanConfig(config);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -474,7 +474,7 @@ describe('URL Config - Edge Cases', () => {
     }
   });
 
-  it('should handle all zone types', () => {
+  it('should handle all zone types', async () => {
     const config: ShareablePlanConfig = {
       title: 'All Zones',
       zoneStrategies: [
@@ -501,8 +501,8 @@ describe('URL Config - Edge Cases', () => {
       },
     };
 
-    const encoded = encodePlanConfig(config);
-    const result = decodePlanConfig(encoded);
+    const encoded = await encodePlanConfig(config);
+    const result = await decodePlanConfig(encoded);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -513,10 +513,10 @@ describe('URL Config - Edge Cases', () => {
     }
   });
 
-  it('should handle all theme options', () => {
+  it('should handle all theme options', async () => {
     const themes = ['light', 'dark', 'auto'] as const;
 
-    themes.forEach((theme) => {
+    for (const theme of themes) {
       const config: ShareablePlanConfig = {
         title: `Plan with ${theme} theme`,
         zoneStrategies: [],
@@ -528,13 +528,13 @@ describe('URL Config - Edge Cases', () => {
         },
       };
 
-      const encoded = encodePlanConfig(config);
-      const result = decodePlanConfig(encoded);
+      const encoded = await encodePlanConfig(config);
+      const result = await decodePlanConfig(encoded);
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.config.theme).toBe(theme);
       }
-    });
+    }
   });
 });

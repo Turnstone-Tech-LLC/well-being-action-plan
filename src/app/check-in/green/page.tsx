@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, CircleCheck, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 /**
  * Green Zone Check-In Screen
@@ -26,7 +28,7 @@ import { ZONE_COLORS, getZoneLabel } from '@/lib/utils/zoneUtils';
  * - Success confirmation message
  * - Navigation back to home screen
  */
-export default function GreenZoneCheckIn() {
+function GreenZoneCheckInContent() {
   const router = useRouter();
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -118,6 +120,7 @@ export default function GreenZoneCheckIn() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 py-12">
+      <OfflineIndicator />
       <div className="w-full max-w-2xl space-y-6">
         {/* Header with Back Button */}
         <div className="flex items-center gap-3">
@@ -244,5 +247,16 @@ export default function GreenZoneCheckIn() {
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * Wrapped with ErrorBoundary to catch and handle rendering errors
+ */
+export default function GreenZoneCheckIn() {
+  return (
+    <ErrorBoundary>
+      <GreenZoneCheckInContent />
+    </ErrorBoundary>
   );
 }

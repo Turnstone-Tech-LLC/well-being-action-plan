@@ -9,6 +9,8 @@
  * without proper credentials, but patient-facing features will work fine.
  */
 
+'use server';
+
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseUrl, getSupabaseAnonKey } from './config';

@@ -75,8 +75,8 @@ export function PlanUrlLoader({
     // Only run once on mount
     if (loadStatus !== 'idle') return;
 
-    // Use setTimeout to avoid setState directly in effect
-    const timer = setTimeout(() => {
+    // Use async IIFE to handle async operations in useEffect
+    const loadPlan = async () => {
       setLoadStatus('loading');
 
       if (debug) {
@@ -84,7 +84,7 @@ export function PlanUrlLoader({
       }
 
       // Extract plan from URL
-      const result = extractConfigFromCurrentUrl();
+      const result = await extractConfigFromCurrentUrl();
 
       if (result.success) {
         if (debug) {
@@ -130,9 +130,9 @@ export function PlanUrlLoader({
           setLoadStatus('idle');
         }
       }
-    }, 0);
+    };
 
-    return () => clearTimeout(timer);
+    loadPlan();
   }, [loadStatus, onPlanLoaded, onError, clearUrlAfterLoad, debug]);
 
   // This component doesn't render anything
@@ -165,9 +165,9 @@ export function usePlanFromUrl(options?: { clearUrlAfterLoad?: boolean; autoLoad
   useEffect(() => {
     if (!autoLoad) return;
 
-    // Use setTimeout to avoid setState directly in effect
-    const timer = setTimeout(() => {
-      const result = extractConfigFromCurrentUrl();
+    // Use async IIFE to handle async operations in useEffect
+    const loadPlan = async () => {
+      const result = await extractConfigFromCurrentUrl();
 
       if (result.success) {
         setLoadedPlan(result.data);
@@ -194,17 +194,17 @@ export function usePlanFromUrl(options?: { clearUrlAfterLoad?: boolean; autoLoad
       }
 
       setIsLoading(false);
-    }, 0);
+    };
 
-    return () => clearTimeout(timer);
+    loadPlan();
   }, [autoLoad, clearUrlAfterLoad]);
 
-  const reload = () => {
+  const reload = async () => {
     setIsLoading(true);
     setError(null);
     setLoadedPlan(null);
 
-    const result = extractConfigFromCurrentUrl();
+    const result = await extractConfigFromCurrentUrl();
 
     if (result.success) {
       setLoadedPlan(result.data);
