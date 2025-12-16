@@ -1,59 +1,95 @@
-<script lang="ts">
-	import Counter from './Counter.svelte';
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcomeFallback from '$lib/images/svelte-welcome.png';
-</script>
-
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>Well-Being Action Plan</title>
+	<meta name="description" content="A shared protocol for patient well-being between providers and patients" />
 </svelte:head>
 
-<section>
-	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcomeFallback} alt="Welcome" />
-			</picture>
-		</span>
+<section class="hero">
+	<div class="hero-content">
+		<h1>Well-Being Action Plan</h1>
+		<p class="tagline">
+			A shared protocol supporting your well-being journey
+		</p>
+		<div class="cta-group">
+			<a href="/restore" class="btn btn-primary">
+				Restore Your Plan
+			</a>
+			<a href="/provider/login" class="btn btn-outline">
+				Provider Access
+			</a>
+		</div>
+	</div>
+</section>
 
-		to your new<br />SvelteKit app
-	</h1>
-
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
-
-	<Counter />
+<section class="features">
+	<div class="features-content">
+		<div class="feature">
+			<h3>Privacy First</h3>
+			<p>Your data stays on your device. No accounts required for patients.</p>
+		</div>
+		<div class="feature">
+			<h3>Shared Protocol</h3>
+			<p>Work together with your provider using a common framework.</p>
+		</div>
+		<div class="feature">
+			<h3>Your Control</h3>
+			<p>Export, backup, and manage your well-being data on your terms.</p>
+		</div>
+	</div>
 </section>
 
 <style>
-	section {
+	.hero {
+		background-color: var(--color-bg-subtle);
+		padding: var(--space-16) var(--space-4);
+		text-align: center;
+	}
+
+	.hero-content {
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.hero h1 {
+		color: var(--color-primary);
+		margin-bottom: var(--space-4);
+	}
+
+	.tagline {
+		font-size: var(--font-size-xl);
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-8);
+	}
+
+	.cta-group {
 		display: flex;
-		flex-direction: column;
+		gap: var(--space-4);
 		justify-content: center;
-		align-items: center;
-		flex: 0.6;
+		flex-wrap: wrap;
 	}
 
-	h1 {
-		width: 100%;
+	.features {
+		padding: var(--space-16) var(--space-4);
 	}
 
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
+	.features-content {
+		max-width: var(--max-width);
+		margin: 0 auto;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: var(--space-8);
 	}
 
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
+	.feature {
+		text-align: center;
+		padding: var(--space-6);
+	}
+
+	.feature h3 {
+		color: var(--color-primary);
+		margin-bottom: var(--space-3);
+	}
+
+	.feature p {
+		color: var(--color-text-muted);
 	}
 </style>
