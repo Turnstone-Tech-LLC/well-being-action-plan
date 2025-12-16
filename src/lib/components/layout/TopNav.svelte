@@ -1,22 +1,38 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+
+	type UserState = 'unauthenticated' | 'provider' | 'patient';
+
+	interface Props {
+		userState?: UserState;
+		onClearData?: () => void;
+	}
+
+	let { userState = 'unauthenticated', onClearData }: Props = $props();
 </script>
 
 <header>
 	<nav>
 		<a href="/" class="logo" aria-label="Well-Being Action Plan Home">
-			<span class="logo-text">WBAP</span>
+			<img src="/logo-small.png" alt="" class="logo-img" />
+			<span class="logo-text">Well-Being Action Plan</span>
 		</a>
 
 		<ul class="nav-links">
 			<li>
-				<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
+				<a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
 			</li>
-			<li>
-				<a href="/provider/login" class:active={$page.url.pathname.startsWith('/provider')}>
-					Provider
-				</a>
-			</li>
+			{#if userState === 'provider'}
+				<li>
+					<button type="button" class="nav-button" onclick={() => console.log('Log out')}>
+						Log Out
+					</button>
+				</li>
+			{:else if userState === 'patient'}
+				<li>
+					<button type="button" class="nav-button" onclick={onClearData}>Clear Data</button>
+				</li>
+			{/if}
 		</ul>
 	</nav>
 </header>
@@ -52,6 +68,11 @@
 		color: var(--color-accent);
 	}
 
+	.logo-img {
+		height: 2rem;
+		width: auto;
+	}
+
 	.logo-text {
 		letter-spacing: 0.05em;
 	}
@@ -62,6 +83,7 @@
 		margin: 0;
 		padding: 0;
 		gap: var(--space-6);
+		align-items: center;
 	}
 
 	.nav-links a {
@@ -89,5 +111,18 @@
 		right: 0;
 		height: 2px;
 		background-color: var(--color-accent);
+	}
+
+	.nav-button {
+		background: transparent;
+		border: none;
+		color: white;
+		font-weight: 500;
+		padding: var(--space-2) 0;
+		cursor: pointer;
+	}
+
+	.nav-button:hover {
+		color: var(--color-accent);
 	}
 </style>
