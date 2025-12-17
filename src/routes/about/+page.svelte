@@ -308,7 +308,7 @@
 	}
 
 	.zone-yellow h3 {
-		color: #f57f17;
+		color: #bf6000; /* Darkened for WCAG AA contrast (3:1 on #fffde7) */
 	}
 
 	.zone-red {

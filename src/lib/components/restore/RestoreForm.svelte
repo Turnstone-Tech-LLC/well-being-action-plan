@@ -170,18 +170,17 @@
 		<p>Taking you to your plan...</p>
 	</div>
 {:else}
-	<form onsubmit={handleSubmit} class="restore-form">
+	<form onsubmit={handleSubmit} class="restore-form" aria-label="Restore backup">
 		<!-- File Upload Area -->
 		<div
 			class="upload-area"
 			class:drag-over={isDragOver}
 			class:has-file={selectedFile !== null}
-			role="button"
-			tabindex="0"
+			role="region"
+			aria-label="File upload drop zone"
 			ondragover={handleDragOver}
 			ondragleave={handleDragLeave}
 			ondrop={handleDrop}
-			onkeydown={(e) => e.key === 'Enter' && fileInputRef?.click()}
 		>
 			{#if selectedFile}
 				<div class="selected-file">
@@ -221,7 +220,7 @@
 					</button>
 				</div>
 			{:else}
-				<div class="upload-icon">
+				<div class="upload-icon" aria-hidden="true">
 					<svg
 						width="48"
 						height="48"
@@ -237,15 +236,16 @@
 						<line x1="12" y1="3" x2="12" y2="15" />
 					</svg>
 				</div>
-				<p class="upload-text">Drag and drop your backup file here, or</p>
+				<p class="upload-text" id="upload-instructions">Drag and drop your backup file here, or</p>
 				<label class="btn btn-outline file-select-btn">
-					Choose File
+					<span>Choose File</span>
 					<input
 						bind:this={fileInputRef}
 						type="file"
 						accept=".wbap,.json"
 						class="visually-hidden"
 						onchange={handleFileSelect}
+						aria-describedby="upload-instructions"
 					/>
 				</label>
 			{/if}
@@ -262,6 +262,9 @@
 					placeholder="Enter your recovery passphrase"
 					autocomplete="off"
 					disabled={restoreState === 'restoring'}
+					aria-describedby="passphrase-help{errorMessage ? ' passphrase-error' : ''}"
+					aria-invalid={errorMessage ? 'true' : undefined}
+					required
 				/>
 				<button
 					type="button"
@@ -302,7 +305,7 @@
 					{/if}
 				</button>
 			</div>
-			<p class="helper-text">
+			<p id="passphrase-help" class="helper-text">
 				This is the passphrase you created when you made your backup. Take your time - there's no
 				rush.
 			</p>
@@ -310,7 +313,7 @@
 
 		<!-- Error Message -->
 		{#if errorMessage}
-			<div class="error-message" role="alert">
+			<div id="passphrase-error" class="error-message" role="alert" aria-live="assertive">
 				<svg
 					width="20"
 					height="20"
@@ -320,6 +323,7 @@
 					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
+					aria-hidden="true"
 				>
 					<circle cx="12" cy="12" r="10" />
 					<line x1="12" y1="8" x2="12" y2="12" />
@@ -330,9 +334,14 @@
 		{/if}
 
 		<!-- Submit Button -->
-		<button type="submit" class="btn btn-primary submit-btn" disabled={!canSubmit}>
+		<button
+			type="submit"
+			class="btn btn-primary submit-btn"
+			disabled={!canSubmit}
+			aria-busy={restoreState === 'restoring'}
+		>
 			{#if restoreState === 'restoring'}
-				<span class="spinner"></span>
+				<span class="spinner" aria-hidden="true"></span>
 				Restoring...
 			{:else}
 				Restore My Plan
@@ -356,14 +365,11 @@
 		transition:
 			border-color 0.15s ease,
 			background-color 0.15s ease;
-		cursor: pointer;
 	}
 
-	.upload-area:hover,
-	.upload-area:focus {
+	.upload-area:has(.file-select-btn:focus-within) {
 		border-color: var(--color-primary);
 		background-color: var(--color-bg-subtle);
-		outline: none;
 	}
 
 	.upload-area.drag-over {

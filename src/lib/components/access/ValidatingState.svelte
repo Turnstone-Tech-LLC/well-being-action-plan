@@ -6,7 +6,7 @@
 	let { message = 'Validating your access code...' }: Props = $props();
 </script>
 
-<div class="validating-state">
+<div class="validating-state" role="status" aria-live="polite" aria-busy="true">
 	<div class="spinner" aria-hidden="true"></div>
 	<p class="message">{message}</p>
 </div>
