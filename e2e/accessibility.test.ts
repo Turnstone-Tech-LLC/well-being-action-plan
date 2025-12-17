@@ -135,7 +135,7 @@ test.describe('Accessibility', () => {
 
 	test.describe('Provider Login Page', () => {
 		test('has no accessibility violations', async ({ page }) => {
-			await page.goto('/provider/login');
+			await page.goto('/auth');
 
 			const accessibilityScanResults = await new AxeBuilder({ page })
 				.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -145,16 +145,12 @@ test.describe('Accessibility', () => {
 		});
 
 		test('form inputs have required attribute', async ({ page }) => {
-			await page.goto('/provider/login');
+			await page.goto('/auth');
 
 			const emailInput = page.locator('#email');
-			const passwordInput = page.locator('#password');
 
 			await expect(emailInput).toHaveAttribute('required');
-			await expect(passwordInput).toHaveAttribute('required');
-
 			await expect(emailInput).toHaveAttribute('aria-required', 'true');
-			await expect(passwordInput).toHaveAttribute('aria-required', 'true');
 		});
 	});
 
