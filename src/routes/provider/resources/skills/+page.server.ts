@@ -8,17 +8,24 @@ export interface SkillsPageData {
 }
 
 export const load: PageServerLoad = async ({ locals, parent }): Promise<SkillsPageData> => {
-	// Get user from parent layout
-	const { user } = await parent();
+	// Get provider from parent layout (already authenticated)
+	const { provider } = await parent();
 
-	// Fetch provider profile to get organization_id
-	const { data: providerProfile } = await locals.supabase
-		.from('provider_profiles')
-		.select('*')
-		.eq('id', user.id)
-		.single();
+	const orgId = provider?.organization_id;
 
-	const orgId = providerProfile?.organization_id;
+	// Map provider from layout to ProviderProfile type
+	const providerProfile: ProviderProfile | null = provider
+		? {
+				id: provider.id,
+				organization_id: provider.organization_id,
+				email: provider.email,
+				name: provider.name,
+				role: provider.role,
+				settings: {},
+				created_at: '',
+				updated_at: ''
+			}
+		: null;
 
 	// Fetch skills: global (org_id is null) OR org-specific
 	let query = locals.supabase
