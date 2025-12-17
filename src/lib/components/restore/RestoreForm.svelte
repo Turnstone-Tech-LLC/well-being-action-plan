@@ -2,8 +2,17 @@
 	import { restoreBackup, isValidBackupFile, BACKUP_FILE_EXTENSION } from '$lib/crypto/backup';
 	import { saveLocalPlan, generateDeviceInstallId } from '$lib/db/index';
 	import { goto } from '$app/navigation';
+	import RestoreError from './RestoreError.svelte';
+	import {
+		detectRestoreErrorType,
+		INLINE_PASSPHRASE_ERROR,
+		type RestoreErrorType
+	} from '$lib/restore/errors';
 
 	type RestoreState = 'idle' | 'restoring' | 'success' | 'error';
+
+	// Threshold for switching from inline error to full error state
+	const MAX_INLINE_FAILURES = 2;
 
 	let restoreState = $state<RestoreState>('idle');
 	let errorMessage = $state('');
@@ -12,6 +21,8 @@
 	let showPassphrase = $state(false);
 	let isDragOver = $state(false);
 	let fileInputRef: HTMLInputElement | null = $state(null);
+	let failureCount = $state(0);
+	let errorType = $state<RestoreErrorType>('unknown');
 
 	function handleFileSelect(event: Event) {
 		const input = event.target as HTMLInputElement;
@@ -82,15 +93,49 @@
 			});
 
 			restoreState = 'success';
+			failureCount = 0;
 
 			// Redirect after brief success message
 			setTimeout(() => {
 				goto('/');
 			}, 1500);
 		} catch (err) {
-			restoreState = 'error';
-			errorMessage = err instanceof Error ? err.message : 'Failed to restore backup';
+			handleRestoreError(err);
 		}
+	}
+
+	function handleRestoreError(error: unknown) {
+		const detectedType = detectRestoreErrorType(error);
+		failureCount++;
+
+		// For passphrase errors with fewer than MAX_INLINE_FAILURES, show inline error
+		if (detectedType === 'wrong_passphrase' && failureCount < MAX_INLINE_FAILURES) {
+			errorMessage = INLINE_PASSPHRASE_ERROR;
+			restoreState = 'idle';
+			return;
+		}
+
+		// Show full error state for other errors or after multiple failures
+		errorType = detectedType;
+		restoreState = 'error';
+		errorMessage = '';
+	}
+
+	function handleTryAgain() {
+		// Reset form state without page reload
+		restoreState = 'idle';
+		selectedFile = null;
+		passphrase = '';
+		failureCount = 0;
+		errorMessage = '';
+		errorType = 'unknown';
+		if (fileInputRef) {
+			fileInputRef.value = '';
+		}
+	}
+
+	function handleReturnHome() {
+		goto('/');
 	}
 
 	function togglePassphraseVisibility() {
@@ -102,7 +147,9 @@
 	);
 </script>
 
-{#if restoreState === 'success'}
+{#if restoreState === 'error'}
+	<RestoreError {errorType} onTryAgain={handleTryAgain} onReturnHome={handleReturnHome} />
+{:else if restoreState === 'success'}
 	<div class="success-message" role="status" aria-live="polite">
 		<div class="success-icon">
 			<svg
