@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HelpMethod } from '$lib/types/database';
 	import HelpMethodsList from '$lib/components/resources/HelpMethodsList.svelte';
-	import DeleteHelpMethodModal from '$lib/components/resources/DeleteHelpMethodModal.svelte';
+	import { DeleteResourceModal } from '$lib/components/shared';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 
@@ -160,37 +160,40 @@
 	/>
 </section>
 
-<DeleteHelpMethodModal
+<DeleteResourceModal
 	open={showDeleteModal}
-	methodTitle={methodToDelete?.title ?? ''}
+	itemName={methodToDelete?.title ?? ''}
+	title="Delete help method?"
 	error={deleteError}
-	{isDeleting}
+	loading={isDeleting}
 	onCancel={handleCancelDelete}
 >
-	<form
-		method="POST"
-		action="?/delete"
-		use:enhance={() => {
-			isDeleting = true;
-			deleteError = null;
-			return async ({ result, update }) => {
-				isDeleting = false;
-				if (result.type === 'failure' && result.data?.error) {
-					deleteError = result.data.error as string;
-				} else if (result.type === 'success') {
-					showDeleteModal = false;
-					methodToDelete = null;
-					await update();
-				}
-			};
-		}}
-	>
-		<input type="hidden" name="id" value={methodToDelete?.id ?? ''} />
-		<button type="submit" class="btn btn-destructive" disabled={isDeleting}>
-			{isDeleting ? 'Deleting...' : 'Delete Method'}
-		</button>
-	</form>
-</DeleteHelpMethodModal>
+	{#snippet actions()}
+		<form
+			method="POST"
+			action="?/delete"
+			use:enhance={() => {
+				isDeleting = true;
+				deleteError = null;
+				return async ({ result, update }) => {
+					isDeleting = false;
+					if (result.type === 'failure' && result.data?.error) {
+						deleteError = result.data.error as string;
+					} else if (result.type === 'success') {
+						showDeleteModal = false;
+						methodToDelete = null;
+						await update();
+					}
+				};
+			}}
+		>
+			<input type="hidden" name="id" value={methodToDelete?.id ?? ''} />
+			<button type="submit" class="btn btn-destructive" disabled={isDeleting}>
+				{isDeleting ? 'Deleting...' : 'Delete Method'}
+			</button>
+		</form>
+	{/snippet}
+</DeleteResourceModal>
 
 <style>
 	.help-methods-page {
