@@ -33,14 +33,10 @@
 				/>
 			</div>
 
-			<button type="submit" class="btn btn-primary btn-full">
-				Sign In
-			</button>
+			<button type="submit" class="btn btn-primary btn-full"> Sign In </button>
 		</form>
 
-		<p class="help-text">
-			Contact your administrator if you need access.
-		</p>
+		<p class="help-text">Contact your administrator if you need access.</p>
 	</div>
 </section>
 
@@ -98,7 +94,9 @@
 		padding: var(--space-3) var(--space-4);
 		border: 1px solid var(--color-gray-300);
 		border-radius: var(--radius-md);
-		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
 	}
 
 	.form-group input:focus {

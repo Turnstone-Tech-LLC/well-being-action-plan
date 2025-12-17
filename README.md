@@ -45,12 +45,14 @@ Patient check-ins are never automatically transmitted to the backend.
 The application is delivered via a single URL and supports two distinct modes:
 
 ### Patient mode
+
 - Accessed via temporary install or update links
 - No account creation
 - Local-only storage for check-ins (IndexedDB)
 - Encrypted backups for patient-controlled recovery
 
 ### Provider mode
+
 - Invite-only access
 - Email-based authentication
 - Scoped to an organization

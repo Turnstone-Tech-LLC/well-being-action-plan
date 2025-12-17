@@ -23,6 +23,14 @@ Well-Being Action Plan - A SvelteKit application for youth well-being support, b
 - `pnpm run test` - Run Vitest tests
 - `pnpm run test:e2e` - Run Playwright e2e tests
 
+## Development Workflow
+
+Before committing, ensure code passes linting and type checks:
+
+1. `pnpm run format` - Auto-fix formatting issues
+2. `pnpm run lint` - Verify Prettier and ESLint pass
+3. `pnpm run check` - Verify TypeScript/Svelte types
+
 ## Git Conventions
 
 - **Branch naming:** `jordpo/<ticket>` (e.g., `jordpo/TUR-7`)

@@ -12,15 +12,22 @@
 
 		<div class="upload-area">
 			<div class="upload-icon">
-				<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					width="48"
+					height="48"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 					<polyline points="17 8 12 3 7 8" />
 					<line x1="12" y1="3" x2="12" y2="15" />
 				</svg>
 			</div>
-			<p class="upload-text">
-				Drag and drop your backup file here, or
-			</p>
+			<p class="upload-text">Drag and drop your backup file here, or</p>
 			<label class="btn btn-primary">
 				Choose File
 				<input type="file" accept=".json,.wbap" class="visually-hidden" />
@@ -30,8 +37,8 @@
 		<div class="info-box">
 			<h3>About Backup Files</h3>
 			<p>
-				Your backup file contains your encrypted Well-Being Action Plan data.
-				You'll need your recovery passphrase to decrypt and restore your plan.
+				Your backup file contains your encrypted Well-Being Action Plan data. You'll need your
+				recovery passphrase to decrypt and restore your plan.
 			</p>
 		</div>
 	</div>
@@ -69,7 +76,9 @@
 		padding: var(--space-10);
 		text-align: center;
 		margin-bottom: var(--space-8);
-		transition: border-color 0.15s ease, background-color 0.15s ease;
+		transition:
+			border-color 0.15s ease,
+			background-color 0.15s ease;
 	}
 
 	.upload-area:hover {
