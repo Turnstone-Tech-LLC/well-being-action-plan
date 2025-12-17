@@ -1,13 +1,37 @@
 <script lang="ts">
+	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
 	import type { Skill } from '$lib/types/database';
 	import CategoryFilter from '$lib/components/resources/CategoryFilter.svelte';
 	import SkillsList from '$lib/components/resources/SkillsList.svelte';
+	import DeleteSkillModal from '$lib/components/resources/DeleteSkillModal.svelte';
+	import { toastStore } from '$lib/stores/toast';
 
 	let { data } = $props();
 
 	// Filter state
 	let searchQuery = $state('');
 	let selectedCategory = $state<string | null>(null);
+
+	// Delete modal state
+	let deleteModalOpen = $state(false);
+	let skillToDelete = $state<Skill | null>(null);
+	let deleteLoading = $state(false);
+	let deleteError = $state<string | null>(null);
+
+	// Show toast messages based on URL params on mount
+	$effect(() => {
+		const url = $page.url;
+		if (url.searchParams.has('created')) {
+			toastStore.success('Skill created successfully');
+			// Clean up URL
+			goto('/provider/resources/skills', { replaceState: true });
+		} else if (url.searchParams.has('updated')) {
+			toastStore.success('Skill updated successfully');
+			// Clean up URL
+			goto('/provider/resources/skills', { replaceState: true });
+		}
+	});
 
 	// Computed filtered skills
 	const filteredSkills = $derived.by(() => {
@@ -30,15 +54,68 @@
 	// Get provider's organization ID
 	const providerOrgId = $derived(data.providerProfile?.organization_id ?? null);
 
-	// Handlers for edit/delete (placeholders for future implementation)
+	// Navigate to edit page
 	function handleEdit(skill: Skill) {
-		// TODO: Navigate to edit page or open edit modal
-		console.log('Edit skill:', skill.id);
+		goto(`/provider/resources/skills/${skill.id}/edit`);
 	}
 
+	// Open delete confirmation modal
 	function handleDelete(skill: Skill) {
-		// TODO: Show delete confirmation modal
-		console.log('Delete skill:', skill.id);
+		skillToDelete = skill;
+		deleteError = null;
+		deleteModalOpen = true;
+	}
+
+	// Close delete modal
+	function handleCancelDelete() {
+		deleteModalOpen = false;
+		skillToDelete = null;
+		deleteError = null;
+	}
+
+	// Handle delete confirmation
+	async function handleConfirmDelete() {
+		if (!skillToDelete) return;
+
+		deleteLoading = true;
+		deleteError = null;
+
+		// Submit the delete form programmatically
+		const formData = new FormData();
+		formData.append('skillId', skillToDelete.id);
+
+		try {
+			const response = await fetch('?/delete', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (result.type === 'failure') {
+				deleteError = result.data?.error || 'Failed to delete skill';
+				deleteLoading = false;
+				return;
+			}
+
+			// Success
+			deleteModalOpen = false;
+			skillToDelete = null;
+			deleteLoading = false;
+
+			// Refresh the data
+			await invalidateAll();
+
+			// Show success toast
+			if (result.data?.softDeleted) {
+				toastStore.success('Skill has been archived (it was in use by action plans)');
+			} else {
+				toastStore.success('Skill deleted successfully');
+			}
+		} catch {
+			deleteError = 'An unexpected error occurred. Please try again.';
+			deleteLoading = false;
+		}
 	}
 
 	function handleCategoryChange(category: string | null) {
@@ -161,6 +238,15 @@
 
 	<SkillsList skills={filteredSkills} {providerOrgId} onEdit={handleEdit} onDelete={handleDelete} />
 </section>
+
+<DeleteSkillModal
+	open={deleteModalOpen}
+	skill={skillToDelete}
+	loading={deleteLoading}
+	error={deleteError}
+	onConfirm={handleConfirmDelete}
+	onCancel={handleCancelDelete}
+/>
 
 <style>
 	.skills-page {
