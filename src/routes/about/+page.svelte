@@ -20,7 +20,7 @@
 	<aside class="section-nav">
 		<nav aria-label="Page sections">
 			<ul>
-				{#each sections as section}
+				{#each sections as section (section.id)}
 					<li>
 						<a href="#{section.id}">{section.label}</a>
 					</li>
@@ -32,17 +32,14 @@
 	<article class="content">
 		<header class="page-header">
 			<h1>About the Well-Being Action Plan</h1>
-			<p class="lead">
-				A conversation guide for school-aged youth about emotional well-being.
-			</p>
+			<p class="lead">A conversation guide for school-aged youth about emotional well-being.</p>
 		</header>
 
 		<section id="what-is-wbap" class="section">
 			<h2>What is the Well-Being Action Plan?</h2>
 			<p>
-				A conversation guide for school-aged youth about emotional well-being. It's not a
-				diagnostic or screening tool — it helps identify coping skills and when to seek additional
-				support.
+				A conversation guide for school-aged youth about emotional well-being. It's not a diagnostic
+				or screening tool — it helps identify coping skills and when to seek additional support.
 			</p>
 			<p>
 				The WBAP is designed for time-limited settings like routine well-child visits. It gives
@@ -69,9 +66,7 @@
 					well-being. This includes coping skills like movement, sleep, creative activities, and
 					spending time with supportive people.
 				</p>
-				<p>
-					The Green Zone also identifies supportive adults the patient can talk to when needed.
-				</p>
+				<p>The Green Zone also identifies supportive adults the patient can talk to when needed.</p>
 			</div>
 
 			<div class="zone zone-yellow">
@@ -135,8 +130,8 @@
 		<section id="history" class="section">
 			<h2>History & Development</h2>
 			<p>
-				Developed by <strong>Dr. Andrea Green</strong> at Golisano Children's Hospital at the
-				University of Vermont Medical Center.
+				Developed by <strong>Dr. Andrea Green</strong> at Golisano Children's Hospital at the University
+				of Vermont Medical Center.
 			</p>
 			<p>
 				Refined with feedback from over 240 youth in Vermont and Washington DC who provided input on
