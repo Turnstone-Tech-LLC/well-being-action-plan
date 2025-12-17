@@ -107,5 +107,103 @@ export function getDB(): WellBeingDB | null {
 	return db;
 }
 
+/**
+ * Check if a local plan exists in IndexedDB.
+ * Returns true if any plan is stored locally.
+ */
+export async function hasLocalPlan(): Promise<boolean> {
+	const database = getDB();
+	if (!database) {
+		return false;
+	}
+
+	const count = await database.localPlans.count();
+	return count > 0;
+}
+
+/**
+ * Get the currently stored local plan.
+ * Returns the most recently installed plan, or null if none exists.
+ */
+export async function getLocalPlan(): Promise<LocalActionPlan | null> {
+	const database = getDB();
+	if (!database) {
+		return null;
+	}
+
+	// Get the most recently installed plan
+	const plan = await database.localPlans.orderBy('installedAt').reverse().first();
+	return plan ?? null;
+}
+
+/**
+ * Save a plan to local IndexedDB storage.
+ * If a plan already exists for this actionPlanId, it will be updated.
+ */
+export async function saveLocalPlan(plan: Omit<LocalActionPlan, 'id'>): Promise<number> {
+	const database = getDB();
+	if (!database) {
+		throw new Error('Database not available (not in browser environment)');
+	}
+
+	// Check if plan already exists for this actionPlanId
+	const existing = await database.localPlans
+		.where('actionPlanId')
+		.equals(plan.actionPlanId)
+		.first();
+
+	if (existing?.id) {
+		// Update existing plan
+		await database.localPlans.update(existing.id, plan);
+		return existing.id;
+	}
+
+	// Add new plan
+	const id = await database.localPlans.add(plan as LocalActionPlan);
+	return id!;
+}
+
+/**
+ * Update the lastAccessedAt timestamp for the local plan.
+ */
+export async function updateLastAccessed(actionPlanId: string): Promise<void> {
+	const database = getDB();
+	if (!database) {
+		return;
+	}
+
+	await database.localPlans.where('actionPlanId').equals(actionPlanId).modify({
+		lastAccessedAt: new Date()
+	});
+}
+
+/**
+ * Clear all local plan data from IndexedDB.
+ */
+export async function clearLocalData(): Promise<void> {
+	const database = getDB();
+	if (!database) {
+		return;
+	}
+
+	await database.localPlans.clear();
+}
+
+/**
+ * Generate a unique device install ID.
+ * Uses crypto.randomUUID if available, falls back to a simple implementation.
+ */
+export function generateDeviceInstallId(): string {
+	if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+		return crypto.randomUUID();
+	}
+	// Fallback for older browsers
+	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+		const r = (Math.random() * 16) | 0;
+		const v = c === 'x' ? r : (r & 0x3) | 0x8;
+		return v.toString(16);
+	});
+}
+
 export { db };
 export type { WellBeingDB };
