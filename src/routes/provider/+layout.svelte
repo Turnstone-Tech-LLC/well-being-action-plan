@@ -2,6 +2,7 @@
 	import { navigating } from '$app/stores';
 	import ProviderNav from '$lib/components/provider/ProviderNav.svelte';
 	import Footer from '$lib/components/layout/Footer.svelte';
+	import Toast from '$lib/components/layout/Toast.svelte';
 
 	let { data, children } = $props();
 
@@ -46,6 +47,8 @@
 
 	<Footer />
 </div>
+
+<Toast />
 
 <style>
 	.skip-link {
