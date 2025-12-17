@@ -1,7 +1,10 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import ActionPlansList from '$lib/components/provider/ActionPlansList.svelte';
+	import DashboardEmptyState from '$lib/components/provider/DashboardEmptyState.svelte';
 
 	let { data } = $props();
+
+	const hasPlans = $derived(data.actionPlans && data.actionPlans.length > 0);
 </script>
 
 <svelte:head>
@@ -12,22 +15,21 @@
 <section class="dashboard">
 	<div class="dashboard-header">
 		<div class="header-content">
-			<h1>Provider Dashboard</h1>
-			<p class="welcome">Welcome, {data.user.email}</p>
+			<h1>Action Plans</h1>
+			<p class="welcome">
+				Welcome back, {data.provider.name || data.provider.email}
+			</p>
 		</div>
-		<form method="POST" action="/auth/logout" use:enhance>
-			<button type="submit" class="btn btn-outline">Sign Out</button>
-		</form>
 	</div>
 
 	<div class="dashboard-content">
-		<div class="placeholder-card">
-			<h2>Coming Soon</h2>
-			<p>
-				The provider dashboard is under development. You'll be able to create and manage Well-Being
-				Action Plans for your patients here.
-			</p>
-		</div>
+		{#if hasPlans}
+			<ActionPlansList plans={data.actionPlans} />
+		{:else}
+			<div class="empty-state-container">
+				<DashboardEmptyState />
+			</div>
+		{/if}
 	</div>
 </section>
 
@@ -44,7 +46,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		margin-bottom: var(--space-8);
+		margin-bottom: var(--space-6);
 		gap: var(--space-4);
 		flex-wrap: wrap;
 	}
@@ -69,22 +71,10 @@
 		gap: var(--space-6);
 	}
 
-	.placeholder-card {
+	.empty-state-container {
 		background-color: var(--color-white);
-		padding: var(--space-8);
 		border-radius: var(--radius-xl);
 		box-shadow: var(--shadow-md);
-		text-align: center;
-	}
-
-	.placeholder-card h2 {
-		color: var(--color-primary);
-		margin-bottom: var(--space-4);
-	}
-
-	.placeholder-card p {
-		color: var(--color-text-muted);
-		max-width: 36rem;
-		margin: 0 auto;
+		padding: var(--space-8);
 	}
 </style>
