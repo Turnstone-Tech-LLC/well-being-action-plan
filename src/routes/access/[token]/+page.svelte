@@ -2,6 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import ValidatingState from '$lib/components/access/ValidatingState.svelte';
+	import InvalidExpiredToken from '$lib/components/empty-states/InvalidExpiredToken.svelte';
+	import AlreadyUsedToken from '$lib/components/empty-states/AlreadyUsedToken.svelte';
+	import RevokedToken from '$lib/components/empty-states/RevokedToken.svelte';
+	import UpdateExpiredToken from '$lib/components/empty-states/UpdateExpiredToken.svelte';
 	import { hasLocalPlan, saveLocalPlan, generateDeviceInstallId } from '$lib/db';
 	import type { PageData } from './$types';
 
@@ -92,32 +96,17 @@
 <section class="access-page">
 	<div class="container">
 		{#if flowState === 'error'}
-			<div class="error-state">
-				<h1>Unable to Access Plan</h1>
-				{#if data.tokenStatus === 'not_found'}
-					<p class="description">
-						This access code was not found. Please check the link and try again.
-					</p>
-				{:else if data.tokenStatus === 'expired'}
-					<p class="description">
-						This access code has expired. Please contact your provider for a new link.
-					</p>
-				{:else if data.tokenStatus === 'used'}
-					<p class="description">
-						This access code has already been used. If you need to access your plan on a new device,
-						please contact your provider.
-					</p>
-				{:else if data.tokenStatus === 'revoked'}
-					<p class="description">
-						This access code is no longer valid. Please contact your provider.
-					</p>
-				{:else}
-					<p class="description">
-						We encountered an error loading your plan. Please try again or contact your provider.
-					</p>
-				{/if}
-				<a href="/" class="btn btn-primary">Return Home</a>
-			</div>
+			{#if data.tokenStatus === 'not_found' || data.tokenStatus === 'expired'}
+				<InvalidExpiredToken />
+			{:else if data.tokenStatus === 'used'}
+				<AlreadyUsedToken />
+			{:else if data.tokenStatus === 'revoked'}
+				<RevokedToken />
+			{:else if data.tokenStatus === 'update_expired'}
+				<UpdateExpiredToken />
+			{:else}
+				<InvalidExpiredToken />
+			{/if}
 		{:else}
 			<ValidatingState message={statusMessage} />
 			<p class="note">Your plan data will be stored locally on this device for privacy.</p>
@@ -137,17 +126,6 @@
 	.container {
 		max-width: 32rem;
 		text-align: center;
-	}
-
-	.error-state h1 {
-		color: var(--color-primary);
-		margin-bottom: var(--space-4);
-	}
-
-	.description {
-		font-size: var(--font-size-lg);
-		color: var(--color-text-muted);
-		margin-bottom: var(--space-6);
 	}
 
 	.note {
