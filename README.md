@@ -129,6 +129,45 @@ You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
 
+### Database Seeding
+
+The project includes seed data matching the WBAP 2.0 physical card. To seed your local database:
+
+```sh
+# Run basic seed (resources only)
+pnpm run db:seed
+
+# Run seed with admin provider creation
+SEED_ADMIN_EMAIL=provider@example.com pnpm run db:seed:admin
+```
+
+#### Seed Environment Variables
+
+| Variable           | Description                                       | Default                   |
+| ------------------ | ------------------------------------------------- | ------------------------- |
+| `SEED_ADMIN_EMAIL` | Email for admin provider (triggers user creation) | -                         |
+| `SEED_ORG_NAME`    | Organization name                                 | `UVM Children's Hospital` |
+
+#### What Gets Seeded
+
+- **Organization**: UVM Children's Hospital
+- **Skills** (21 total across 4 categories):
+  - Physical: Move my body, Go outside, Get sleep, Eat well, Shower/bath, Take a break
+  - Creative: Read, Write/journal, Draw/paint, Craft/create, Listen/play music
+  - Social: Play games, Play with pets, Help others, Family time, Friend time, Talk to adult
+  - Mindfulness: Pray/meditate, Laugh, Focus positive, Deep breaths
+- **Supportive Adult Types** (7): Parent/guardian, Sibling, Grandparent, Therapist, Coach, Teacher, Other
+- **Help Methods** (4): Emotion help, More coping skills, Better use skills, Professional help
+- **Crisis Resources** (2): Crisis Text Line (741741), 988 Suicide Prevention Line
+
+#### Manual Admin Creation
+
+If you need to create an admin provider manually via SQL:
+
+```sql
+SELECT seed_admin_provider('provider@example.com');
+```
+
 ---
 
 ## License
