@@ -6,6 +6,11 @@ import type { PlanPayload } from '$lib/db';
 export type TokenStatus = 'valid' | 'expired' | 'used' | 'revoked' | 'update_expired' | 'not_found';
 
 /**
+ * Token purpose type.
+ */
+export type TokenPurpose = 'install' | 'update';
+
+/**
  * Database row for action_plan_install_tokens table.
  */
 export interface InstallToken {
@@ -13,6 +18,7 @@ export interface InstallToken {
 	action_plan_id: string;
 	revision_id: string;
 	token: string;
+	purpose: TokenPurpose;
 	expires_at: string;
 	used_at: string | null;
 	revoked_at: string | null;
