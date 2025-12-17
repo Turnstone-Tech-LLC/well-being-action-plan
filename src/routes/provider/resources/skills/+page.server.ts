@@ -7,15 +7,15 @@ export interface SkillsPageData {
 	categories: string[];
 }
 
-export const load: PageServerLoad = async ({ locals, parent }): Promise<SkillsPageData> => {
-	// Get user from parent layout
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ locals }): Promise<SkillsPageData> => {
+	// User is guaranteed by parent layout auth guard
+	const userId = locals.user!.id;
 
 	// Fetch provider profile to get organization_id
 	const { data: providerProfile } = await locals.supabase
 		.from('provider_profiles')
 		.select('*')
-		.eq('id', user.id)
+		.eq('id', userId)
 		.single();
 
 	const orgId = providerProfile?.organization_id;
