@@ -28,7 +28,7 @@
 				return {
 					title: "We couldn't restore your data",
 					body: "This file doesn't appear to be a valid Well-Being Action Plan backup. Please select a file ending in .wbap or .json.",
-					guidance: 'Your original backup file hasn\'t been changed.'
+					guidance: "Your original backup file hasn't been changed."
 				};
 			default:
 				return {

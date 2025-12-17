@@ -10,7 +10,7 @@
 			Sign in to manage and distribute Well-Being Action Plans to your patients.
 		</p>
 
-		<form class="login-form">
+		<form class="login-form" aria-label="Provider login">
 			<div class="form-group">
 				<label for="email">Email</label>
 				<input
@@ -19,6 +19,8 @@
 					name="email"
 					placeholder="provider@example.com"
 					autocomplete="email"
+					required
+					aria-required="true"
 				/>
 			</div>
 
@@ -30,6 +32,8 @@
 					name="password"
 					placeholder="Enter your password"
 					autocomplete="current-password"
+					required
+					aria-required="true"
 				/>
 			</div>
 

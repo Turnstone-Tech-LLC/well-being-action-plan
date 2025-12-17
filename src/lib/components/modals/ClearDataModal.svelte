@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { createFocusTrap, type FocusTrap } from '$lib/a11y';
+
 	interface Props {
 		open: boolean;
 		onConfirm: () => void;
@@ -6,23 +8,58 @@
 	}
 
 	let { open, onConfirm, onCancel }: Props = $props();
+
+	let modalElement: HTMLElement | null = $state(null);
+	let focusTrap: FocusTrap | null = $state(null);
+
+	// Manage focus trap when modal opens/closes
+	$effect(() => {
+		if (open && modalElement) {
+			focusTrap = createFocusTrap(modalElement, {
+				onEscape: onCancel
+			});
+			focusTrap.activate();
+		}
+
+		return () => {
+			if (focusTrap) {
+				focusTrap.deactivate();
+				focusTrap = null;
+			}
+		};
+	});
+
+	function handleBackdropClick(event: MouseEvent) {
+		// Only close if clicking directly on backdrop, not on modal content
+		if (event.target === event.currentTarget) {
+			onCancel();
+		}
+	}
+
+	function handleBackdropKeyDown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			onCancel();
+		}
+	}
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={onCancel}>
+	<div
+		class="modal-backdrop"
+		onclick={handleBackdropClick}
+		onkeydown={handleBackdropKeyDown}
+		role="presentation"
+	>
 		<div
+			bind:this={modalElement}
 			class="modal"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="modal-title"
-			tabindex="-1"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.key === 'Escape' && onCancel()}
+			aria-describedby="modal-description"
 		>
 			<h2 id="modal-title">Clear your plan data?</h2>
-			<p class="modal-body">
+			<p id="modal-description" class="modal-body">
 				This will remove your Well-Being Action Plan from this device. You can reload it anytime
 				with your access code.
 			</p>
@@ -55,6 +92,10 @@
 		box-shadow: var(--shadow-lg);
 	}
 
+	.modal:focus {
+		outline: none;
+	}
+
 	.modal h2 {
 		margin-bottom: var(--space-4);
 		font-size: var(--font-size-xl);
@@ -79,5 +120,10 @@
 
 	.btn-destructive:hover {
 		background-color: #b91c1c;
+	}
+
+	.btn-destructive:focus-visible {
+		outline-color: var(--color-white);
+		box-shadow: 0 0 0 3px #dc2626;
 	}
 </style>

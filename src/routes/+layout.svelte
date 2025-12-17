@@ -26,10 +26,12 @@
 	}
 </script>
 
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <div class="app">
 	<TopNav {userState} onClearData={handleClearData} />
 
-	<main>
+	<main id="main-content" tabindex="-1">
 		{@render children()}
 	</main>
 
@@ -39,6 +41,27 @@
 <ClearDataModal open={showClearDataModal} onConfirm={confirmClearData} onCancel={cancelClearData} />
 
 <style>
+	.skip-link {
+		position: absolute;
+		top: -100%;
+		left: 50%;
+		transform: translateX(-50%);
+		background-color: var(--color-primary);
+		color: var(--color-white);
+		padding: var(--space-3) var(--space-6);
+		border-radius: var(--radius-md);
+		text-decoration: none;
+		font-weight: 600;
+		z-index: 1000;
+		transition: top 0.2s ease;
+	}
+
+	.skip-link:focus {
+		top: var(--space-4);
+		outline: 3px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
 	.app {
 		display: flex;
 		flex-direction: column;
@@ -49,5 +72,9 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+	}
+
+	main:focus {
+		outline: none;
 	}
 </style>

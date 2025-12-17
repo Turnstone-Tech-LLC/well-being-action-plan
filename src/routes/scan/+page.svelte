@@ -20,7 +20,7 @@
 	<div class="container">
 		<h1>Load Your Plan</h1>
 
-		<div class="scanner-placeholder">
+		<div class="scanner-placeholder" aria-hidden="true">
 			<div class="camera-icon">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -32,6 +32,7 @@
 					stroke-width="1.5"
 					stroke-linecap="round"
 					stroke-linejoin="round"
+					aria-hidden="true"
 				>
 					<path
 						d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
@@ -46,7 +47,7 @@
 			<span>or enter your code</span>
 		</div>
 
-		<form onsubmit={handleSubmit}>
+		<form onsubmit={handleSubmit} aria-label="Access code entry">
 			<div class="form-group">
 				<label for="access-code">Access Code</label>
 				<input
@@ -55,7 +56,12 @@
 					bind:value={accessCode}
 					placeholder="Enter your access code"
 					autocomplete="off"
+					aria-describedby="access-code-help"
+					required
 				/>
+				<p id="access-code-help" class="visually-hidden">
+					Enter the access code from your provider or QR code
+				</p>
 			</div>
 			<button type="submit" class="btn btn-primary" disabled={!accessCode.trim()}>
 				Load My Plan

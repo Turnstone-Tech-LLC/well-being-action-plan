@@ -17,7 +17,7 @@
 		<RestoreForm />
 
 		<div class="info-box">
-			<h3>About Backup Files</h3>
+			<h2>About Backup Files</h2>
 			<p>
 				Your backup file contains your encrypted Well-Being Action Plan data. You'll need your
 				recovery passphrase to decrypt and restore your plan.
@@ -59,7 +59,7 @@
 		border-radius: var(--radius-lg);
 	}
 
-	.info-box h3 {
+	.info-box h2 {
 		font-size: var(--font-size-lg);
 		color: var(--color-primary);
 		margin-bottom: var(--space-2);
