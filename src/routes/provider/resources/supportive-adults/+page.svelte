@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { SupportiveAdultType } from '$lib/types/database';
 	import SupportiveAdultTypesList from '$lib/components/resources/SupportiveAdultTypesList.svelte';
-	import DeleteConfirmModal from '$lib/components/resources/DeleteConfirmModal.svelte';
+	import { DeleteResourceModal } from '$lib/components/shared';
 
 	let { data, form } = $props();
 
@@ -191,7 +191,7 @@
 
 <!-- Delete confirmation modal -->
 {#if typeToDelete}
-	<DeleteConfirmModal
+	<DeleteResourceModal
 		open={deleteModalOpen}
 		title="Delete supportive adult type?"
 		itemName={typeToDelete.label}

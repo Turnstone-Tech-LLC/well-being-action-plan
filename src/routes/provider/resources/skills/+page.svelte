@@ -4,7 +4,7 @@
 	import type { Skill } from '$lib/types/database';
 	import CategoryFilter from '$lib/components/resources/CategoryFilter.svelte';
 	import SkillsList from '$lib/components/resources/SkillsList.svelte';
-	import DeleteSkillModal from '$lib/components/resources/DeleteSkillModal.svelte';
+	import { DeleteResourceModal } from '$lib/components/shared';
 	import { toastStore } from '$lib/stores/toast';
 
 	let { data } = $props();
@@ -239,11 +239,14 @@
 	<SkillsList skills={filteredSkills} {providerOrgId} onEdit={handleEdit} onDelete={handleDelete} />
 </section>
 
-<DeleteSkillModal
+<DeleteResourceModal
 	open={deleteModalOpen}
-	skill={skillToDelete}
+	itemName={skillToDelete?.title ?? ''}
+	title="Delete this skill?"
 	loading={deleteLoading}
 	error={deleteError}
+	showWarningIcon={true}
+	centered={true}
 	onConfirm={handleConfirmDelete}
 	onCancel={handleCancelDelete}
 />
