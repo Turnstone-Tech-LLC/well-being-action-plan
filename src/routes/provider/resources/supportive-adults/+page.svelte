@@ -1,51 +1,31 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
-	import type { Skill } from '$lib/types/database';
-	import CategoryFilter from '$lib/components/resources/CategoryFilter.svelte';
-	import SkillsList from '$lib/components/resources/SkillsList.svelte';
-	import DeleteSkillModal from '$lib/components/resources/DeleteSkillModal.svelte';
-	import { toastStore } from '$lib/stores/toast';
+	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
+	import type { SupportiveAdultType } from '$lib/types/database';
+	import SupportiveAdultTypesList from '$lib/components/resources/SupportiveAdultTypesList.svelte';
+	import DeleteConfirmModal from '$lib/components/resources/DeleteConfirmModal.svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	// Filter state
 	let searchQuery = $state('');
-	let selectedCategory = $state<string | null>(null);
 
 	// Delete modal state
 	let deleteModalOpen = $state(false);
-	let skillToDelete = $state<Skill | null>(null);
-	let deleteLoading = $state(false);
-	let deleteError = $state<string | null>(null);
+	let typeToDelete = $state<SupportiveAdultType | null>(null);
+	let isInUse = $state(false);
 
-	// Show toast messages based on URL params on mount
-	$effect(() => {
-		const url = $page.url;
-		if (url.searchParams.has('created')) {
-			toastStore.success('Skill created successfully');
-			// Clean up URL
-			goto('/provider/resources/skills', { replaceState: true });
-		} else if (url.searchParams.has('updated')) {
-			toastStore.success('Skill updated successfully');
-			// Clean up URL
-			goto('/provider/resources/skills', { replaceState: true });
-		}
-	});
+	// Reference to the hidden delete form
+	let deleteFormElement: HTMLFormElement | null = $state(null);
 
-	// Computed filtered skills
-	const filteredSkills = $derived.by(() => {
-		let result = data.skills;
+	// Computed filtered types
+	const filteredTypes = $derived.by(() => {
+		let result = data.types;
 
-		// Filter by category
-		if (selectedCategory !== null) {
-			result = result.filter((skill) => skill.category === selectedCategory);
-		}
-
-		// Filter by search query (case-insensitive title search)
+		// Filter by search query (case-insensitive label search)
 		if (searchQuery.trim() !== '') {
 			const query = searchQuery.toLowerCase().trim();
-			result = result.filter((skill) => skill.title.toLowerCase().includes(query));
+			result = result.filter((type) => type.label.toLowerCase().includes(query));
 		}
 
 		return result;
@@ -54,72 +34,26 @@
 	// Get provider's organization ID
 	const providerOrgId = $derived(data.providerProfile?.organization_id ?? null);
 
-	// Navigate to edit page
-	function handleEdit(skill: Skill) {
-		goto(`/provider/resources/skills/${skill.id}/edit`);
+	function handleEdit(type: SupportiveAdultType) {
+		goto(`/provider/resources/supportive-adults/${type.id}/edit`);
 	}
 
-	// Open delete confirmation modal
-	function handleDelete(skill: Skill) {
-		skillToDelete = skill;
-		deleteError = null;
+	function handleDelete(type: SupportiveAdultType) {
+		typeToDelete = type;
+		isInUse = false;
 		deleteModalOpen = true;
 	}
 
-	// Close delete modal
-	function handleCancelDelete() {
+	function handleDeleteCancel() {
 		deleteModalOpen = false;
-		skillToDelete = null;
-		deleteError = null;
+		typeToDelete = null;
+		isInUse = false;
 	}
 
-	// Handle delete confirmation
-	async function handleConfirmDelete() {
-		if (!skillToDelete) return;
-
-		deleteLoading = true;
-		deleteError = null;
-
-		// Submit the delete form programmatically
-		const formData = new FormData();
-		formData.append('skillId', skillToDelete.id);
-
-		try {
-			const response = await fetch('?/delete', {
-				method: 'POST',
-				body: formData
-			});
-
-			const result = await response.json();
-
-			if (result.type === 'failure') {
-				deleteError = result.data?.error || 'Failed to delete skill';
-				deleteLoading = false;
-				return;
-			}
-
-			// Success
-			deleteModalOpen = false;
-			skillToDelete = null;
-			deleteLoading = false;
-
-			// Refresh the data
-			await invalidateAll();
-
-			// Show success toast
-			if (result.data?.softDeleted) {
-				toastStore.success('Skill has been archived (it was in use by action plans)');
-			} else {
-				toastStore.success('Skill deleted successfully');
-			}
-		} catch {
-			deleteError = 'An unexpected error occurred. Please try again.';
-			deleteLoading = false;
+	function handleDeleteConfirm() {
+		if (deleteFormElement) {
+			deleteFormElement.requestSubmit();
 		}
-	}
-
-	function handleCategoryChange(category: string | null) {
-		selectedCategory = category;
 	}
 
 	function handleSearchInput(event: Event) {
@@ -130,23 +64,37 @@
 	function clearSearch() {
 		searchQuery = '';
 	}
+
+	// Handle form action results
+	$effect(() => {
+		if (form?.error && typeToDelete) {
+			// Type assertion to access isInUse property from delete action response
+			const formResult = form as { error: string; isInUse?: boolean };
+			isInUse = formResult.isInUse ?? false;
+			// If in use, keep modal open to show warning
+			if (!formResult.isInUse) {
+				deleteModalOpen = false;
+				typeToDelete = null;
+			}
+		} else if (form?.success) {
+			deleteModalOpen = false;
+			typeToDelete = null;
+		}
+	});
 </script>
 
 <svelte:head>
-	<title>Skills Library | Well-Being Action Plan</title>
-	<meta
-		name="description"
-		content="Browse and manage Green Zone coping strategies for Well-Being Action Plans"
-	/>
+	<title>Supportive Adult Types | Well-Being Action Plan</title>
+	<meta name="description" content="Manage supportive adult types for Well-Being Action Plans" />
 </svelte:head>
 
-<section class="skills-page">
+<section class="types-page">
 	<header class="page-header">
 		<div class="header-content">
-			<h1>Skills Library</h1>
-			<p class="subtitle">Green Zone coping strategies for Well-Being Action Plans</p>
+			<h1>Supportive Adult Types</h1>
+			<p class="subtitle">Categories of trusted adults that patients can identify</p>
 		</div>
-		<a href="/provider/resources/skills/new" class="btn btn-primary">
+		<a href="/provider/resources/supportive-adults/new" class="btn btn-primary">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				fill="none"
@@ -158,13 +106,13 @@
 			>
 				<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
 			</svg>
-			Add Skill
+			Add Type
 		</a>
 	</header>
 
 	<div class="filters-section">
 		<div class="search-container">
-			<label for="skill-search" class="visually-hidden">Search skills by title</label>
+			<label for="type-search" class="visually-hidden">Search supportive adult types</label>
 			<div class="search-input-wrapper">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -182,9 +130,9 @@
 					/>
 				</svg>
 				<input
-					id="skill-search"
+					id="type-search"
 					type="search"
-					placeholder="Search skills..."
+					placeholder="Search types..."
 					value={searchQuery}
 					oninput={handleSearchInput}
 					class="search-input"
@@ -210,46 +158,52 @@
 				{/if}
 			</div>
 		</div>
-
-		<CategoryFilter
-			categories={data.categories}
-			{selectedCategory}
-			onCategoryChange={handleCategoryChange}
-		/>
 	</div>
 
 	<div class="results-info" aria-live="polite" aria-atomic="true">
 		<span class="results-count">
-			{filteredSkills.length}
-			{filteredSkills.length === 1 ? 'skill' : 'skills'}
-			{#if selectedCategory || searchQuery}
-				<span class="filter-context">
-					{#if selectedCategory && searchQuery}
-						matching "{searchQuery}" in {selectedCategory}
-					{:else if selectedCategory}
-						in {selectedCategory}
-					{:else if searchQuery}
-						matching "{searchQuery}"
-					{/if}
-				</span>
+			{filteredTypes.length}
+			{filteredTypes.length === 1 ? 'type' : 'types'}
+			{#if searchQuery}
+				<span class="filter-context">matching "{searchQuery}"</span>
 			{/if}
 		</span>
 	</div>
 
-	<SkillsList skills={filteredSkills} {providerOrgId} onEdit={handleEdit} onDelete={handleDelete} />
+	<SupportiveAdultTypesList
+		types={filteredTypes}
+		{providerOrgId}
+		onEdit={handleEdit}
+		onDelete={handleDelete}
+	/>
 </section>
 
-<DeleteSkillModal
-	open={deleteModalOpen}
-	skill={skillToDelete}
-	loading={deleteLoading}
-	error={deleteError}
-	onConfirm={handleConfirmDelete}
-	onCancel={handleCancelDelete}
-/>
+<!-- Hidden delete form -->
+<form
+	bind:this={deleteFormElement}
+	method="POST"
+	action="?/delete"
+	class="visually-hidden"
+	use:enhance
+>
+	<input type="hidden" name="id" value={typeToDelete?.id ?? ''} />
+</form>
+
+<!-- Delete confirmation modal -->
+{#if typeToDelete}
+	<DeleteConfirmModal
+		open={deleteModalOpen}
+		title="Delete supportive adult type?"
+		itemName={typeToDelete.label}
+		{isInUse}
+		usageMessage="This type is currently being used in action plans and cannot be deleted."
+		onConfirm={handleDeleteConfirm}
+		onCancel={handleDeleteCancel}
+	/>
+{/if}
 
 <style>
-	.skills-page {
+	.types-page {
 		flex: 1;
 		padding: var(--space-8) var(--space-4);
 		max-width: var(--max-width);
