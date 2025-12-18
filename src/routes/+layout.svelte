@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import TopNav from '$lib/components/layout/TopNav.svelte';
 	import Footer from '$lib/components/layout/Footer.svelte';
 	import ClearDataModal from '$lib/components/modals/ClearDataModal.svelte';
+	import { registerServiceWorker } from '$lib/notifications';
 	import './layout.css';
 
 	let { children } = $props();
@@ -9,6 +12,15 @@
 	// Stubbed user state - will be replaced with actual auth/IndexedDB check
 	let userState: 'unauthenticated' | 'provider' | 'patient' = $state('unauthenticated');
 	let showClearDataModal = $state(false);
+
+	// Register service worker on mount
+	onMount(() => {
+		if (browser) {
+			registerServiceWorker().catch((err) => {
+				console.warn('Service worker registration failed:', err);
+			});
+		}
+	});
 
 	function handleClearData() {
 		showClearDataModal = true;

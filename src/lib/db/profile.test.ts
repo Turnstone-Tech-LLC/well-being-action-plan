@@ -32,7 +32,9 @@ import {
 	completeOnboarding,
 	isOnboardingComplete,
 	deletePatientProfile,
-	clearPatientProfiles
+	clearPatientProfiles,
+	updateNotificationPreferences,
+	updateLastReminderShown
 } from './profile';
 
 describe('profile utilities', () => {
@@ -242,6 +244,46 @@ describe('profile utilities', () => {
 			await clearPatientProfiles();
 
 			expect(mockPatientProfiles.clear).toHaveBeenCalled();
+		});
+	});
+
+	describe('updateNotificationPreferences', () => {
+		it('updates notification preferences', async () => {
+			mockPatientProfiles.modify.mockResolvedValue(1);
+
+			await updateNotificationPreferences({
+				actionPlanId: 'test-id',
+				notificationsEnabled: true,
+				notificationFrequency: 'daily',
+				notificationTime: 'morning'
+			});
+
+			expect(mockPatientProfiles.where).toHaveBeenCalledWith('actionPlanId');
+			expect(mockPatientProfiles.equals).toHaveBeenCalledWith('test-id');
+			expect(mockPatientProfiles.modify).toHaveBeenCalledWith(
+				expect.objectContaining({
+					notificationsEnabled: true,
+					notificationFrequency: 'daily',
+					notificationTime: 'morning'
+				})
+			);
+		});
+	});
+
+	describe('updateLastReminderShown', () => {
+		it('updates the last reminder shown timestamp', async () => {
+			mockPatientProfiles.modify.mockResolvedValue(1);
+
+			await updateLastReminderShown('test-id');
+
+			expect(mockPatientProfiles.where).toHaveBeenCalledWith('actionPlanId');
+			expect(mockPatientProfiles.equals).toHaveBeenCalledWith('test-id');
+			expect(mockPatientProfiles.modify).toHaveBeenCalledWith(
+				expect.objectContaining({
+					lastReminderShown: expect.any(Date),
+					updatedAt: expect.any(Date)
+				})
+			);
 		});
 	});
 });
