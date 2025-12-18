@@ -173,6 +173,116 @@ export type CrisisResourceInsert = Omit<CrisisResource, 'id' | 'created_at'> & {
 };
 
 /**
+ * Action plan status types.
+ */
+export type ActionPlanStatus = 'draft' | 'active' | 'archived';
+
+/**
+ * Database row for action_plans table.
+ */
+export interface ActionPlan {
+	id: string;
+	organization_id: string;
+	provider_id: string | null;
+	patient_mrn: string | null;
+	patient_nickname: string | null;
+	status: ActionPlanStatus;
+	happy_when: string | null;
+	happy_because: string | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+	archived_at: string | null;
+}
+
+/**
+ * Database row for action_plan_skills join table.
+ */
+export interface ActionPlanSkill {
+	id: string;
+	action_plan_id: string;
+	skill_id: string | null;
+	additional_info: string | null;
+	is_custom: boolean;
+	display_order: number;
+	created_at: string;
+}
+
+/**
+ * Database row for action_plan_supportive_adults join table.
+ */
+export interface ActionPlanSupportiveAdult {
+	id: string;
+	action_plan_id: string;
+	supportive_adult_type_id: string | null;
+	name: string | null;
+	contact_info: string | null;
+	is_primary: boolean;
+	is_custom: boolean;
+	display_order: number;
+	created_at: string;
+}
+
+/**
+ * Database row for action_plan_help_methods join table.
+ */
+export interface ActionPlanHelpMethod {
+	id: string;
+	action_plan_id: string;
+	help_method_id: string | null;
+	additional_info: string | null;
+	is_custom: boolean;
+	display_order: number;
+	created_at: string;
+}
+
+export type ActionPlanInsert = Omit<ActionPlan, 'id' | 'created_at' | 'updated_at'> & {
+	id?: string;
+	provider_id?: string | null;
+	patient_mrn?: string | null;
+	patient_nickname?: string | null;
+	status?: ActionPlanStatus;
+	happy_when?: string | null;
+	happy_because?: string | null;
+	created_by?: string | null;
+	archived_at?: string | null;
+	created_at?: string;
+	updated_at?: string;
+};
+
+export type ActionPlanSkillInsert = Omit<ActionPlanSkill, 'id' | 'created_at'> & {
+	id?: string;
+	skill_id?: string | null;
+	additional_info?: string | null;
+	is_custom?: boolean;
+	display_order?: number;
+	created_at?: string;
+};
+
+export type ActionPlanSupportiveAdultInsert = Omit<
+	ActionPlanSupportiveAdult,
+	'id' | 'created_at'
+> & {
+	id?: string;
+	supportive_adult_type_id?: string | null;
+	name?: string | null;
+	contact_info?: string | null;
+	is_primary?: boolean;
+	is_custom?: boolean;
+	display_order?: number;
+	created_at?: string;
+};
+
+export type ActionPlanHelpMethodInsert = Omit<ActionPlanHelpMethod, 'id' | 'created_at'> & {
+	id?: string;
+	help_method_id?: string | null;
+	additional_info?: string | null;
+	is_custom?: boolean;
+	display_order?: number;
+	created_at?: string;
+};
+
+/**
  * Update types (for updating existing records).
  * All fields are optional.
  */
@@ -188,3 +298,13 @@ export type SupportiveAdultTypeUpdate = Partial<Omit<SupportiveAdultType, 'id' |
 export type HelpMethodUpdate = Partial<Omit<HelpMethod, 'id' | 'created_at'>>;
 
 export type CrisisResourceUpdate = Partial<Omit<CrisisResource, 'id' | 'created_at'>>;
+
+export type ActionPlanUpdate = Partial<Omit<ActionPlan, 'id' | 'created_at'>>;
+
+export type ActionPlanSkillUpdate = Partial<Omit<ActionPlanSkill, 'id' | 'created_at'>>;
+
+export type ActionPlanSupportiveAdultUpdate = Partial<
+	Omit<ActionPlanSupportiveAdult, 'id' | 'created_at'>
+>;
+
+export type ActionPlanHelpMethodUpdate = Partial<Omit<ActionPlanHelpMethod, 'id' | 'created_at'>>;
