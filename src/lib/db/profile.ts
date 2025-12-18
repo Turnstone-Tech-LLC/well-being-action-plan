@@ -1,4 +1,9 @@
-import { getDB, type PatientProfile } from './index';
+import {
+	getDB,
+	type PatientProfile,
+	type NotificationFrequency,
+	type NotificationTime
+} from './index';
 
 /**
  * Check if a patient profile exists for the given action plan.
@@ -76,15 +81,62 @@ export async function createPatientProfile(input: CreatePatientProfileInput): Pr
 			updatedAt: now
 		});
 	} else {
-		// Insert new profile
+		// Insert new profile with default notification settings
 		await db.patientProfiles.add({
 			actionPlanId: input.actionPlanId,
 			displayName: input.displayName,
 			onboardingComplete: false,
+			notificationsEnabled: false,
+			notificationFrequency: 'none',
+			notificationTime: 'morning',
 			createdAt: now,
 			updatedAt: now
 		});
 	}
+}
+
+/**
+ * Input type for updating notification preferences.
+ */
+export interface UpdateNotificationPreferencesInput {
+	actionPlanId: string;
+	notificationsEnabled: boolean;
+	notificationFrequency: NotificationFrequency;
+	notificationTime: NotificationTime;
+}
+
+/**
+ * Update notification preferences for a patient profile.
+ */
+export async function updateNotificationPreferences(
+	input: UpdateNotificationPreferencesInput
+): Promise<void> {
+	const db = getDB();
+	if (!db) {
+		return;
+	}
+
+	await db.patientProfiles.where('actionPlanId').equals(input.actionPlanId).modify({
+		notificationsEnabled: input.notificationsEnabled,
+		notificationFrequency: input.notificationFrequency,
+		notificationTime: input.notificationTime,
+		updatedAt: new Date()
+	});
+}
+
+/**
+ * Update the last reminder shown timestamp.
+ */
+export async function updateLastReminderShown(actionPlanId: string): Promise<void> {
+	const db = getDB();
+	if (!db) {
+		return;
+	}
+
+	await db.patientProfiles.where('actionPlanId').equals(actionPlanId).modify({
+		lastReminderShown: new Date(),
+		updatedAt: new Date()
+	});
 }
 
 /**

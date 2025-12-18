@@ -4,13 +4,19 @@
 	import { browser } from '$app/environment';
 	import WelcomeStep from '$lib/components/onboarding/WelcomeStep.svelte';
 	import ProfileSetupStep from '$lib/components/onboarding/ProfileSetupStep.svelte';
+	import NotificationStep from '$lib/components/onboarding/NotificationStep.svelte';
 	import ValidatingState from '$lib/components/access/ValidatingState.svelte';
 	import { localPlanStore, localPlan, planPayload, hasPlan } from '$lib/stores/localPlan';
 	import { patientProfileStore, patientProfile } from '$lib/stores/patientProfile';
-	import { createPatientProfile, completeOnboarding } from '$lib/db/profile';
+	import {
+		createPatientProfile,
+		completeOnboarding,
+		updateNotificationPreferences
+	} from '$lib/db/profile';
+	import type { NotificationFrequency, NotificationTime } from '$lib/db';
 	import { announce } from '$lib/a11y';
 
-	type OnboardingStep = 'loading' | 'welcome' | 'profile' | 'complete';
+	type OnboardingStep = 'loading' | 'welcome' | 'profile' | 'notifications' | 'complete';
 
 	let currentStep: OnboardingStep = $state('loading');
 	let statusMessage = $state('Loading your plan...');
@@ -69,6 +75,40 @@
 				displayName
 			});
 
+			// Move to notifications step
+			currentStep = 'notifications';
+			announce('Step 3: Notification settings');
+		} catch (error) {
+			console.error('Failed to save profile:', error);
+			currentStep = 'profile';
+			announce('Failed to save profile. Please try again.');
+		}
+	}
+
+	function handleNotificationsBack() {
+		currentStep = 'profile';
+		announce('Step 2: Profile setup');
+	}
+
+	async function handleNotificationsContinue(settings: {
+		notificationsEnabled: boolean;
+		notificationFrequency: NotificationFrequency;
+		notificationTime: NotificationTime;
+	}) {
+		if (!plan) return;
+
+		currentStep = 'loading';
+		statusMessage = 'Finishing setup...';
+
+		try {
+			// Save notification preferences
+			await updateNotificationPreferences({
+				actionPlanId: plan.actionPlanId,
+				notificationsEnabled: settings.notificationsEnabled,
+				notificationFrequency: settings.notificationFrequency,
+				notificationTime: settings.notificationTime
+			});
+
 			// Mark onboarding as complete
 			await completeOnboarding(plan.actionPlanId);
 
@@ -76,15 +116,14 @@
 			await patientProfileStore.refresh();
 
 			statusMessage = 'All set! Redirecting...';
-			announce('Profile saved. Redirecting to your dashboard.');
+			announce('Setup complete. Redirecting to your dashboard.');
 
-			// Redirect to app dashboard (or notifications step if implementing TUR-35)
-			// For now, redirect to home since dashboard isn't implemented
+			// Redirect to app dashboard
 			await goto('/app');
 		} catch (error) {
-			console.error('Failed to save profile:', error);
-			currentStep = 'profile';
-			announce('Failed to save profile. Please try again.');
+			console.error('Failed to complete setup:', error);
+			currentStep = 'notifications';
+			announce('Failed to complete setup. Please try again.');
 		}
 	}
 
@@ -95,15 +134,17 @@
 				return 1;
 			case 'profile':
 				return 2;
-			case 'complete':
+			case 'notifications':
 				return 3;
+			case 'complete':
+				return 4;
 			default:
 				return 0;
 		}
 	}
 
 	let stepNumber = $derived(getStepNumber(currentStep));
-	let totalSteps = 2;
+	let totalSteps = 3;
 </script>
 
 <svelte:head>
@@ -137,6 +178,8 @@
 				onContinue={handleProfileContinue}
 				onBack={handleProfileBack}
 			/>
+		{:else if currentStep === 'notifications'}
+			<NotificationStep onContinue={handleNotificationsContinue} onBack={handleNotificationsBack} />
 		{/if}
 	</div>
 </section>

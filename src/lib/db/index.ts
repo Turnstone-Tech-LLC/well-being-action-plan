@@ -68,6 +68,16 @@ export interface LocalActionPlan {
 }
 
 /**
+ * Notification frequency options for reminders.
+ */
+export type NotificationFrequency = 'daily' | 'every_few_days' | 'weekly' | 'none';
+
+/**
+ * Time preference for notifications.
+ */
+export type NotificationTime = 'morning' | 'afternoon' | 'evening';
+
+/**
  * Represents a patient's profile data stored locally.
  * Created during onboarding after token validation.
  */
@@ -80,6 +90,14 @@ export interface PatientProfile {
 	displayName: string;
 	/** Whether onboarding has been completed */
 	onboardingComplete: boolean;
+	/** Whether push notifications are enabled */
+	notificationsEnabled: boolean;
+	/** How often to send reminder notifications */
+	notificationFrequency: NotificationFrequency;
+	/** Preferred time of day for notifications */
+	notificationTime: NotificationTime;
+	/** Last time a reminder was shown */
+	lastReminderShown?: Date;
 	/** When this profile was created */
 	createdAt: Date;
 	/** Last time the profile was updated */
@@ -108,6 +126,24 @@ class WellBeingDB extends Dexie {
 			localPlans: '++id, &actionPlanId, accessCode, installedAt',
 			patientProfiles: '++id, &actionPlanId, onboardingComplete, createdAt'
 		});
+
+		// Version 3: Add notification preferences to patient profiles
+		this.version(3)
+			.stores({
+				localPlans: '++id, &actionPlanId, accessCode, installedAt',
+				patientProfiles: '++id, &actionPlanId, onboardingComplete, createdAt'
+			})
+			.upgrade((tx) => {
+				// Migrate existing profiles to have default notification settings
+				return tx
+					.table('patientProfiles')
+					.toCollection()
+					.modify((profile) => {
+						profile.notificationsEnabled = false;
+						profile.notificationFrequency = 'none';
+						profile.notificationTime = 'morning';
+					});
+			});
 	}
 }
 
