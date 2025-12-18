@@ -1,10 +1,30 @@
 <script lang="ts">
 	import { planPayload } from '$lib/stores/localPlan';
-	import { displayName } from '$lib/stores/patientProfile';
+	import { patientProfile, displayName } from '$lib/stores/patientProfile';
+	import { DashboardHeader, CheckInCTA, QuickStats } from '$lib/components/app';
+	import type { Zone } from '$lib/components/app';
 
 	// Reactive values from stores
 	let payload = $derived($planPayload);
+	let profile = $derived($patientProfile);
 	let name = $derived($displayName);
+
+	// Determine if user is returning (has completed at least one check-in)
+	// For now, we'll use the profile creation date to determine this
+	// In the future, this will be based on check-in history
+	let isReturningUser = $derived(() => {
+		if (!profile?.createdAt) return false;
+		const createdAt = new Date(profile.createdAt);
+		const now = new Date();
+		// Consider returning if profile was created more than 1 day ago
+		return now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000;
+	});
+
+	// Mock check-in data for now - will be replaced with real data from IndexedDB
+	// when the check-in feature is implemented
+	let lastCheckIn: Date | null = $state(null);
+	let streak: number = $state(0);
+	let currentZone: Zone = $state(null);
 </script>
 
 <svelte:head>
@@ -12,123 +32,178 @@
 	<meta name="description" content="Your Well-Being Action Plan dashboard" />
 </svelte:head>
 
-<section class="dashboard-page">
-	<div class="dashboard-header">
-		{#if name}
-			<h1>Welcome back, {name}!</h1>
-		{:else}
-			<h1>Welcome to Your Dashboard</h1>
-		{/if}
-		<p class="subtitle">Your Well-Being Action Plan is ready to help you.</p>
-	</div>
+<div class="dashboard-page">
+	<DashboardHeader displayName={name} isReturningUser={isReturningUser()} />
+
+	<CheckInCTA />
+
+	<QuickStats {lastCheckIn} {streak} {currentZone} />
 
 	{#if payload}
-		<div class="quick-stats">
-			<div class="stat-card">
-				<span class="stat-value">{payload.skills.length}</span>
-				<span class="stat-label">Coping Skills</span>
+		<section class="plan-summary" aria-labelledby="plan-summary-heading">
+			<h2 id="plan-summary-heading" class="visually-hidden">Your plan summary</h2>
+			<div class="summary-cards">
+				<div class="summary-card">
+					<span class="card-icon" aria-hidden="true">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M12 2L2 7l10 5 10-5-10-5z" />
+							<path d="M2 17l10 5 10-5" />
+							<path d="M2 12l10 5 10-5" />
+						</svg>
+					</span>
+					<span class="card-value">{payload.skills.length}</span>
+					<span class="card-label">Coping Skills</span>
+				</div>
+				<div class="summary-card">
+					<span class="card-icon" aria-hidden="true">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+							<circle cx="9" cy="7" r="4" />
+							<path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+							<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+						</svg>
+					</span>
+					<span class="card-value">{payload.supportiveAdults.length}</span>
+					<span class="card-label">Supportive Adults</span>
+				</div>
+				<div class="summary-card">
+					<span class="card-icon" aria-hidden="true">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<circle cx="12" cy="12" r="10" />
+							<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+							<line x1="12" y1="17" x2="12.01" y2="17" />
+						</svg>
+					</span>
+					<span class="card-value">{payload.helpMethods.length}</span>
+					<span class="card-label">Help Methods</span>
+				</div>
 			</div>
-			<div class="stat-card">
-				<span class="stat-value">{payload.supportiveAdults.length}</span>
-				<span class="stat-label">Supportive Adults</span>
-			</div>
-			<div class="stat-card">
-				<span class="stat-value">{payload.helpMethods.length}</span>
-				<span class="stat-label">Help Methods</span>
-			</div>
-		</div>
-
-		<div class="coming-soon">
-			<p>Full dashboard features coming soon...</p>
-			<p class="muted">Your plan data is safely stored on this device.</p>
-		</div>
+		</section>
 	{/if}
-</section>
+
+	<section class="offline-indicator" aria-live="polite">
+		<p class="muted">
+			<span class="offline-icon" aria-hidden="true">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+					<path d="M12 6v6l4 2" />
+				</svg>
+			</span>
+			Your plan is stored on this device and works offline
+		</p>
+	</section>
+</div>
 
 <style>
 	.dashboard-page {
-		padding: var(--space-8) var(--space-4);
 		max-width: var(--max-width);
 		margin: 0 auto;
 	}
 
-	.dashboard-header {
-		text-align: center;
-		margin-bottom: var(--space-8);
+	/* Plan Summary Section */
+	.plan-summary {
+		padding: var(--space-4);
 	}
 
-	.dashboard-header h1 {
-		font-size: var(--font-size-3xl);
-		color: var(--color-gray-900);
-		margin-bottom: var(--space-2);
-	}
-
-	.subtitle {
-		font-size: var(--font-size-lg);
-		color: var(--color-text-muted);
-	}
-
-	.quick-stats {
+	.summary-cards {
 		display: flex;
-		gap: var(--space-4);
+		gap: var(--space-3);
 		justify-content: center;
 		flex-wrap: wrap;
-		margin-bottom: var(--space-8);
+		max-width: 500px;
+		margin: 0 auto;
 	}
 
-	.stat-card {
+	.summary-card {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: var(--space-6);
+		gap: var(--space-1);
+		padding: var(--space-4) var(--space-3);
 		background-color: var(--color-bg-subtle);
 		border: 1px solid var(--color-gray-200);
 		border-radius: var(--radius-lg);
-		min-width: 140px;
+		flex: 1;
+		min-width: 100px;
+		max-width: 150px;
 	}
 
-	.stat-value {
-		font-size: var(--font-size-4xl);
+	.card-icon {
+		width: 24px;
+		height: 24px;
+		color: var(--color-primary);
+	}
+
+	.card-icon svg {
+		width: 100%;
+		height: 100%;
+	}
+
+	.card-value {
+		font-size: var(--font-size-2xl);
 		font-weight: 600;
 		color: var(--color-primary);
 		line-height: 1;
 	}
 
-	.stat-label {
-		font-size: var(--font-size-sm);
+	.card-label {
+		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
-		margin-top: var(--space-2);
-	}
-
-	.coming-soon {
 		text-align: center;
-		padding: var(--space-8);
-		background-color: var(--color-bg-subtle);
-		border-radius: var(--radius-lg);
 	}
 
-	.coming-soon p {
-		color: var(--color-text);
-		font-size: var(--font-size-lg);
+	/* Offline Indicator */
+	.offline-indicator {
+		padding: var(--space-6) var(--space-4);
+		text-align: center;
 	}
 
-	.coming-soon .muted {
-		color: var(--color-text-muted);
+	.offline-indicator p {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
 		font-size: var(--font-size-sm);
-		margin-top: var(--space-2);
+		color: var(--color-text-muted);
 	}
 
-	@media (max-width: 480px) {
-		.dashboard-header h1 {
-			font-size: var(--font-size-2xl);
-		}
+	.offline-icon {
+		width: 16px;
+		height: 16px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
 
-		.quick-stats {
+	.offline-icon svg {
+		width: 100%;
+		height: 100%;
+	}
+
+	.muted {
+		color: var(--color-text-muted);
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 400px) {
+		.summary-cards {
 			flex-direction: column;
+			align-items: center;
 		}
 
-		.stat-card {
+		.summary-card {
 			width: 100%;
+			max-width: 280px;
+			flex-direction: row;
+			justify-content: flex-start;
+			gap: var(--space-3);
+		}
+
+		.card-value {
+			font-size: var(--font-size-xl);
+		}
+
+		.card-label {
+			text-align: left;
 		}
 	}
 </style>

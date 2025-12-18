@@ -5,6 +5,7 @@
 	import { browser } from '$app/environment';
 	import { localPlanStore, hasPlan } from '$lib/stores/localPlan';
 	import { patientProfileStore, onboardingComplete } from '$lib/stores/patientProfile';
+	import { PatientNav } from '$lib/components/app';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -18,6 +19,9 @@
 
 	// Check if we're on the onboarding page
 	let isOnboardingRoute = $derived($page.url.pathname === '/app/onboarding');
+
+	// Show navigation only when not on onboarding and when onboarding is complete
+	let showNav = $derived(!isOnboardingRoute && $onboardingComplete);
 
 	onMount(async () => {
 		if (!browser) return;
@@ -75,10 +79,39 @@
 		<p>Loading...</p>
 	</div>
 {:else}
-	{@render children()}
+	<div class="app-layout" class:has-nav={showNav}>
+		{#if showNav}
+			<PatientNav />
+		{/if}
+		<main class="app-content">
+			{@render children()}
+		</main>
+	</div>
 {/if}
 
 <style>
+	.app-layout {
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Mobile: nav is fixed at bottom, so add padding */
+	.app-layout.has-nav {
+		padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+	}
+
+	.app-content {
+		flex: 1;
+	}
+
+	/* Desktop: nav is at top */
+	@media (min-width: 768px) {
+		.app-layout.has-nav {
+			padding-bottom: 0;
+		}
+	}
+
 	.loading-state {
 		display: flex;
 		flex-direction: column;
