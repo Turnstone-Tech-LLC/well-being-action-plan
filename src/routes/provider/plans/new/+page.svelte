@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { actionPlanDraft, type ActionPlanDraft } from '$lib/stores/actionPlanDraft';
 	import type {
 		Skill,
@@ -12,6 +13,8 @@
 	import GreenZoneSkillsStep from '$lib/components/plans/GreenZoneSkillsStep.svelte';
 	import SupportiveAdultsStep from '$lib/components/plans/SupportiveAdultsStep.svelte';
 	import YellowZoneStep from '$lib/components/plans/YellowZoneStep.svelte';
+	import ReviewStep from '$lib/components/plans/ReviewStep.svelte';
+	import SuccessScreen from '$lib/components/plans/SuccessScreen.svelte';
 
 	interface PageData {
 		skills: Skill[];
@@ -21,6 +24,15 @@
 	}
 
 	let { data }: { data: PageData } = $props();
+
+	// State for submission and success
+	let isSubmitting = $state(false);
+	let submitError = $state<string | null>(null);
+	let createdPlan = $state<{
+		actionPlanId: string;
+		token: string;
+		patientNickname: string;
+	} | null>(null);
 
 	// Subscribe to the store for reactive updates
 	let draft: ActionPlanDraft = $state({
@@ -147,6 +159,73 @@
 	function handleRemoveCustomHelpMethod(customId: string) {
 		actionPlanDraft.removeCustomHelpMethod(customId);
 	}
+
+	// Review step handlers
+	function handleEditStep(step: number) {
+		actionPlanDraft.setStep(step);
+	}
+
+	// Create action plan handler
+	async function handleCreatePlan() {
+		isSubmitting = true;
+		submitError = null;
+
+		try {
+			const formData = new FormData();
+			formData.set(
+				'draft',
+				JSON.stringify({
+					patientNickname: draft.patientNickname,
+					selectedSkills: draft.selectedSkills,
+					customSkills: draft.customSkills,
+					happyWhen: draft.happyWhen,
+					happyBecause: draft.happyBecause,
+					selectedSupportiveAdults: draft.selectedSupportiveAdults,
+					customSupportiveAdults: draft.customSupportiveAdults,
+					selectedHelpMethods: draft.selectedHelpMethods,
+					customHelpMethods: draft.customHelpMethods
+				})
+			);
+
+			const response = await fetch('?/createPlan', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (result.type === 'failure') {
+				submitError = result.data?.error || 'Failed to create action plan';
+				return;
+			}
+
+			// Success - update state with created plan info
+			createdPlan = {
+				actionPlanId: result.data.actionPlanId,
+				token: result.data.token,
+				patientNickname: result.data.patientNickname
+			};
+
+			// Clear the draft from session storage
+			actionPlanDraft.reset();
+		} catch (error) {
+			console.error('Error creating action plan:', error);
+			submitError = 'An unexpected error occurred. Please try again.';
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	// Success screen handlers
+	function handleDone() {
+		goto('/provider');
+	}
+
+	function handleViewPlan() {
+		if (createdPlan) {
+			goto(`/provider/plans/${createdPlan.actionPlanId}`);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -155,71 +234,141 @@
 
 <main class="wizard-page">
 	<div class="wizard-container">
-		<StepIndicator currentStep={draft.currentStep} {steps} />
+		{#if createdPlan}
+			<!-- Success screen - hide step indicator -->
+			<div class="wizard-content">
+				<SuccessScreen
+					token={createdPlan.token}
+					patientNickname={createdPlan.patientNickname}
+					onDone={handleDone}
+					onViewPlan={handleViewPlan}
+				/>
+			</div>
+		{:else}
+			<StepIndicator currentStep={draft.currentStep} {steps} />
 
-		<div class="wizard-content">
-			{#if draft.currentStep === 1}
-				<BasicInfoStep
-					patientNickname={draft.patientNickname}
-					onContinue={handleNextStep}
-					onNicknameChange={handleNicknameChange}
-				/>
-			{:else if draft.currentStep === 2}
-				<GreenZoneSkillsStep
-					skills={data.skills}
-					selectedSkills={draft.selectedSkills}
-					customSkills={draft.customSkills}
-					happyWhen={draft.happyWhen}
-					happyBecause={draft.happyBecause}
-					onBack={handlePrevStep}
-					onContinue={handleNextStep}
-					onToggleSkill={handleToggleSkill}
-					onSkillFillIn={handleSkillFillIn}
-					onAddCustomSkill={handleAddCustomSkill}
-					onRemoveCustomSkill={handleRemoveCustomSkill}
-					onHappyWhenChange={handleHappyWhenChange}
-					onHappyBecauseChange={handleHappyBecauseChange}
-				/>
-			{:else if draft.currentStep === 3}
-				<SupportiveAdultsStep
-					supportiveAdultTypes={data.supportiveAdultTypes}
-					selectedSupportiveAdults={draft.selectedSupportiveAdults}
-					customSupportiveAdults={draft.customSupportiveAdults}
-					onBack={handlePrevStep}
-					onContinue={handleNextStep}
-					onToggleSupportiveAdult={handleToggleSupportiveAdult}
-					onSetName={handleSetSupportiveAdultName}
-					onSetContactInfo={handleSetSupportiveAdultContactInfo}
-					onSetPrimary={handleSetSupportiveAdultPrimary}
-					onAddCustomSupportiveAdult={handleAddCustomSupportiveAdult}
-					onUpdateCustomSupportiveAdult={handleUpdateCustomSupportiveAdult}
-					onRemoveCustomSupportiveAdult={handleRemoveCustomSupportiveAdult}
-				/>
-			{:else if draft.currentStep === 4}
-				<YellowZoneStep
-					helpMethods={data.helpMethods}
-					selectedHelpMethods={draft.selectedHelpMethods}
-					customHelpMethods={draft.customHelpMethods}
-					crisisResources={data.crisisResources}
-					onBack={handlePrevStep}
-					onContinue={handleNextStep}
-					onToggleHelpMethod={handleToggleHelpMethod}
-					onSetAdditionalInfo={handleSetHelpMethodAdditionalInfo}
-					onAddCustomHelpMethod={handleAddCustomHelpMethod}
-					onUpdateCustomHelpMethod={handleUpdateCustomHelpMethod}
-					onRemoveCustomHelpMethod={handleRemoveCustomHelpMethod}
-				/>
-			{:else}
-				<!-- Placeholder for future steps -->
-				<div class="placeholder-step">
-					<h2>Coming Soon</h2>
-					<p>Step {draft.currentStep} is not yet implemented.</p>
-					<div class="placeholder-actions">
-						<button type="button" class="btn btn-outline" onclick={handlePrevStep}> Back </button>
+			<div class="wizard-content">
+				{#if submitError}
+					<div class="error-banner" role="alert">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+							class="error-icon"
+							aria-hidden="true"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+							/>
+						</svg>
+						<p>{submitError}</p>
+						<button
+							type="button"
+							class="dismiss-btn"
+							onclick={() => (submitError = null)}
+							aria-label="Dismiss error"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="2"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+							</svg>
+						</button>
 					</div>
-				</div>
-			{/if}
-		</div>
+				{/if}
+
+				{#if draft.currentStep === 1}
+					<BasicInfoStep
+						patientNickname={draft.patientNickname}
+						onContinue={handleNextStep}
+						onNicknameChange={handleNicknameChange}
+					/>
+				{:else if draft.currentStep === 2}
+					<GreenZoneSkillsStep
+						skills={data.skills}
+						selectedSkills={draft.selectedSkills}
+						customSkills={draft.customSkills}
+						happyWhen={draft.happyWhen}
+						happyBecause={draft.happyBecause}
+						onBack={handlePrevStep}
+						onContinue={handleNextStep}
+						onToggleSkill={handleToggleSkill}
+						onSkillFillIn={handleSkillFillIn}
+						onAddCustomSkill={handleAddCustomSkill}
+						onRemoveCustomSkill={handleRemoveCustomSkill}
+						onHappyWhenChange={handleHappyWhenChange}
+						onHappyBecauseChange={handleHappyBecauseChange}
+					/>
+				{:else if draft.currentStep === 3}
+					<SupportiveAdultsStep
+						supportiveAdultTypes={data.supportiveAdultTypes}
+						selectedSupportiveAdults={draft.selectedSupportiveAdults}
+						customSupportiveAdults={draft.customSupportiveAdults}
+						onBack={handlePrevStep}
+						onContinue={handleNextStep}
+						onToggleSupportiveAdult={handleToggleSupportiveAdult}
+						onSetName={handleSetSupportiveAdultName}
+						onSetContactInfo={handleSetSupportiveAdultContactInfo}
+						onSetPrimary={handleSetSupportiveAdultPrimary}
+						onAddCustomSupportiveAdult={handleAddCustomSupportiveAdult}
+						onUpdateCustomSupportiveAdult={handleUpdateCustomSupportiveAdult}
+						onRemoveCustomSupportiveAdult={handleRemoveCustomSupportiveAdult}
+					/>
+				{:else if draft.currentStep === 4}
+					<YellowZoneStep
+						helpMethods={data.helpMethods}
+						selectedHelpMethods={draft.selectedHelpMethods}
+						customHelpMethods={draft.customHelpMethods}
+						crisisResources={data.crisisResources}
+						onBack={handlePrevStep}
+						onContinue={handleNextStep}
+						onToggleHelpMethod={handleToggleHelpMethod}
+						onSetAdditionalInfo={handleSetHelpMethodAdditionalInfo}
+						onAddCustomHelpMethod={handleAddCustomHelpMethod}
+						onUpdateCustomHelpMethod={handleUpdateCustomHelpMethod}
+						onRemoveCustomHelpMethod={handleRemoveCustomHelpMethod}
+					/>
+				{:else if draft.currentStep === 5}
+					<ReviewStep
+						patientNickname={draft.patientNickname}
+						skills={data.skills}
+						selectedSkills={draft.selectedSkills}
+						customSkills={draft.customSkills}
+						happyWhen={draft.happyWhen}
+						happyBecause={draft.happyBecause}
+						supportiveAdultTypes={data.supportiveAdultTypes}
+						selectedSupportiveAdults={draft.selectedSupportiveAdults}
+						customSupportiveAdults={draft.customSupportiveAdults}
+						helpMethods={data.helpMethods}
+						selectedHelpMethods={draft.selectedHelpMethods}
+						customHelpMethods={draft.customHelpMethods}
+						crisisResources={data.crisisResources}
+						{isSubmitting}
+						onBack={handlePrevStep}
+						onEditStep={handleEditStep}
+						onCreatePlan={handleCreatePlan}
+					/>
+				{:else}
+					<!-- Fallback for unexpected steps -->
+					<div class="placeholder-step">
+						<h2>Step Not Found</h2>
+						<p>Step {draft.currentStep} is not recognized.</p>
+						<div class="placeholder-actions">
+							<button type="button" class="btn btn-outline" onclick={handlePrevStep}> Back </button>
+						</div>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	</div>
 </main>
 
@@ -294,6 +443,59 @@
 	.btn-outline:focus-visible {
 		outline: 3px solid var(--color-accent);
 		outline-offset: 2px;
+	}
+
+	.error-banner {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-3) var(--space-4);
+		background-color: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-6);
+		color: #b91c1c;
+	}
+
+	.error-banner p {
+		flex: 1;
+		margin: 0;
+		font-size: var(--font-size-sm);
+	}
+
+	.error-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+		flex-shrink: 0;
+	}
+
+	.dismiss-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		padding: 0;
+		background: transparent;
+		border: none;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		color: #b91c1c;
+		flex-shrink: 0;
+	}
+
+	.dismiss-btn:hover {
+		background-color: rgba(239, 68, 68, 0.1);
+	}
+
+	.dismiss-btn:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 1px;
+	}
+
+	.dismiss-btn svg {
+		width: 1rem;
+		height: 1rem;
 	}
 
 	@media (max-width: 640px) {
