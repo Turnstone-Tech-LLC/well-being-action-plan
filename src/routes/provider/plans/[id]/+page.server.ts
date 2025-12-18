@@ -2,6 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { PlanPayload } from '$lib/db';
 import type { InstallToken, ActionPlanRevision } from '$lib/server/types';
+import { createInstallToken } from '$lib/server/utils/token';
 
 export interface PlanDetailData {
 	id: string;
@@ -188,9 +189,8 @@ export const actions: Actions = {
 			.is('used_at', null)
 			.is('revoked_at', null);
 
-		// Generate new token using nanoid
-		const { nanoid } = await import('nanoid');
-		const token = nanoid(10);
+		// Generate new token using human-friendly install token generator
+		const token = createInstallToken();
 
 		// Token expires in 7 days
 		const expiresAt = new Date();
