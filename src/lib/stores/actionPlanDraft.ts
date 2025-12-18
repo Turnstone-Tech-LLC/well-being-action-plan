@@ -20,6 +20,27 @@ export interface CustomSkill {
 }
 
 /**
+ * Selected supportive adult from the predefined list.
+ */
+export interface SelectedSupportiveAdult {
+	typeId: string;
+	name: string;
+	contactInfo?: string;
+	isPrimary: boolean;
+}
+
+/**
+ * Custom supportive adult added by the provider.
+ */
+export interface CustomSupportiveAdult {
+	id: string;
+	label: string;
+	name: string;
+	contactInfo?: string;
+	isPrimary: boolean;
+}
+
+/**
  * Action plan draft state for the wizard.
  */
 export interface ActionPlanDraft {
@@ -35,6 +56,10 @@ export interface ActionPlanDraft {
 	happyWhen: string;
 	/** Reflective question: "I can tell I am feeling happy because..." */
 	happyBecause: string;
+	/** Selected supportive adults from the predefined list */
+	selectedSupportiveAdults: SelectedSupportiveAdult[];
+	/** Custom supportive adults added by the provider */
+	customSupportiveAdults: CustomSupportiveAdult[];
 }
 
 const STORAGE_KEY = 'actionPlanDraft';
@@ -49,7 +74,9 @@ function createInitialDraft(): ActionPlanDraft {
 		selectedSkills: [],
 		customSkills: [],
 		happyWhen: '',
-		happyBecause: ''
+		happyBecause: '',
+		selectedSupportiveAdults: [],
+		customSupportiveAdults: []
 	};
 }
 
@@ -201,6 +228,112 @@ function createActionPlanDraftStore() {
 		},
 
 		/**
+		 * Toggle a supportive adult type selection.
+		 */
+		toggleSupportiveAdult(typeId: string): void {
+			update((draft) => {
+				const exists = draft.selectedSupportiveAdults.some((a) => a.typeId === typeId);
+				if (exists) {
+					return {
+						...draft,
+						selectedSupportiveAdults: draft.selectedSupportiveAdults.filter(
+							(a) => a.typeId !== typeId
+						)
+					};
+				} else {
+					return {
+						...draft,
+						selectedSupportiveAdults: [
+							...draft.selectedSupportiveAdults,
+							{ typeId, name: '', isPrimary: false }
+						]
+					};
+				}
+			});
+		},
+
+		/**
+		 * Set the name for a selected supportive adult.
+		 */
+		setSupportiveAdultName(typeId: string, name: string): void {
+			update((draft) => ({
+				...draft,
+				selectedSupportiveAdults: draft.selectedSupportiveAdults.map((a) =>
+					a.typeId === typeId ? { ...a, name } : a
+				)
+			}));
+		},
+
+		/**
+		 * Set the contact info for a selected supportive adult.
+		 */
+		setSupportiveAdultContactInfo(typeId: string, contactInfo: string): void {
+			update((draft) => ({
+				...draft,
+				selectedSupportiveAdults: draft.selectedSupportiveAdults.map((a) =>
+					a.typeId === typeId ? { ...a, contactInfo } : a
+				)
+			}));
+		},
+
+		/**
+		 * Set a supportive adult as primary (only one can be primary).
+		 */
+		setSupportiveAdultPrimary(typeId: string | null, customId: string | null): void {
+			update((draft) => ({
+				...draft,
+				selectedSupportiveAdults: draft.selectedSupportiveAdults.map((a) => ({
+					...a,
+					isPrimary: a.typeId === typeId
+				})),
+				customSupportiveAdults: draft.customSupportiveAdults.map((a) => ({
+					...a,
+					isPrimary: a.id === customId
+				}))
+			}));
+		},
+
+		/**
+		 * Add a custom supportive adult.
+		 */
+		addCustomSupportiveAdult(label: string, name: string): string {
+			const id = `custom-adult-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+			update((draft) => ({
+				...draft,
+				customSupportiveAdults: [
+					...draft.customSupportiveAdults,
+					{ id, label, name, isPrimary: false }
+				]
+			}));
+			return id;
+		},
+
+		/**
+		 * Update a custom supportive adult.
+		 */
+		updateCustomSupportiveAdult(
+			customId: string,
+			updates: { label?: string; name?: string; contactInfo?: string }
+		): void {
+			update((draft) => ({
+				...draft,
+				customSupportiveAdults: draft.customSupportiveAdults.map((a) =>
+					a.id === customId ? { ...a, ...updates } : a
+				)
+			}));
+		},
+
+		/**
+		 * Remove a custom supportive adult.
+		 */
+		removeCustomSupportiveAdult(customId: string): void {
+			update((draft) => ({
+				...draft,
+				customSupportiveAdults: draft.customSupportiveAdults.filter((a) => a.id !== customId)
+			}));
+		},
+
+		/**
 		 * Reset the draft to initial state.
 		 */
 		reset(): void {
@@ -272,6 +405,22 @@ export const selectedSkills: Readable<SelectedSkill[]> = derived(
 export const customSkills: Readable<CustomSkill[]> = derived(
 	actionPlanDraft,
 	($draft) => $draft.customSkills
+);
+
+/**
+ * Derived store for selected supportive adults.
+ */
+export const selectedSupportiveAdults: Readable<SelectedSupportiveAdult[]> = derived(
+	actionPlanDraft,
+	($draft) => $draft.selectedSupportiveAdults
+);
+
+/**
+ * Derived store for custom supportive adults.
+ */
+export const customSupportiveAdults: Readable<CustomSupportiveAdult[]> = derived(
+	actionPlanDraft,
+	($draft) => $draft.customSupportiveAdults
 );
 
 /**
@@ -348,4 +497,13 @@ export function getCategoryDisplayName(category: SkillCategory): string {
 		mindfulness: 'Mindfulness'
 	};
 	return names[category] || category;
+}
+
+/**
+ * Type guard to check if a supportive adult is custom.
+ */
+export function isCustomSupportiveAdult(
+	adult: SelectedSupportiveAdult | CustomSupportiveAdult
+): adult is CustomSupportiveAdult {
+	return 'id' in adult && typeof adult.id === 'string' && adult.id.startsWith('custom-adult-');
 }
