@@ -68,11 +68,31 @@ export interface LocalActionPlan {
 }
 
 /**
+ * Represents a patient's profile data stored locally.
+ * Created during onboarding after token validation.
+ */
+export interface PatientProfile {
+	/** Primary key for local storage (auto-generated) */
+	id?: number;
+	/** Matches the action plan ID this profile is associated with */
+	actionPlanId: string;
+	/** Display name chosen by the patient */
+	displayName: string;
+	/** Whether onboarding has been completed */
+	onboardingComplete: boolean;
+	/** When this profile was created */
+	createdAt: Date;
+	/** Last time the profile was updated */
+	updatedAt: Date;
+}
+
+/**
  * Dexie database for Well-Being Action Plan local storage.
  * Uses IndexedDB under the hood for offline-capable storage.
  */
 class WellBeingDB extends Dexie {
 	localPlans!: EntityTable<LocalActionPlan, 'id'>;
+	patientProfiles!: EntityTable<PatientProfile, 'id'>;
 
 	constructor() {
 		super('WellBeingActionPlan');
@@ -81,6 +101,12 @@ class WellBeingDB extends Dexie {
 			// Primary key is auto-incrementing id
 			// Indexed fields: actionPlanId (unique), accessCode, installedAt
 			localPlans: '++id, &actionPlanId, accessCode, installedAt'
+		});
+
+		// Version 2: Add patient profiles table
+		this.version(2).stores({
+			localPlans: '++id, &actionPlanId, accessCode, installedAt',
+			patientProfiles: '++id, &actionPlanId, onboardingComplete, createdAt'
 		});
 	}
 }
