@@ -26,6 +26,7 @@
 		customHelpMethods: CustomHelpMethod[];
 		crisisResources: CrisisResource[];
 		isSubmitting?: boolean;
+		submitButtonText?: string;
 		onBack: () => void;
 		onEditStep: (step: number) => void;
 		onCreatePlan: () => void;
@@ -46,6 +47,7 @@
 		customHelpMethods,
 		crisisResources,
 		isSubmitting = false,
+		submitButtonText = 'Create Action Plan',
 		onBack,
 		onEditStep,
 		onCreatePlan
@@ -364,9 +366,9 @@
 		>
 			{#if isSubmitting}
 				<span class="spinner" aria-hidden="true"></span>
-				Creating...
+				{submitButtonText === 'Create Action Plan' ? 'Creating...' : 'Saving...'}
 			{:else}
-				Create Action Plan
+				{submitButtonText}
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
