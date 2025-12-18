@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
 	import type { InstallToken } from '$lib/server/types';
+	import { createFocusTrap, type FocusTrap } from '$lib/a11y/focus-trap';
 
 	interface Props {
 		token: InstallToken;
@@ -13,6 +14,8 @@
 	let copySuccess = $state(false);
 	let qrError = $state<string | null>(null);
 	let showQRModal = $state(false);
+	let modalContentEl = $state<HTMLElement | null>(null);
+	let focusTrap: FocusTrap | null = null;
 
 	// Construct the token URL
 	const tokenUrl = $derived(
@@ -84,14 +87,27 @@
 		});
 	}
 
-	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && showQRModal) {
-			showQRModal = false;
-		}
+	function closeModal() {
+		showQRModal = false;
 	}
-</script>
 
-<svelte:window onkeydown={handleKeydown} />
+	// Manage focus trap when modal opens/closes
+	$effect(() => {
+		if (showQRModal && modalContentEl) {
+			focusTrap = createFocusTrap(modalContentEl, {
+				onEscape: closeModal
+			});
+			focusTrap.activate();
+		}
+
+		return () => {
+			if (focusTrap) {
+				focusTrap.deactivate();
+				focusTrap = null;
+			}
+		};
+	});
+</script>
 
 <section class="token-info-section" aria-labelledby="token-heading">
 	<header class="section-header">
@@ -217,29 +233,25 @@
 
 <!-- QR Code Modal -->
 {#if showQRModal}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div
-		class="modal-backdrop"
-		onclick={() => (showQRModal = false)}
-		onkeydown={(e) => e.key === 'Escape' && (showQRModal = false)}
-	>
+	<div class="modal-backdrop">
+		<!-- Backdrop click handler as a separate invisible button for a11y -->
+		<button
+			type="button"
+			class="modal-backdrop-close"
+			onclick={closeModal}
+			aria-label="Close modal"
+			tabindex="-1"
+		></button>
 		<div
+			bind:this={modalContentEl}
 			class="modal-content"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="qr-modal-title"
-			tabindex="-1"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
 		>
 			<header class="modal-header">
 				<h3 id="qr-modal-title">Scan QR Code</h3>
-				<button
-					type="button"
-					class="modal-close"
-					onclick={() => (showQRModal = false)}
-					aria-label="Close modal"
-				>
+				<button type="button" class="modal-close" onclick={closeModal} aria-label="Close modal">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -514,7 +526,18 @@
 		padding: var(--space-4);
 	}
 
+	.modal-backdrop-close {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+	}
+
 	.modal-content {
+		position: relative;
 		background-color: var(--color-white);
 		border-radius: var(--radius-xl);
 		max-width: 24rem;
