@@ -1,14 +1,23 @@
 <script lang="ts">
 	import { actionPlanDraft, type ActionPlanDraft } from '$lib/stores/actionPlanDraft';
-	import type { Skill, SkillCategory, SupportiveAdultType } from '$lib/types/database';
+	import type {
+		Skill,
+		SkillCategory,
+		SupportiveAdultType,
+		HelpMethod,
+		CrisisResource
+	} from '$lib/types/database';
 	import StepIndicator from '$lib/components/plans/StepIndicator.svelte';
 	import BasicInfoStep from '$lib/components/plans/BasicInfoStep.svelte';
 	import GreenZoneSkillsStep from '$lib/components/plans/GreenZoneSkillsStep.svelte';
 	import SupportiveAdultsStep from '$lib/components/plans/SupportiveAdultsStep.svelte';
+	import YellowZoneStep from '$lib/components/plans/YellowZoneStep.svelte';
 
 	interface PageData {
 		skills: Skill[];
 		supportiveAdultTypes: SupportiveAdultType[];
+		helpMethods: HelpMethod[];
+		crisisResources: CrisisResource[];
 	}
 
 	let { data }: { data: PageData } = $props();
@@ -22,7 +31,9 @@
 		happyWhen: '',
 		happyBecause: '',
 		selectedSupportiveAdults: [],
-		customSupportiveAdults: []
+		customSupportiveAdults: [],
+		selectedHelpMethods: [],
+		customHelpMethods: []
 	});
 
 	// Keep draft in sync with store
@@ -112,6 +123,30 @@
 	function handleRemoveCustomSupportiveAdult(customId: string) {
 		actionPlanDraft.removeCustomSupportiveAdult(customId);
 	}
+
+	// Yellow zone (help methods) handlers
+	function handleToggleHelpMethod(helpMethodId: string) {
+		actionPlanDraft.toggleHelpMethod(helpMethodId);
+	}
+
+	function handleSetHelpMethodAdditionalInfo(helpMethodId: string, additionalInfo: string) {
+		actionPlanDraft.setHelpMethodAdditionalInfo(helpMethodId, additionalInfo);
+	}
+
+	function handleAddCustomHelpMethod(title: string) {
+		actionPlanDraft.addCustomHelpMethod(title);
+	}
+
+	function handleUpdateCustomHelpMethod(
+		customId: string,
+		updates: { title?: string; additionalInfo?: string }
+	) {
+		actionPlanDraft.updateCustomHelpMethod(customId, updates);
+	}
+
+	function handleRemoveCustomHelpMethod(customId: string) {
+		actionPlanDraft.removeCustomHelpMethod(customId);
+	}
 </script>
 
 <svelte:head>
@@ -159,6 +194,20 @@
 					onAddCustomSupportiveAdult={handleAddCustomSupportiveAdult}
 					onUpdateCustomSupportiveAdult={handleUpdateCustomSupportiveAdult}
 					onRemoveCustomSupportiveAdult={handleRemoveCustomSupportiveAdult}
+				/>
+			{:else if draft.currentStep === 4}
+				<YellowZoneStep
+					helpMethods={data.helpMethods}
+					selectedHelpMethods={draft.selectedHelpMethods}
+					customHelpMethods={draft.customHelpMethods}
+					crisisResources={data.crisisResources}
+					onBack={handlePrevStep}
+					onContinue={handleNextStep}
+					onToggleHelpMethod={handleToggleHelpMethod}
+					onSetAdditionalInfo={handleSetHelpMethodAdditionalInfo}
+					onAddCustomHelpMethod={handleAddCustomHelpMethod}
+					onUpdateCustomHelpMethod={handleUpdateCustomHelpMethod}
+					onRemoveCustomHelpMethod={handleRemoveCustomHelpMethod}
 				/>
 			{:else}
 				<!-- Placeholder for future steps -->

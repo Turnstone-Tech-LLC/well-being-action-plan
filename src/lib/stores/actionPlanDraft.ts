@@ -41,6 +41,23 @@ export interface CustomSupportiveAdult {
 }
 
 /**
+ * Selected help method from the predefined list.
+ */
+export interface SelectedHelpMethod {
+	helpMethodId: string;
+	additionalInfo?: string;
+}
+
+/**
+ * Custom help method added by the provider.
+ */
+export interface CustomHelpMethod {
+	id: string;
+	title: string;
+	additionalInfo?: string;
+}
+
+/**
  * Action plan draft state for the wizard.
  */
 export interface ActionPlanDraft {
@@ -60,6 +77,10 @@ export interface ActionPlanDraft {
 	selectedSupportiveAdults: SelectedSupportiveAdult[];
 	/** Custom supportive adults added by the provider */
 	customSupportiveAdults: CustomSupportiveAdult[];
+	/** Selected help methods from the predefined list (Yellow Zone) */
+	selectedHelpMethods: SelectedHelpMethod[];
+	/** Custom help methods added by the provider (Yellow Zone) */
+	customHelpMethods: CustomHelpMethod[];
 }
 
 const STORAGE_KEY = 'actionPlanDraft';
@@ -76,7 +97,9 @@ function createInitialDraft(): ActionPlanDraft {
 		happyWhen: '',
 		happyBecause: '',
 		selectedSupportiveAdults: [],
-		customSupportiveAdults: []
+		customSupportiveAdults: [],
+		selectedHelpMethods: [],
+		customHelpMethods: []
 	};
 }
 
@@ -334,6 +357,77 @@ function createActionPlanDraftStore() {
 		},
 
 		/**
+		 * Toggle a help method selection.
+		 */
+		toggleHelpMethod(helpMethodId: string): void {
+			update((draft) => {
+				const exists = draft.selectedHelpMethods.some((h) => h.helpMethodId === helpMethodId);
+				if (exists) {
+					return {
+						...draft,
+						selectedHelpMethods: draft.selectedHelpMethods.filter(
+							(h) => h.helpMethodId !== helpMethodId
+						)
+					};
+				} else {
+					return {
+						...draft,
+						selectedHelpMethods: [...draft.selectedHelpMethods, { helpMethodId }]
+					};
+				}
+			});
+		},
+
+		/**
+		 * Set additional info for a selected help method.
+		 */
+		setHelpMethodAdditionalInfo(helpMethodId: string, additionalInfo: string): void {
+			update((draft) => ({
+				...draft,
+				selectedHelpMethods: draft.selectedHelpMethods.map((h) =>
+					h.helpMethodId === helpMethodId ? { ...h, additionalInfo } : h
+				)
+			}));
+		},
+
+		/**
+		 * Add a custom help method.
+		 */
+		addCustomHelpMethod(title: string, additionalInfo?: string): string {
+			const id = `custom-help-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+			update((draft) => ({
+				...draft,
+				customHelpMethods: [...draft.customHelpMethods, { id, title, additionalInfo }]
+			}));
+			return id;
+		},
+
+		/**
+		 * Update a custom help method.
+		 */
+		updateCustomHelpMethod(
+			customId: string,
+			updates: { title?: string; additionalInfo?: string }
+		): void {
+			update((draft) => ({
+				...draft,
+				customHelpMethods: draft.customHelpMethods.map((h) =>
+					h.id === customId ? { ...h, ...updates } : h
+				)
+			}));
+		},
+
+		/**
+		 * Remove a custom help method.
+		 */
+		removeCustomHelpMethod(customId: string): void {
+			update((draft) => ({
+				...draft,
+				customHelpMethods: draft.customHelpMethods.filter((h) => h.id !== customId)
+			}));
+		},
+
+		/**
 		 * Reset the draft to initial state.
 		 */
 		reset(): void {
@@ -424,6 +518,22 @@ export const customSupportiveAdults: Readable<CustomSupportiveAdult[]> = derived
 );
 
 /**
+ * Derived store for selected help methods.
+ */
+export const selectedHelpMethods: Readable<SelectedHelpMethod[]> = derived(
+	actionPlanDraft,
+	($draft) => $draft.selectedHelpMethods
+);
+
+/**
+ * Derived store for custom help methods.
+ */
+export const customHelpMethods: Readable<CustomHelpMethod[]> = derived(
+	actionPlanDraft,
+	($draft) => $draft.customHelpMethods
+);
+
+/**
  * Helper to check if a skill is selected (reactive).
  */
 export function createIsSkillSelected(skillId: string): Readable<boolean> {
@@ -506,4 +616,13 @@ export function isCustomSupportiveAdult(
 	adult: SelectedSupportiveAdult | CustomSupportiveAdult
 ): adult is CustomSupportiveAdult {
 	return 'id' in adult && typeof adult.id === 'string' && adult.id.startsWith('custom-adult-');
+}
+
+/**
+ * Type guard to check if a help method is custom.
+ */
+export function isCustomHelpMethod(
+	method: SelectedHelpMethod | CustomHelpMethod
+): method is CustomHelpMethod {
+	return 'id' in method && typeof method.id === 'string' && method.id.startsWith('custom-help-');
 }
