@@ -24,8 +24,7 @@
 			// Bypass token validation - redirect to app
 			statusMessage = 'Plan found! Redirecting...';
 			flowState = 'redirecting';
-			// TODO: Redirect to actual app view when implemented
-			await goto('/');
+			await goto('/app');
 			return;
 		}
 
@@ -75,12 +74,11 @@
 				// Continue anyway - local install succeeded
 			}
 
-			// Step 5: Redirect to app
+			// Step 5: Redirect to onboarding
 			flowState = 'redirecting';
-			statusMessage = 'Success! Redirecting to your plan...';
+			statusMessage = 'Success! Redirecting to setup...';
 
-			// TODO: Redirect to actual app view when implemented
-			await goto('/');
+			await goto('/app/onboarding');
 		} catch (err) {
 			console.error('Failed to install plan:', err);
 			flowState = 'error';
