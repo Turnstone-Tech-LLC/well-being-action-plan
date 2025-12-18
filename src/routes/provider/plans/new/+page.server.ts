@@ -1,9 +1,10 @@
 import type { PageServerLoad } from './$types';
-import type { Skill, SkillCategory } from '$lib/types/database';
+import type { Skill, SkillCategory, SupportiveAdultType } from '$lib/types/database';
 
 export interface NewPlanPageData {
 	skills: Skill[];
 	categories: SkillCategory[];
+	supportiveAdultTypes: SupportiveAdultType[];
 }
 
 export const load: PageServerLoad = async ({ locals, parent }): Promise<NewPlanPageData> => {
@@ -13,32 +14,46 @@ export const load: PageServerLoad = async ({ locals, parent }): Promise<NewPlanP
 	const orgId = provider.organization_id;
 
 	// Fetch skills: global (org_id is null) OR org-specific
-	let query = locals.supabase
+	let skillsQuery = locals.supabase
 		.from('skills')
 		.select('*')
 		.eq('is_active', true)
 		.order('category', { ascending: true })
 		.order('display_order', { ascending: true });
 
-	// Filter by organization - show global skills and org-specific skills
+	// Fetch supportive adult types: global (org_id is null) OR org-specific
+	let adultTypesQuery = locals.supabase
+		.from('supportive_adult_types')
+		.select('*')
+		.eq('is_active', true)
+		.order('display_order', { ascending: true });
+
+	// Filter by organization - show global and org-specific
 	if (orgId) {
-		query = query.or(`organization_id.is.null,organization_id.eq.${orgId}`);
+		skillsQuery = skillsQuery.or(`organization_id.is.null,organization_id.eq.${orgId}`);
+		adultTypesQuery = adultTypesQuery.or(`organization_id.is.null,organization_id.eq.${orgId}`);
 	} else {
-		// If no org, show only global skills
-		query = query.is('organization_id', null);
+		// If no org, show only global
+		skillsQuery = skillsQuery.is('organization_id', null);
+		adultTypesQuery = adultTypesQuery.is('organization_id', null);
 	}
 
-	const { data: skills, error } = await query;
+	const [skillsResult, adultTypesResult] = await Promise.all([skillsQuery, adultTypesQuery]);
 
-	if (error) {
-		console.error('Error fetching skills:', error);
+	if (skillsResult.error) {
+		console.error('Error fetching skills:', skillsResult.error);
+	}
+
+	if (adultTypesResult.error) {
+		console.error('Error fetching supportive adult types:', adultTypesResult.error);
 	}
 
 	// Standard category order
 	const categories: SkillCategory[] = ['physical', 'creative', 'social', 'mindfulness'];
 
 	return {
-		skills: skills || [],
-		categories
+		skills: skillsResult.data || [],
+		categories,
+		supportiveAdultTypes: adultTypesResult.data || []
 	};
 };

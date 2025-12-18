@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { actionPlanDraft, type ActionPlanDraft } from '$lib/stores/actionPlanDraft';
-	import type { Skill, SkillCategory } from '$lib/types/database';
+	import type { Skill, SkillCategory, SupportiveAdultType } from '$lib/types/database';
 	import StepIndicator from '$lib/components/plans/StepIndicator.svelte';
 	import BasicInfoStep from '$lib/components/plans/BasicInfoStep.svelte';
 	import GreenZoneSkillsStep from '$lib/components/plans/GreenZoneSkillsStep.svelte';
+	import SupportiveAdultsStep from '$lib/components/plans/SupportiveAdultsStep.svelte';
 
 	interface PageData {
 		skills: Skill[];
+		supportiveAdultTypes: SupportiveAdultType[];
 	}
 
 	let { data }: { data: PageData } = $props();
@@ -18,7 +20,9 @@
 		selectedSkills: [],
 		customSkills: [],
 		happyWhen: '',
-		happyBecause: ''
+		happyBecause: '',
+		selectedSupportiveAdults: [],
+		customSupportiveAdults: []
 	});
 
 	// Keep draft in sync with store
@@ -76,6 +80,38 @@
 	function handleHappyBecauseChange(value: string) {
 		actionPlanDraft.setHappyBecause(value);
 	}
+
+	// Supportive adults handlers
+	function handleToggleSupportiveAdult(typeId: string) {
+		actionPlanDraft.toggleSupportiveAdult(typeId);
+	}
+
+	function handleSetSupportiveAdultName(typeId: string, name: string) {
+		actionPlanDraft.setSupportiveAdultName(typeId, name);
+	}
+
+	function handleSetSupportiveAdultContactInfo(typeId: string, contactInfo: string) {
+		actionPlanDraft.setSupportiveAdultContactInfo(typeId, contactInfo);
+	}
+
+	function handleSetSupportiveAdultPrimary(typeId: string | null, customId: string | null) {
+		actionPlanDraft.setSupportiveAdultPrimary(typeId, customId);
+	}
+
+	function handleAddCustomSupportiveAdult(label: string, name: string) {
+		actionPlanDraft.addCustomSupportiveAdult(label, name);
+	}
+
+	function handleUpdateCustomSupportiveAdult(
+		customId: string,
+		updates: { label?: string; name?: string; contactInfo?: string }
+	) {
+		actionPlanDraft.updateCustomSupportiveAdult(customId, updates);
+	}
+
+	function handleRemoveCustomSupportiveAdult(customId: string) {
+		actionPlanDraft.removeCustomSupportiveAdult(customId);
+	}
 </script>
 
 <svelte:head>
@@ -108,6 +144,21 @@
 					onRemoveCustomSkill={handleRemoveCustomSkill}
 					onHappyWhenChange={handleHappyWhenChange}
 					onHappyBecauseChange={handleHappyBecauseChange}
+				/>
+			{:else if draft.currentStep === 3}
+				<SupportiveAdultsStep
+					supportiveAdultTypes={data.supportiveAdultTypes}
+					selectedSupportiveAdults={draft.selectedSupportiveAdults}
+					customSupportiveAdults={draft.customSupportiveAdults}
+					onBack={handlePrevStep}
+					onContinue={handleNextStep}
+					onToggleSupportiveAdult={handleToggleSupportiveAdult}
+					onSetName={handleSetSupportiveAdultName}
+					onSetContactInfo={handleSetSupportiveAdultContactInfo}
+					onSetPrimary={handleSetSupportiveAdultPrimary}
+					onAddCustomSupportiveAdult={handleAddCustomSupportiveAdult}
+					onUpdateCustomSupportiveAdult={handleUpdateCustomSupportiveAdult}
+					onRemoveCustomSupportiveAdult={handleRemoveCustomSupportiveAdult}
 				/>
 			{:else}
 				<!-- Placeholder for future steps -->
