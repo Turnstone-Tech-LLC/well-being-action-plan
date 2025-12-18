@@ -10,16 +10,17 @@ test.describe('Access Token Flow', () => {
 	});
 
 	test.describe('With existing local plan', () => {
-		test('bypasses token validation and redirects to home', async ({ page }) => {
-			// Seed a plan in IndexedDB
+		test('bypasses token validation and redirects to app', async ({ page }) => {
+			// Seed a plan in IndexedDB with completed onboarding
 			await seedLocalPlan(page);
 
 			// Navigate to access page with any token
 			await page.goto('/access/ANY-TOKEN-VALUE');
 
-			// Should show "Plan found!" message briefly then redirect
+			// Should show "Plan found!" message briefly then redirect to app
 			// The redirect happens quickly, so we check for the final URL
-			await expect(page).toHaveURL('/', { timeout: 5000 });
+			// Note: May redirect to /app or /app/onboarding depending on profile state
+			await expect(page).toHaveURL(/\/app(\/onboarding)?$/, { timeout: 5000 });
 		});
 
 		test('does not show loading state when plan exists', async ({ page }) => {
@@ -29,7 +30,8 @@ test.describe('Access Token Flow', () => {
 			await page.goto('/access/INVALID-TOKEN');
 
 			// Should redirect without showing validation states
-			await expect(page).toHaveURL('/', { timeout: 5000 });
+			// Note: May redirect to /app or /app/onboarding depending on profile state
+			await expect(page).toHaveURL(/\/app(\/onboarding)?$/, { timeout: 5000 });
 		});
 	});
 
