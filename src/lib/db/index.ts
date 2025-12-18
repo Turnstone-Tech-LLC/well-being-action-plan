@@ -105,12 +105,44 @@ export interface PatientProfile {
 }
 
 /**
+ * Zone colors following the well-being zones concept:
+ * - green: Feeling good, using coping skills proactively
+ * - yellow: Feeling stressed, need extra support
+ * - red: In crisis, need immediate help
+ */
+export type CheckInZone = 'green' | 'yellow' | 'red';
+
+/**
+ * Represents a patient check-in record.
+ * Stored in IndexedDB for tracking well-being over time.
+ */
+export interface CheckIn {
+	/** Primary key for local storage (auto-generated) */
+	id?: number;
+	/** Matches the action plan ID this check-in is associated with */
+	actionPlanId: string;
+	/** The zone the patient selected during check-in */
+	zone: CheckInZone;
+	/** IDs of coping strategies used during this check-in */
+	strategiesUsed: string[];
+	/** IDs of supportive adults contacted during this check-in */
+	supportiveAdultsContacted: string[];
+	/** IDs of help methods selected during this check-in */
+	helpMethodsSelected: string[];
+	/** Optional notes from the patient */
+	notes?: string;
+	/** When this check-in was created */
+	createdAt: Date;
+}
+
+/**
  * Dexie database for Well-Being Action Plan local storage.
  * Uses IndexedDB under the hood for offline-capable storage.
  */
 class WellBeingDB extends Dexie {
 	localPlans!: EntityTable<LocalActionPlan, 'id'>;
 	patientProfiles!: EntityTable<PatientProfile, 'id'>;
+	checkIns!: EntityTable<CheckIn, 'id'>;
 
 	constructor() {
 		super('WellBeingActionPlan');
@@ -144,6 +176,13 @@ class WellBeingDB extends Dexie {
 						profile.notificationTime = 'morning';
 					});
 			});
+
+		// Version 4: Add check-ins table
+		this.version(4).stores({
+			localPlans: '++id, &actionPlanId, accessCode, installedAt',
+			patientProfiles: '++id, &actionPlanId, onboardingComplete, createdAt',
+			checkIns: '++id, actionPlanId, zone, createdAt'
+		});
 	}
 }
 

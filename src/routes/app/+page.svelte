@@ -1,30 +1,93 @@
 <script lang="ts">
-	import { planPayload } from '$lib/stores/localPlan';
-	import { patientProfile, displayName } from '$lib/stores/patientProfile';
-	import { DashboardHeader, CheckInCTA, QuickStats } from '$lib/components/app';
+	import { onMount } from 'svelte';
+	import { planPayload, localPlan } from '$lib/stores/localPlan';
+	import { displayName } from '$lib/stores/patientProfile';
+	import { DashboardHeader, CheckInCTA, QuickStats, CheckInHistory } from '$lib/components/app';
 	import type { Zone } from '$lib/components/app';
+	import type { CheckIn } from '$lib/db/index';
+	import { getRecentCheckIns, getLatestCheckIn } from '$lib/db/checkIns';
 
 	// Reactive values from stores
 	let payload = $derived($planPayload);
-	let profile = $derived($patientProfile);
+	let plan = $derived($localPlan);
 	let name = $derived($displayName);
 
-	// Determine if user is returning (has completed at least one check-in)
-	// For now, we'll use the profile creation date to determine this
-	// In the future, this will be based on check-in history
-	let isReturningUser = $derived(() => {
-		if (!profile?.createdAt) return false;
-		const createdAt = new Date(profile.createdAt);
-		const now = new Date();
-		// Consider returning if profile was created more than 1 day ago
-		return now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000;
-	});
-
-	// Mock check-in data for now - will be replaced with real data from IndexedDB
-	// when the check-in feature is implemented
+	// Check-in data from IndexedDB
+	let recentCheckIns: CheckIn[] = $state([]);
 	let lastCheckIn: Date | null = $state(null);
 	let streak: number = $state(0);
 	let currentZone: Zone = $state(null);
+
+	// Determine if user is returning (has completed at least one check-in)
+	let isReturningUser = $derived(recentCheckIns.length > 0);
+
+	/**
+	 * Calculate the current streak based on check-ins.
+	 * A streak is maintained if there's a check-in today or yesterday.
+	 */
+	function calculateStreak(checkIns: CheckIn[]): number {
+		if (checkIns.length === 0) return 0;
+
+		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+		let streakCount = 0;
+		let currentDate = today;
+
+		// Sort check-ins by date descending
+		const sortedCheckIns = [...checkIns].sort(
+			(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+		);
+
+		// Get unique days with check-ins using a plain object
+		const daysWithCheckIns: Record<string, boolean> = {};
+		for (const checkIn of sortedCheckIns) {
+			const checkInDate = new Date(checkIn.createdAt);
+			const dayKey = `${checkInDate.getFullYear()}-${checkInDate.getMonth()}-${checkInDate.getDate()}`;
+			daysWithCheckIns[dayKey] = true;
+		}
+
+		// Count consecutive days
+		for (let i = 0; i < 365; i++) {
+			const dayKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
+
+			if (daysWithCheckIns[dayKey]) {
+				streakCount++;
+			} else if (i > 0) {
+				// Allow gap only for today (i === 0) - if no check-in today, check yesterday
+				break;
+			}
+
+			// Move to previous day
+			currentDate = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000);
+		}
+
+		return streakCount;
+	}
+
+	/**
+	 * Load check-in data from IndexedDB.
+	 */
+	async function loadCheckIns() {
+		if (!plan?.actionPlanId) return;
+
+		const [checkIns, latestCheckIn] = await Promise.all([
+			getRecentCheckIns(plan.actionPlanId, 7),
+			getLatestCheckIn(plan.actionPlanId)
+		]);
+
+		recentCheckIns = checkIns;
+
+		if (latestCheckIn) {
+			lastCheckIn = new Date(latestCheckIn.createdAt);
+			currentZone = latestCheckIn.zone;
+			streak = calculateStreak(checkIns);
+		}
+	}
+
+	onMount(() => {
+		loadCheckIns();
+	});
 </script>
 
 <svelte:head>
@@ -33,11 +96,13 @@
 </svelte:head>
 
 <div class="dashboard-page">
-	<DashboardHeader displayName={name} isReturningUser={isReturningUser()} />
+	<DashboardHeader displayName={name} {isReturningUser} />
 
 	<CheckInCTA />
 
 	<QuickStats {lastCheckIn} {streak} {currentZone} />
+
+	<CheckInHistory checkIns={recentCheckIns} />
 
 	{#if payload}
 		<section class="plan-summary" aria-labelledby="plan-summary-heading">
