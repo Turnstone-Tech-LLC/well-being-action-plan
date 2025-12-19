@@ -18,13 +18,15 @@
 		announce(`Selected: ${zoneLabels[zone]}. Proceeding to next step.`);
 
 		// Navigate to appropriate next step based on zone
-		// For now, use URL params to pass zone to next step
 		if (zone === 'red') {
 			// Red zone goes to crisis response
-			goto(`/app/checkin/crisis?zone=${zone}`);
+			goto('/app/checkin/crisis');
+		} else if (zone === 'green') {
+			// Green zone goes to coping skills selection
+			goto('/app/checkin/green');
 		} else {
-			// Green and Yellow zones go to strategy selection
-			goto(`/app/checkin/strategies?zone=${zone}`);
+			// Yellow zone goes to supportive adults selection
+			goto('/app/checkin/yellow');
 		}
 	}
 </script>
