@@ -9,11 +9,6 @@
 	let showClearModal = $state(false);
 	let isClearing = $state(false);
 
-	function handleExportClick() {
-		// Export flow is handled in a separate issue
-		toastStore.info('Export feature coming soon');
-	}
-
 	function handleClearClick() {
 		showClearModal = true;
 	}
@@ -47,9 +42,9 @@
 		<div class="data-option">
 			<div class="option-info">
 				<span class="option-label">Export My Data</span>
-				<span class="option-description">Download a copy of all your check-ins and settings</span>
+				<span class="option-description">Download an encrypted backup of your data</span>
 			</div>
-			<button type="button" class="btn btn-outline" onclick={handleExportClick}>
+			<a href="/app/settings/export" class="btn btn-outline">
 				<svg
 					width="18"
 					height="18"
@@ -84,7 +79,7 @@
 					/>
 				</svg>
 				Export
-			</button>
+			</a>
 		</div>
 	</div>
 

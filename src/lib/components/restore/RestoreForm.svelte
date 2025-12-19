@@ -82,13 +82,13 @@
 
 		try {
 			const fileContent = await selectedFile.text();
-			const planData = await restoreBackup(fileContent, passphrase);
+			const { plan } = await restoreBackup(fileContent, passphrase);
 
 			// Generate a new device install ID for this restore
 			const deviceInstallId = generateDeviceInstallId();
 
 			await saveLocalPlan({
-				...planData,
+				...plan,
 				deviceInstallId
 			});
 
