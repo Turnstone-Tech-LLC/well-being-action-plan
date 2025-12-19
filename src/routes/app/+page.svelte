@@ -2,7 +2,13 @@
 	import { onMount } from 'svelte';
 	import { planPayload, localPlan } from '$lib/stores/localPlan';
 	import { displayName } from '$lib/stores/patientProfile';
-	import { DashboardHeader, CheckInCTA, QuickStats, CheckInHistory } from '$lib/components/app';
+	import {
+		DashboardHeader,
+		CheckInCTA,
+		QuickStats,
+		CheckInHistory,
+		CalendarView
+	} from '$lib/components/app';
 	import type { Zone } from '$lib/components/app';
 	import type { CheckIn } from '$lib/db/index';
 	import { getRecentCheckIns, getLatestCheckIn } from '$lib/db/checkIns';
@@ -14,6 +20,7 @@
 
 	// Check-in data from IndexedDB
 	let recentCheckIns: CheckIn[] = $state([]);
+	let allCheckIns: CheckIn[] = $state([]);
 	let lastCheckIn: Date | null = $state(null);
 	let streak: number = $state(0);
 	let currentZone: Zone = $state(null);
@@ -71,17 +78,19 @@
 	async function loadCheckIns() {
 		if (!plan?.actionPlanId) return;
 
-		const [checkIns, latestCheckIn] = await Promise.all([
+		const [checkIns, calendarCheckIns, latestCheckIn] = await Promise.all([
 			getRecentCheckIns(plan.actionPlanId, 7),
+			getRecentCheckIns(plan.actionPlanId, 365), // Load up to a year for calendar
 			getLatestCheckIn(plan.actionPlanId)
 		]);
 
 		recentCheckIns = checkIns;
+		allCheckIns = calendarCheckIns;
 
 		if (latestCheckIn) {
 			lastCheckIn = new Date(latestCheckIn.createdAt);
 			currentZone = latestCheckIn.zone;
-			streak = calculateStreak(checkIns);
+			streak = calculateStreak(calendarCheckIns);
 		}
 	}
 
@@ -103,6 +112,8 @@
 	<QuickStats {lastCheckIn} {streak} {currentZone} />
 
 	<CheckInHistory checkIns={recentCheckIns} />
+
+	<CalendarView checkIns={allCheckIns} />
 
 	{#if payload}
 		<section class="plan-summary" aria-labelledby="plan-summary-heading">
