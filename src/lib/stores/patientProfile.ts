@@ -6,9 +6,11 @@ import {
 	createPatientProfile,
 	completeOnboarding,
 	updateDisplayName,
+	updateNotificationPreferences,
 	deletePatientProfile,
 	clearPatientProfiles,
-	type CreatePatientProfileInput
+	type CreatePatientProfileInput,
+	type UpdateNotificationPreferencesInput
 } from '$lib/db/profile';
 import { browser } from '$app/environment';
 
@@ -172,6 +174,35 @@ function createPatientProfileStore() {
 				}));
 			} catch (err) {
 				const message = err instanceof Error ? err.message : 'Failed to update display name';
+				update((state) => ({
+					...state,
+					loading: false,
+					error: message
+				}));
+				throw err;
+			}
+		},
+
+		/**
+		 * Update notification preferences and refresh the store.
+		 */
+		async updateNotificationPreferences(input: UpdateNotificationPreferencesInput): Promise<void> {
+			if (!browser) return;
+
+			update((state) => ({ ...state, loading: true, error: null }));
+
+			try {
+				await updateNotificationPreferences(input);
+				const profile = await getPatientProfile(input.actionPlanId);
+				update((state) => ({
+					...state,
+					profile,
+					loading: false,
+					error: null
+				}));
+			} catch (err) {
+				const message =
+					err instanceof Error ? err.message : 'Failed to update notification preferences';
 				update((state) => ({
 					...state,
 					loading: false,

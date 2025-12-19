@@ -291,6 +291,23 @@ export async function clearLocalData(): Promise<void> {
 }
 
 /**
+ * Clear all data from IndexedDB (plans, profiles, check-ins).
+ * Use this for "Clear All Data" functionality.
+ */
+export async function clearAllData(): Promise<void> {
+	const database = getDB();
+	if (!database) {
+		return;
+	}
+
+	await Promise.all([
+		database.localPlans.clear(),
+		database.patientProfiles.clear(),
+		database.checkIns.clear()
+	]);
+}
+
+/**
  * Generate a unique device install ID.
  * Uses crypto.randomUUID if available, falls back to a simple implementation.
  */
