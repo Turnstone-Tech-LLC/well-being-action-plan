@@ -47,11 +47,11 @@ describe('DataManagement', () => {
 		await expect.element(exportLabel).toBeInTheDocument();
 	});
 
-	it('renders Export button', async () => {
+	it('renders Export link', async () => {
 		render(DataManagement);
 
-		const exportButton = page.getByRole('button', { name: /Export/i });
-		await expect.element(exportButton).toBeInTheDocument();
+		const exportLink = page.getByRole('link', { name: /Export/i });
+		await expect.element(exportLink).toBeInTheDocument();
 	});
 
 	it('renders Clear All Data option', async () => {
@@ -80,7 +80,7 @@ describe('DataManagement', () => {
 	it('shows export description', async () => {
 		render(DataManagement);
 
-		const description = page.getByText('Download a copy of all your check-ins and settings');
+		const description = page.getByText('Download an encrypted backup of your data');
 		await expect.element(description).toBeInTheDocument();
 	});
 

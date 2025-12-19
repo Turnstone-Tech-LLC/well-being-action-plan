@@ -145,6 +145,20 @@ export async function clearCheckIns(actionPlanId: string): Promise<void> {
 }
 
 /**
+ * Get all check-ins for an action plan.
+ * Returns check-ins sorted by createdAt in ascending order (oldest first).
+ * Used for backup/export functionality.
+ */
+export async function getAllCheckIns(actionPlanId: string): Promise<CheckIn[]> {
+	const db = getDB();
+	if (!db) {
+		return [];
+	}
+
+	return db.checkIns.where('actionPlanId').equals(actionPlanId).sortBy('createdAt');
+}
+
+/**
  * Zone display information.
  */
 export interface ZoneInfo {
