@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { planPayload, localPlan } from '$lib/stores/localPlan';
+	import { patientProfile } from '$lib/stores/patientProfile';
 	import type { CheckIn, PlanPayload } from '$lib/db/index';
 	import { getRecentCheckIns, getCheckInsByDateRange } from '$lib/db/checkIns';
 	import {
@@ -9,6 +10,7 @@
 		SummaryStats,
 		CheckInHistoryFull,
 		EmptyState,
+		PdfExportModal,
 		type QuickFilter,
 		type ZoneFilterValue
 	} from '$lib/components/reports';
@@ -16,6 +18,10 @@
 	// Reactive values from stores
 	let payload = $derived($planPayload);
 	let plan = $derived($localPlan);
+	let profile = $derived($patientProfile);
+
+	// PDF export modal state
+	let showExportModal: boolean = $state(false);
 
 	// Filter state
 	let activeQuickFilter: QuickFilter = $state('all');
@@ -273,9 +279,14 @@
 				<CheckInHistoryFull checkIns={filteredCheckIns} planPayload={payload} />
 			</section>
 
-			<!-- PDF Export placeholder -->
+			<!-- PDF Export -->
 			<section class="export-section" aria-label="Export options">
-				<button type="button" class="export-btn" disabled title="Coming soon">
+				<button
+					type="button"
+					class="export-btn"
+					onclick={() => (showExportModal = true)}
+					disabled={!profile || !payload}
+				>
 					<span class="export-icon" aria-hidden="true">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -286,7 +297,6 @@
 						</svg>
 					</span>
 					Create PDF Report
-					<span class="coming-soon-badge">Coming Soon</span>
 				</button>
 			</section>
 		{:else}
@@ -295,6 +305,19 @@
 		{/if}
 	{/if}
 </div>
+
+<!-- PDF Export Modal -->
+{#if profile && payload && plan}
+	<PdfExportModal
+		open={showExportModal}
+		actionPlanId={plan.actionPlanId}
+		{profile}
+		planPayload={payload}
+		initialStartDate={startDate}
+		initialEndDate={endDate}
+		onClose={() => (showExportModal = false)}
+	/>
+{/if}
 
 <style>
 	.reports-page {
@@ -432,15 +455,31 @@
 		align-items: center;
 		gap: var(--space-2);
 		padding: var(--space-3) var(--space-6);
-		background-color: var(--color-white);
-		border: 1px solid var(--color-gray-300);
+		background-color: var(--color-primary);
+		border: 1px solid var(--color-primary);
 		border-radius: var(--radius-lg);
 		font-size: var(--font-size-sm);
 		font-weight: 500;
-		color: var(--color-text);
-		cursor: not-allowed;
-		opacity: 0.6;
+		color: var(--color-white);
+		cursor: pointer;
 		min-height: 44px;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease;
+	}
+
+	.export-btn:hover:not(:disabled) {
+		background-color: #004a3f;
+	}
+
+	.export-btn:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	.export-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.export-icon {
@@ -451,14 +490,6 @@
 	.export-icon svg {
 		width: 100%;
 		height: 100%;
-	}
-
-	.coming-soon-badge {
-		padding: var(--space-1) var(--space-2);
-		background-color: var(--color-gray-100);
-		border-radius: var(--radius-md);
-		font-size: var(--font-size-xs);
-		color: var(--color-text-muted);
 	}
 
 	/* Reduced motion preference */

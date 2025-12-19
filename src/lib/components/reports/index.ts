@@ -11,3 +11,5 @@ export { default as CheckInDetailExpanded } from './CheckInDetailExpanded.svelte
 export { default as CheckInHistoryFull } from './CheckInHistoryFull.svelte';
 
 export { default as EmptyState } from './EmptyState.svelte';
+
+export { default as PdfExportModal } from './PdfExportModal.svelte';
