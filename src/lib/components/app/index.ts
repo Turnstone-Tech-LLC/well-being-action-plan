@@ -4,3 +4,5 @@ export { default as CheckInCTA } from './CheckInCTA.svelte';
 export { default as QuickStats, type Zone } from './QuickStats.svelte';
 export { default as CheckInCard } from './CheckInCard.svelte';
 export { default as CheckInHistory } from './CheckInHistory.svelte';
+export { default as CalendarDay } from './CalendarDay.svelte';
+export { default as CalendarView } from './CalendarView.svelte';
