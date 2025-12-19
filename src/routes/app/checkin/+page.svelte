@@ -20,7 +20,7 @@
 		// Navigate to appropriate next step based on zone
 		if (zone === 'red') {
 			// Red zone goes to crisis response
-			goto('/app/checkin/crisis');
+			goto('/app/checkin/red');
 		} else if (zone === 'green') {
 			// Green zone goes to coping skills selection
 			goto('/app/checkin/green');

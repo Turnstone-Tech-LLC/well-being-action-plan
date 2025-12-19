@@ -5,3 +5,5 @@ export { default as SupportiveAdultsList } from './SupportiveAdultsList.svelte';
 export { default as CheckInSuccess } from './CheckInSuccess.svelte';
 export { default as GreenZoneStep } from './GreenZoneStep.svelte';
 export { default as YellowZoneStep } from './YellowZoneStep.svelte';
+export { default as CrisisButton } from './CrisisButton.svelte';
+export { default as RedZoneResponse } from './RedZoneResponse.svelte';
