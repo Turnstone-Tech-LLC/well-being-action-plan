@@ -53,6 +53,8 @@
 		"@supabase/ssr": "^0.8.0",
 		"@supabase/supabase-js": "^2.88.0",
 		"dexie": "^4.2.1",
+		"jspdf": "^3.0.4",
+		"jspdf-autotable": "^5.0.2",
 		"nanoid": "^5.1.6",
 		"qrcode": "^1.5.4"
 	}
