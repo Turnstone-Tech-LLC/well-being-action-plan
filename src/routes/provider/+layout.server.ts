@@ -7,6 +7,7 @@ export interface ProviderProfile {
 	name: string | null;
 	role: 'admin' | 'provider';
 	organization_id: string;
+	settings: Record<string, unknown>;
 }
 
 export interface Organization {
@@ -35,7 +36,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	// Load provider profile
 	const { data: profile, error: profileError } = await locals.supabase
 		.from('provider_profiles')
-		.select('id, email, name, role, organization_id')
+		.select('id, email, name, role, organization_id, settings')
 		.eq('id', userId)
 		.single();
 
