@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { createSupabaseAdminClient } from '$lib/server/supabase';
 
 export interface TeamMember {
 	id: string;
@@ -57,7 +58,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 };
 
 export const actions: Actions = {
-	invite: async ({ request, locals }) => {
+	invite: async ({ request, locals, url }) => {
 		const { error: authError, provider } = await getAdminProvider(locals);
 		if (authError || !provider) {
 			return fail(403, { action: 'invite', error: authError || 'Access denied' });
@@ -101,21 +102,46 @@ export const actions: Actions = {
 			});
 		}
 
-		// Create the provider profile directly (in a real app, this would send an invite email)
-		// For now, we'll create a profile that the user can claim via magic link
-		const { error: createError } = await locals.supabase.from('provider_profiles').insert({
-			email,
-			name,
-			role: role as 'admin' | 'provider',
-			organization_id: provider.organization_id,
-			settings: {}
-		});
+		// Use admin client to invite user via Supabase Auth
+		// This creates the auth.users entry and triggers the provider_profile creation
+		try {
+			const adminClient = createSupabaseAdminClient();
 
-		if (createError) {
-			console.error('Error creating provider profile:', createError);
+			const { data: inviteData, error: inviteError } =
+				await adminClient.auth.admin.inviteUserByEmail(email, {
+					data: {
+						organization_id: provider.organization_id,
+						name: name || undefined,
+						provider: true
+					},
+					redirectTo: `${url.origin}/auth/callback`
+				});
+
+			if (inviteError) {
+				console.error('Error inviting user:', inviteError);
+				return fail(500, {
+					action: 'invite',
+					error: inviteError.message || 'Failed to invite provider. Please try again.',
+					values: { email, name, role }
+				});
+			}
+
+			// Update the role if admin was selected (trigger sets default 'provider' role)
+			if (inviteData?.user && role === 'admin') {
+				const { error: updateError } = await adminClient
+					.from('provider_profiles')
+					.update({ role: 'admin' })
+					.eq('id', inviteData.user.id);
+
+				if (updateError) {
+					console.error('Error setting admin role:', updateError);
+				}
+			}
+		} catch (err) {
+			console.error('Error with admin client:', err);
 			return fail(500, {
 				action: 'invite',
-				error: 'Failed to invite provider. Please try again.',
+				error: 'Server configuration error. Please contact support.',
 				values: { email, name, role }
 			});
 		}
