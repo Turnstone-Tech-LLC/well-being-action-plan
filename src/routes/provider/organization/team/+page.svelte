@@ -168,13 +168,17 @@
 
 			{#each data.members as member (member.id)}
 				{@const isCurrentUser = member.id === data.currentUserId}
-				<div class="member-row" class:current-user={isCurrentUser}>
+				{@const isPending = !member.claimed_at}
+				<div class="member-row" class:current-user={isCurrentUser} class:pending={isPending}>
 					<div class="col-name">
 						<div class="member-info">
 							<span class="member-name">
 								{member.name || 'Unnamed Provider'}
 								{#if isCurrentUser}
 									<span class="you-badge">(you)</span>
+								{/if}
+								{#if isPending}
+									<span class="pending-badge">Pending</span>
 								{/if}
 							</span>
 							<span class="member-email">{member.email}</span>
@@ -688,6 +692,25 @@
 		color: var(--color-text-muted);
 		font-weight: 400;
 		font-size: var(--font-size-sm);
+	}
+
+	.pending-badge {
+		display: inline-block;
+		padding: var(--space-1) var(--space-2);
+		background-color: #fef3c7;
+		color: #92400e;
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		border-radius: var(--radius-sm);
+		margin-left: var(--space-2);
+	}
+
+	.member-row.pending {
+		background-color: #fffbeb;
+	}
+
+	.member-row.pending .member-name {
+		color: var(--color-text-muted);
 	}
 
 	.member-email {

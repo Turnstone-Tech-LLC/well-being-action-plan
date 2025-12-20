@@ -8,6 +8,7 @@ export interface TeamMember {
 	name: string | null;
 	role: 'admin' | 'provider';
 	created_at: string;
+	claimed_at: string | null;
 }
 
 // Helper to fetch current admin provider
@@ -39,7 +40,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	// Fetch all team members in the organization
 	const { data: members, error: membersError } = await locals.supabase
 		.from('provider_profiles')
-		.select('id, email, name, role, created_at')
+		.select('id, email, name, role, created_at, claimed_at')
 		.eq('organization_id', provider.organization_id)
 		.order('created_at', { ascending: true });
 
