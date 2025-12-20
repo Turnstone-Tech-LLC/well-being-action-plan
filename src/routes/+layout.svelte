@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { page } from '$app/stores';
 	import TopNav from '$lib/components/layout/TopNav.svelte';
 	import Footer from '$lib/components/layout/Footer.svelte';
 	import ClearDataModal from '$lib/components/modals/ClearDataModal.svelte';
@@ -12,6 +13,12 @@
 	// Stubbed user state - will be replaced with actual auth/IndexedDB check
 	let userState: 'unauthenticated' | 'provider' | 'patient' = $state('unauthenticated');
 	let showClearDataModal = $state(false);
+
+	// Check if we're on a route that has its own layout (provider, app)
+	// These routes handle their own nav/footer
+	let hasOwnLayout = $derived(
+		$page.url.pathname.startsWith('/provider') || $page.url.pathname.startsWith('/app')
+	);
 
 	// Register service worker on mount
 	onMount(() => {
@@ -38,19 +45,28 @@
 	}
 </script>
 
-<a href="#main-content" class="skip-link">Skip to main content</a>
+{#if hasOwnLayout}
+	<!-- Provider and App routes have their own layout with nav/footer -->
+	{@render children()}
+{:else}
+	<a href="#main-content" class="skip-link">Skip to main content</a>
 
-<div class="app">
-	<TopNav {userState} onClearData={handleClearData} />
+	<div class="app">
+		<TopNav {userState} onClearData={handleClearData} />
 
-	<main id="main-content" tabindex="-1">
-		{@render children()}
-	</main>
+		<main id="main-content" tabindex="-1">
+			{@render children()}
+		</main>
 
-	<Footer />
-</div>
+		<Footer />
+	</div>
 
-<ClearDataModal open={showClearDataModal} onConfirm={confirmClearData} onCancel={cancelClearData} />
+	<ClearDataModal
+		open={showClearDataModal}
+		onConfirm={confirmClearData}
+		onCancel={cancelClearData}
+	/>
+{/if}
 
 <style>
 	.skip-link {

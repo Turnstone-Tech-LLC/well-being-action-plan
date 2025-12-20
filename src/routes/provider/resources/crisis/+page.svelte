@@ -52,6 +52,20 @@
 </svelte:head>
 
 <section class="crisis-resources-page">
+	<a href="/provider/resources" class="back-link">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="2"
+			stroke="currentColor"
+			aria-hidden="true"
+		>
+			<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+		</svg>
+		Back to Resources
+	</a>
+
 	<header class="page-header">
 		<div class="header-content">
 			<h1>Crisis Resources</h1>
@@ -155,6 +169,33 @@
 		max-width: var(--max-width);
 		margin: 0 auto;
 		width: 100%;
+	}
+
+	.back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		color: var(--color-text-muted);
+		text-decoration: none;
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		margin-bottom: var(--space-4);
+		transition: color 0.15s ease;
+	}
+
+	.back-link:hover {
+		color: var(--color-primary);
+	}
+
+	.back-link:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+		border-radius: var(--radius-sm);
+	}
+
+	.back-link svg {
+		width: 1rem;
+		height: 1rem;
 	}
 
 	.page-header {

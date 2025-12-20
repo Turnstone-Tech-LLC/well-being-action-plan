@@ -96,25 +96,68 @@ WBAP is under active development and experimentation.
 
 This project is built with [SvelteKit](https://kit.svelte.dev/), powered by [`sv`](https://github.com/sveltejs/cli).
 
-### Creating a project
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18+)
+- [pnpm](https://pnpm.io/)
+- [Docker](https://www.docker.com/) (required for local Supabase)
+- [Supabase CLI](https://supabase.com/docs/guides/cli)
+
+### Local Supabase Setup
+
+The project uses Supabase for authentication and database. For local development, run Supabase locally via Docker:
 
 ```sh
-# create a new project in the current directory
-npx sv create
+# Start local Supabase (runs PostgreSQL, Auth, Storage, etc.)
+supabase start
 
-# create a new project in my-app
-npx sv create my-app
+# Stop Supabase when done
+supabase stop
 ```
+
+After starting, Supabase outputs connection details. Update your `.env` file with local values:
+
+```env
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_ANON_KEY=<anon key from supabase start>
+PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase start>
+```
+
+#### Database Migrations
+
+```sh
+# Apply all migrations and seed data
+supabase db reset
+
+# Check current migration status
+supabase db status
+```
+
+### Email Testing with Inbucket
+
+Local Supabase includes [Inbucket](https://inbucket.org/), an email testing tool that captures all outgoing emails (magic links, invitations, etc.).
+
+**Access the Inbucket dashboard:** http://127.0.0.1:54324
+
+When testing authentication:
+
+1. Enter an email on the login page
+2. Open Inbucket dashboard to view the captured email
+3. Click the magic link in the email to complete sign-in
+
+> **Note:** Magic links in Inbucket redirect to `http://localhost:5173/auth/callback`. Ensure the dev server is running on port 5173.
 
 ### Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Install dependencies and start the development server:
 
 ```sh
-npm run dev
+pnpm install
+pnpm run dev
 
 # or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm run dev -- --open
 ```
 
 ### Building
@@ -122,35 +165,26 @@ npm run dev -- --open
 To create a production version of your app:
 
 ```sh
-npm run build
+pnpm run build
 ```
 
-You can preview the production build with `npm run preview`.
+You can preview the production build with `pnpm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
 
 ### Database Seeding
 
-The project includes seed data matching the WBAP 2.0 physical card. To seed your local database:
-
-```sh
-# Run basic seed (resources only)
-pnpm run db:seed
-
-# Run seed with admin provider creation
-SEED_ADMIN_EMAIL=provider@example.com pnpm run db:seed:admin
-```
-
-#### Seed Environment Variables
-
-| Variable           | Description                                       | Default                   |
-| ------------------ | ------------------------------------------------- | ------------------------- |
-| `SEED_ADMIN_EMAIL` | Email for admin provider (triggers user creation) | -                         |
-| `SEED_ORG_NAME`    | Organization name                                 | `UVM Children's Hospital` |
+The project includes seed data matching the WBAP 2.0 physical card. Running `supabase db reset` automatically applies migrations and seeds the database.
 
 #### What Gets Seeded
 
+**Automatically created (local development):**
+
+- **Admin User**: `admin@wbap.local` (use Inbucket to receive magic link)
 - **Organization**: UVM Children's Hospital
+
+**Resources:**
+
 - **Skills** (21 total across 4 categories):
   - Physical: Move my body, Go outside, Get sleep, Eat well, Shower/bath, Take a break
   - Creative: Read, Write/journal, Draw/paint, Craft/create, Listen/play music
@@ -162,7 +196,7 @@ SEED_ADMIN_EMAIL=provider@example.com pnpm run db:seed:admin
 
 #### Manual Admin Creation
 
-If you need to create an admin provider manually via SQL:
+If you need to create an additional admin provider via SQL:
 
 ```sql
 SELECT seed_admin_provider('provider@example.com');
