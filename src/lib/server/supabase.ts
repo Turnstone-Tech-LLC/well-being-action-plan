@@ -57,23 +57,3 @@ function createSimpleSupabaseClient() {
 }
 
 export const supabase = createSimpleSupabaseClient();
-
-/**
- * Create a Supabase Admin client with service role key.
- * This bypasses RLS and should only be used for admin operations.
- */
-export function createSupabaseAdminClient() {
-	const url = env.SUPABASE_URL;
-	const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-
-	if (!url || !serviceKey) {
-		throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
-	}
-
-	return createClient(url, serviceKey, {
-		auth: {
-			autoRefreshToken: false,
-			persistSession: false
-		}
-	});
-}

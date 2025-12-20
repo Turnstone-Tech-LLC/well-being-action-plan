@@ -1,6 +1,5 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { createSupabaseAdminClient } from '$lib/server/supabase';
 import { randomUUID } from 'crypto';
 
 export interface TeamMember {
@@ -105,31 +104,20 @@ export const actions: Actions = {
 
 		// Create a pending provider profile directly
 		// The provider can claim their account later by signing up with this email
-		try {
-			const adminClient = createSupabaseAdminClient();
+		const { error: createError } = await locals.supabase.from('provider_profiles').insert({
+			id: randomUUID(),
+			email,
+			name,
+			role: role as 'admin' | 'provider',
+			organization_id: provider.organization_id,
+			settings: {}
+		});
 
-			const { error: createError } = await adminClient.from('provider_profiles').insert({
-				id: randomUUID(),
-				email,
-				name,
-				role: role as 'admin' | 'provider',
-				organization_id: provider.organization_id,
-				settings: {}
-			});
-
-			if (createError) {
-				console.error('Error creating provider profile:', createError);
-				return fail(500, {
-					action: 'invite',
-					error: 'Failed to add provider. Please try again.',
-					values: { email, name, role }
-				});
-			}
-		} catch (err) {
-			console.error('Error with admin client:', err);
+		if (createError) {
+			console.error('Error creating provider profile:', createError);
 			return fail(500, {
 				action: 'invite',
-				error: 'Server configuration error. Please contact support.',
+				error: 'Failed to add provider. Please try again.',
 				values: { email, name, role }
 			});
 		}
