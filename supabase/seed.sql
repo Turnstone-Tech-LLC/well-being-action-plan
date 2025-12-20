@@ -174,9 +174,9 @@ begin
     false  -- is_anonymous
   );
 
-  -- The trigger will create the provider_profile, but we need to set admin role
+  -- The trigger will create the provider_profile, but we need to set admin role and claimed_at
   update provider_profiles
-  set role = 'admin', name = 'Admin Provider'
+  set role = 'admin', name = 'Admin Provider', claimed_at = now()
   where id = v_user_id;
 
   raise notice 'Created admin provider: %', v_admin_email;

@@ -41,9 +41,14 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		.single();
 
 	if (profileError || !profile) {
-		// Provider profile doesn't exist - redirect to auth
+		// Provider profile doesn't exist - sign out and redirect with error
 		console.error('Provider profile not found:', profileError);
-		redirect(303, '/auth');
+		await locals.supabase.auth.signOut();
+		redirect(
+			303,
+			'/auth?error=' +
+				encodeURIComponent('No provider account found for this email. Contact your administrator.')
+		);
 	}
 
 	// Load organization info
@@ -54,8 +59,13 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		.single();
 
 	if (orgError || !organization) {
+		// Organization not found - sign out and redirect with error
 		console.error('Organization not found:', orgError);
-		redirect(303, '/auth');
+		await locals.supabase.auth.signOut();
+		redirect(
+			303,
+			'/auth?error=' + encodeURIComponent('Organization not found. Contact your administrator.')
+		);
 	}
 
 	// Load action plans with latest revision info
