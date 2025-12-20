@@ -36,7 +36,18 @@ export const actions: Actions = {
 			});
 		}
 
-		// Send magic link
+		// Check if provider exists for this email (silently skip if not)
+		const { data: providerExists } = await locals.supabase.rpc('provider_exists_for_email', {
+			check_email: email
+		});
+
+		// If no provider profile exists, still redirect to verify page
+		// but don't actually send the email (prevents enumeration)
+		if (!providerExists) {
+			redirect(303, `/auth/verify?email=${encodeURIComponent(email)}`);
+		}
+
+		// Send magic link (only if provider exists)
 		const { error } = await locals.supabase.auth.signInWithOtp({
 			email,
 			options: {
