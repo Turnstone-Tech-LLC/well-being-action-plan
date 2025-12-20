@@ -42,7 +42,7 @@
 	$effect(() => {
 		if (form?.success) {
 			if (form.action === 'invite') {
-				toastStore.success(form.message || 'Invitation sent successfully');
+				toastStore.success(form.message || 'Provider added successfully');
 				closeInviteModal();
 			} else if (form.action === 'update') {
 				toastStore.success(form.message || 'Provider updated successfully');
@@ -128,7 +128,7 @@
 				<line x1="19" y1="8" x2="19" y2="14" />
 				<line x1="22" y1="11" x2="16" y2="11" />
 			</svg>
-			Invite Provider
+			Add Provider
 		</button>
 	</header>
 
@@ -152,9 +152,9 @@
 				<path d="M16 3.13a4 4 0 0 1 0 7.75" />
 			</svg>
 			<h3>No team members yet</h3>
-			<p>Invite providers to join your organization and collaborate on action plans.</p>
+			<p>Add providers to your organization to collaborate on action plans.</p>
 			<button type="button" class="btn btn-primary" onclick={openInviteModal}>
-				Invite Your First Provider
+				Add Your First Provider
 			</button>
 		</div>
 	{:else}
@@ -265,7 +265,7 @@
 			onkeydown={(e) => e.stopPropagation()}
 		>
 			<header class="modal-header">
-				<h3 id="invite-modal-title">Invite Provider</h3>
+				<h3 id="invite-modal-title">Add Provider</h3>
 				<button type="button" class="modal-close" onclick={closeInviteModal} aria-label="Close">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -362,9 +362,9 @@
 					<button type="submit" class="btn btn-primary" disabled={inviteLoading || !inviteEmail}>
 						{#if inviteLoading}
 							<span class="spinner" aria-hidden="true"></span>
-							Sending...
+							Adding...
 						{:else}
-							Send Invite
+							Add Provider
 						{/if}
 					</button>
 				</footer>

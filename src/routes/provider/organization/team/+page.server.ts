@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseAdminClient } from '$lib/server/supabase';
+import { randomUUID } from 'crypto';
 
 export interface TeamMember {
 	id: string;
@@ -58,7 +59,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 };
 
 export const actions: Actions = {
-	invite: async ({ request, locals, url }) => {
+	invite: async ({ request, locals }) => {
 		const { error: authError, provider } = await getAdminProvider(locals);
 		if (authError || !provider) {
 			return fail(403, { action: 'invite', error: authError || 'Access denied' });
@@ -102,40 +103,27 @@ export const actions: Actions = {
 			});
 		}
 
-		// Use admin client to invite user via Supabase Auth
-		// This creates the auth.users entry and triggers the provider_profile creation
+		// Create a pending provider profile directly
+		// The provider can claim their account later by signing up with this email
 		try {
 			const adminClient = createSupabaseAdminClient();
 
-			const { data: inviteData, error: inviteError } =
-				await adminClient.auth.admin.inviteUserByEmail(email, {
-					data: {
-						organization_id: provider.organization_id,
-						name: name || undefined,
-						provider: true
-					},
-					redirectTo: `${url.origin}/auth/callback`
-				});
+			const { error: createError } = await adminClient.from('provider_profiles').insert({
+				id: randomUUID(),
+				email,
+				name,
+				role: role as 'admin' | 'provider',
+				organization_id: provider.organization_id,
+				settings: {}
+			});
 
-			if (inviteError) {
-				console.error('Error inviting user:', inviteError);
+			if (createError) {
+				console.error('Error creating provider profile:', createError);
 				return fail(500, {
 					action: 'invite',
-					error: inviteError.message || 'Failed to invite provider. Please try again.',
+					error: 'Failed to add provider. Please try again.',
 					values: { email, name, role }
 				});
-			}
-
-			// Update the role if admin was selected (trigger sets default 'provider' role)
-			if (inviteData?.user && role === 'admin') {
-				const { error: updateError } = await adminClient
-					.from('provider_profiles')
-					.update({ role: 'admin' })
-					.eq('id', inviteData.user.id);
-
-				if (updateError) {
-					console.error('Error setting admin role:', updateError);
-				}
 			}
 		} catch (err) {
 			console.error('Error with admin client:', err);
@@ -146,7 +134,7 @@ export const actions: Actions = {
 			});
 		}
 
-		return { success: true, action: 'invite', message: `Invitation sent to ${email}` };
+		return { success: true, action: 'invite', message: `Provider ${email} added successfully` };
 	},
 
 	update: async ({ request, locals }) => {
