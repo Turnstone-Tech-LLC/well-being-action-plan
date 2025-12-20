@@ -61,7 +61,11 @@
 		<Footer />
 	</div>
 
-	<ClearDataModal open={showClearDataModal} onConfirm={confirmClearData} onCancel={cancelClearData} />
+	<ClearDataModal
+		open={showClearDataModal}
+		onConfirm={confirmClearData}
+		onCancel={cancelClearData}
+	/>
 {/if}
 
 <style>

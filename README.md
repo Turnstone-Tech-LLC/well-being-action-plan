@@ -141,6 +141,7 @@ Local Supabase includes [Inbucket](https://inbucket.org/), an email testing tool
 **Access the Inbucket dashboard:** http://127.0.0.1:54324
 
 When testing authentication:
+
 1. Enter an email on the login page
 2. Open Inbucket dashboard to view the captured email
 3. Click the magic link in the email to complete sign-in
@@ -178,10 +179,12 @@ The project includes seed data matching the WBAP 2.0 physical card. Running `sup
 #### What Gets Seeded
 
 **Automatically created (local development):**
+
 - **Admin User**: `admin@wbap.local` (use Inbucket to receive magic link)
 - **Organization**: UVM Children's Hospital
 
 **Resources:**
+
 - **Skills** (21 total across 4 categories):
   - Physical: Move my body, Go outside, Get sleep, Eat well, Shower/bath, Take a break
   - Creative: Read, Write/journal, Draw/paint, Craft/create, Listen/play music

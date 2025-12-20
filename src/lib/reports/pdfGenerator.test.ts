@@ -167,8 +167,8 @@ describe('pdfGenerator', () => {
 	describe('generateFilename', () => {
 		it('generates filename with date range', () => {
 			const dateRange = {
-				start: new Date('2025-12-01T00:00:00'),
-				end: new Date('2025-12-18T23:59:59')
+				start: new Date('2025-12-01T12:00:00Z'),
+				end: new Date('2025-12-18T12:00:00Z')
 			};
 
 			const result = generateFilename(dateRange);
@@ -178,8 +178,8 @@ describe('pdfGenerator', () => {
 
 		it('handles same day range', () => {
 			const dateRange = {
-				start: new Date('2025-12-15T00:00:00'),
-				end: new Date('2025-12-15T23:59:59')
+				start: new Date('2025-12-15T12:00:00Z'),
+				end: new Date('2025-12-15T12:00:00Z')
 			};
 
 			const result = generateFilename(dateRange);
