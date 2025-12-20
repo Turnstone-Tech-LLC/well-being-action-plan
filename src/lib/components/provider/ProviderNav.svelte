@@ -5,9 +5,12 @@
 	interface Props {
 		providerName: string | null;
 		organizationName: string;
+		providerRole?: 'admin' | 'provider';
 	}
 
-	let { providerName, organizationName }: Props = $props();
+	// providerRole is passed for future use (e.g., conditionally showing Organization link for admins)
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	let { providerName, organizationName, providerRole = 'provider' }: Props = $props();
 
 	let isLoggingOut = $state(false);
 </script>
@@ -37,6 +40,15 @@
 						aria-current={$page.url.pathname.startsWith('/provider/resources') ? 'page' : undefined}
 					>
 						Resources
+					</a>
+				</li>
+				<li>
+					<a
+						href="/provider/settings"
+						class:active={$page.url.pathname.startsWith('/provider/settings')}
+						aria-current={$page.url.pathname.startsWith('/provider/settings') ? 'page' : undefined}
+					>
+						Settings
 					</a>
 				</li>
 			</ul>

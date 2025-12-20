@@ -39,7 +39,11 @@
 {/if}
 
 <div class="provider-app">
-	<ProviderNav providerName={data.provider.name} organizationName={data.organization.name} />
+	<ProviderNav
+		providerName={data.provider.name}
+		organizationName={data.organization.name}
+		providerRole={data.provider.role}
+	/>
 
 	<main id="main-content" tabindex="-1">
 		{@render children()}
