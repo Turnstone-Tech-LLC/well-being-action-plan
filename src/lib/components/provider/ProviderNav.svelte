@@ -8,11 +8,11 @@
 		providerRole?: 'admin' | 'provider';
 	}
 
-	// providerRole is passed for future use (e.g., conditionally showing Organization link for admins)
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	let { providerName, organizationName, providerRole = 'provider' }: Props = $props();
 
 	let isLoggingOut = $state(false);
+
+	const isAdmin = $derived(providerRole === 'admin');
 </script>
 
 <header>
@@ -42,6 +42,19 @@
 						Resources
 					</a>
 				</li>
+				{#if isAdmin}
+					<li>
+						<a
+							href="/provider/organization"
+							class:active={$page.url.pathname.startsWith('/provider/organization')}
+							aria-current={$page.url.pathname.startsWith('/provider/organization')
+								? 'page'
+								: undefined}
+						>
+							Organization
+						</a>
+					</li>
+				{/if}
 				<li>
 					<a
 						href="/provider/settings"
@@ -55,7 +68,12 @@
 
 			<div class="user-menu">
 				<div class="user-info">
-					<span class="user-name">{providerName || 'Provider'}</span>
+					<div class="user-name-row">
+						<span class="user-name">{providerName || 'Provider'}</span>
+						<span class="role-badge" class:admin={isAdmin}>
+							{isAdmin ? 'Admin' : 'Provider'}
+						</span>
+					</div>
 					<span class="org-name">{organizationName}</span>
 				</div>
 				<form
@@ -177,10 +195,30 @@
 		gap: var(--space-1);
 	}
 
+	.user-name-row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
 	.user-name {
 		font-weight: 500;
 		font-size: var(--font-size-sm);
 		color: white;
+	}
+
+	.role-badge {
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		padding: 1px 6px;
+		border-radius: var(--radius-sm);
+		background-color: rgba(255, 255, 255, 0.15);
+		color: rgba(255, 255, 255, 0.85);
+	}
+
+	.role-badge.admin {
+		background-color: var(--color-accent);
+		color: var(--color-primary);
 	}
 
 	.org-name {
