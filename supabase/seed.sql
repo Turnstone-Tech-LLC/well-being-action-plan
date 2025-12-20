@@ -5,16 +5,13 @@
 -- Well-Being Action Plan 2.0 physical card.
 --
 -- IMPORTANT: This seed file is idempotent and can be run multiple times safely.
---
--- Environment Variables (set via psql -v):
---   SEED_ADMIN_EMAIL  - If set, creates an admin provider user
---   SEED_ORG_NAME     - Organization name (defaults to "UVM Children's Hospital")
+-- It runs automatically during `supabase db reset`.
 -- =============================================================================
 
 -- =============================================================================
 -- 1. Default Organization
 -- =============================================================================
--- Create the default organization if it doesn't exist
+-- Create the default organization for local development.
 insert into organizations (id, name, slug)
 values (
   '00000000-0000-0000-0000-000000000001',
@@ -102,44 +99,33 @@ insert into crisis_resources (organization_id, name, contact, contact_type, desc
   (null, 'National Suicide Prevention Line', '988', 'phone', 'Call or text 988 for 24/7 crisis support', 2);
 
 -- =============================================================================
--- 6. Admin Provider Creation (Conditional)
+-- 6. Admin Provider Creation for Local Development
 -- =============================================================================
--- This section creates an admin provider when SEED_ADMIN_EMAIL is set.
---
--- To use, run the seed with the email variable:
---   psql -v seed_admin_email="'provider@example.com'" -f supabase/seed.sql
---
--- Or use the helper script:
---   SEED_ADMIN_EMAIL=provider@example.com pnpm run db:seed
---
--- Note: In Supabase local development, you can also use the Dashboard
--- to create users, or use the Supabase Auth API.
+-- This creates an admin provider user for local development.
+-- Edit the email below to use a different admin account.
 
--- Create a function to seed admin user (can be called from application code)
-create or replace function seed_admin_provider(
-  p_email text,
-  p_org_id uuid default '00000000-0000-0000-0000-000000000001'
-) returns uuid as $$
+do $$
 declare
   v_user_id uuid;
+  v_admin_email text := 'jordan.morano@gmail.com';
+  v_org_id uuid := '00000000-0000-0000-0000-000000000001';
 begin
   -- Check if user already exists
-  select id into v_user_id from auth.users where email = p_email;
+  select id into v_user_id from auth.users where email = v_admin_email;
 
   if v_user_id is not null then
     -- User exists, ensure they have admin role
     update provider_profiles
     set role = 'admin'
     where id = v_user_id;
-
-    return v_user_id;
+    raise notice 'Admin provider already exists: %', v_admin_email;
+    return;
   end if;
 
   -- Generate a new UUID for the user
   v_user_id := gen_random_uuid();
 
-  -- Insert into auth.users
-  -- Note: Password is set to a random value; user should reset via email
+  -- Insert into auth.users with all required columns for GoTrue compatibility
   insert into auth.users (
     id,
     instance_id,
@@ -153,21 +139,39 @@ begin
     created_at,
     updated_at,
     confirmation_token,
-    recovery_token
+    recovery_token,
+    email_change,
+    email_change_token_new,
+    email_change_token_current,
+    phone,
+    phone_change,
+    phone_change_token,
+    reauthentication_token,
+    is_sso_user,
+    is_anonymous
   ) values (
     v_user_id,
     '00000000-0000-0000-0000-000000000000',
-    p_email,
+    v_admin_email,
     crypt(gen_random_uuid()::text, gen_salt('bf')),
     now(), -- Auto-confirm for seed users
-    jsonb_build_object('organization_id', p_org_id, 'provider', true),
+    jsonb_build_object('organization_id', v_org_id, 'provider', true),
     jsonb_build_object('name', 'Admin Provider'),
     'authenticated',
     'authenticated',
     now(),
     now(),
     '',
-    ''
+    '',
+    '',  -- email_change
+    '',  -- email_change_token_new
+    '',  -- email_change_token_current
+    null, -- phone
+    '',  -- phone_change
+    '',  -- phone_change_token
+    '',  -- reauthentication_token
+    false, -- is_sso_user
+    false  -- is_anonymous
   );
 
   -- The trigger will create the provider_profile, but we need to set admin role
@@ -175,12 +179,9 @@ begin
   set role = 'admin', name = 'Admin Provider'
   where id = v_user_id;
 
-  return v_user_id;
+  raise notice 'Created admin provider: %', v_admin_email;
 end;
-$$ language plpgsql security definer;
-
--- Grant execute permission on the function
-grant execute on function seed_admin_provider(text, uuid) to service_role;
+$$;
 
 -- =============================================================================
 -- Seed Summary
@@ -191,7 +192,7 @@ grant execute on function seed_admin_provider(text, uuid) to service_role;
 -- - 7 supportive adult types
 -- - 4 help methods
 -- - 2 crisis resources
+-- - 1 admin provider: jordan.morano@gmail.com
 --
--- To create an admin provider, call:
---   SELECT seed_admin_provider('provider@example.com');
+-- To change the admin email or organization, edit the values directly in this file.
 -- =============================================================================
