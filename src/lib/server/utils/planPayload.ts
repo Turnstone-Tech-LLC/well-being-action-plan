@@ -253,10 +253,15 @@ export function buildJoinRecords(actionPlanId: string, draft: ActionPlanDraftDat
 	}
 
 	for (const custom of draft.customHelpMethods) {
+		// For custom help methods, store title in additional_info (like custom skills)
+		// If there's also additionalInfo from the user, append it
+		const storedInfo = custom.additionalInfo
+			? `${custom.title}: ${custom.additionalInfo}`
+			: custom.title;
 		methodRecords.push({
 			action_plan_id: actionPlanId,
 			help_method_id: null,
-			additional_info: custom.additionalInfo || null,
+			additional_info: storedInfo,
 			is_custom: true,
 			display_order: methodDisplayOrder++
 		});

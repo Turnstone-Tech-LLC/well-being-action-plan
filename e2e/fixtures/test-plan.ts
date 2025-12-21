@@ -112,3 +112,127 @@ export const TEST_TOKENS = {
 	revoked: 'REVOKED012',
 	notFound: 'NOTFOUND999'
 };
+
+/**
+ * Additional test plan with different data for variation.
+ */
+export const TEST_PLAN_PAYLOAD_ALT: typeof TEST_PLAN_PAYLOAD = {
+	patientNickname: 'Jordan',
+	happyWhen: 'I feel happy when I play video games and listen to music.',
+	happyBecause: 'Gaming and music help me relax and have fun.',
+	skills: [
+		{
+			id: 'skill-3',
+			title: 'Listening to Music',
+			description: 'Put on headphones and listen to your favorite songs.',
+			category: 'Distraction',
+			displayOrder: 1
+		},
+		{
+			id: 'skill-4',
+			title: 'Going for a Walk',
+			description: 'Take a short walk outside to clear your head.',
+			category: 'Movement',
+			displayOrder: 2
+		},
+		{
+			id: 'skill-5',
+			title: 'Drawing or Art',
+			description: 'Express yourself through drawing or creative activities.',
+			category: 'Creative',
+			displayOrder: 3
+		}
+	],
+	supportiveAdults: [
+		{
+			id: 'adult-3',
+			type: 'Parent',
+			name: 'Dad',
+			contactInfo: '555-5678',
+			isPrimary: true,
+			displayOrder: 1
+		},
+		{
+			id: 'adult-4',
+			type: 'Counselor',
+			name: 'Dr. Smith',
+			contactInfo: 'counselor@school.edu',
+			isPrimary: false,
+			displayOrder: 2
+		}
+	],
+	helpMethods: [
+		{
+			id: 'help-3',
+			title: 'Talk it out',
+			description: 'Have a conversation about what is bothering you.',
+			displayOrder: 1
+		}
+	],
+	crisisResources: [
+		{
+			id: 'crisis-1',
+			name: '988 Suicide & Crisis Lifeline',
+			contact: '988',
+			contactType: 'phone',
+			description: 'Free, 24/7 confidential support',
+			displayOrder: 1
+		},
+		{
+			id: 'crisis-2',
+			name: 'Crisis Text Line',
+			contact: 'HOME to 741741',
+			contactType: 'text',
+			description: 'Text-based crisis support',
+			displayOrder: 2
+		}
+	]
+};
+
+/**
+ * Generate a series of test check-ins for the past week.
+ */
+export function generateTestCheckIns(
+	actionPlanId: string,
+	count: number = 7
+): Array<{
+	actionPlanId: string;
+	zone: 'green' | 'yellow' | 'red';
+	strategiesUsed: string[];
+	supportiveAdultsContacted: string[];
+	helpMethodsSelected: string[];
+	notes: string;
+	createdAt: Date;
+}> {
+	const zones: Array<'green' | 'yellow' | 'red'> = [
+		'green',
+		'green',
+		'yellow',
+		'green',
+		'green',
+		'yellow',
+		'green'
+	];
+	const checkIns = [];
+
+	for (let i = 0; i < count; i++) {
+		const daysAgo = count - 1 - i;
+		const date = new Date();
+		date.setDate(date.getDate() - daysAgo);
+		date.setHours(10, 0, 0, 0);
+
+		const zone = zones[i % zones.length];
+
+		checkIns.push({
+			actionPlanId,
+			zone,
+			strategiesUsed: zone === 'green' ? ['skill-1'] : [],
+			supportiveAdultsContacted: zone === 'yellow' ? ['adult-1'] : [],
+			helpMethodsSelected: zone === 'yellow' ? ['help-1'] : [],
+			notes: zone === 'green' ? 'Feeling great today!' : 'Had a tough moment but got through it.',
+			createdAt: date
+		});
+	}
+
+	return checkIns;
+}

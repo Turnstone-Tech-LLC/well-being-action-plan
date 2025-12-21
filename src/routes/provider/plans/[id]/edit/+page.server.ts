@@ -409,29 +409,45 @@ export const actions: Actions = {
 		}
 
 		// Fetch reference data for building the plan payload
+		// Build queries that handle both org-specific and global resources
+		let refSkillsQuery = locals.supabase.from('skills').select('*').eq('is_active', true);
+		let refAdultTypesQuery = locals.supabase
+			.from('supportive_adult_types')
+			.select('*')
+			.eq('is_active', true);
+		let refHelpMethodsQuery = locals.supabase.from('help_methods').select('*').eq('is_active', true);
+		let refCrisisResourcesQuery = locals.supabase
+			.from('crisis_resources')
+			.select('*')
+			.eq('is_active', true)
+			.order('display_order', { ascending: true });
+
+		// Filter by organization - show global and org-specific
+		if (orgId) {
+			refSkillsQuery = refSkillsQuery.or(`organization_id.is.null,organization_id.eq.${orgId}`);
+			refAdultTypesQuery = refAdultTypesQuery.or(
+				`organization_id.is.null,organization_id.eq.${orgId}`
+			);
+			refHelpMethodsQuery = refHelpMethodsQuery.or(
+				`organization_id.is.null,organization_id.eq.${orgId}`
+			);
+			refCrisisResourcesQuery = refCrisisResourcesQuery.or(
+				`organization_id.is.null,organization_id.eq.${orgId}`
+			);
+		} else {
+			// If no org, show only global
+			refSkillsQuery = refSkillsQuery.is('organization_id', null);
+			refAdultTypesQuery = refAdultTypesQuery.is('organization_id', null);
+			refHelpMethodsQuery = refHelpMethodsQuery.is('organization_id', null);
+			refCrisisResourcesQuery = refCrisisResourcesQuery.is('organization_id', null);
+		}
+
 		const [skillsResult, adultTypesResult, helpMethodsResult, crisisResourcesResult] =
 			await Promise.all([
-				locals.supabase
-					.from('skills')
-					.select('*')
-					.eq('is_active', true)
-					.or(`organization_id.is.null,organization_id.eq.${orgId}`),
-				locals.supabase
-					.from('supportive_adult_types')
-					.select('*')
-					.eq('is_active', true)
-					.or(`organization_id.is.null,organization_id.eq.${orgId}`),
-				locals.supabase
-					.from('help_methods')
-					.select('*')
-					.eq('is_active', true)
-					.or(`organization_id.is.null,organization_id.eq.${orgId}`),
-				locals.supabase
-					.from('crisis_resources')
-					.select('*')
-					.eq('is_active', true)
-					.or(`organization_id.is.null,organization_id.eq.${orgId}`)
-					.order('display_order', { ascending: true })
+				refSkillsQuery,
+				refAdultTypesQuery,
+				refHelpMethodsQuery,
+				refCrisisResourcesQuery
 			]);
 
 		// Build the plan payload using shared utility
