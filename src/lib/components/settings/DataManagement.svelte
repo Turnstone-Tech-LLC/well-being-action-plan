@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { ClearDataModal } from '$lib/components/modals';
-	import { goto } from '$app/navigation';
 	import { clearAllData } from '$lib/db';
 	import { localPlanStore } from '$lib/stores/localPlan';
 	import { patientProfileStore } from '$lib/stores/patientProfile';
@@ -21,17 +20,18 @@
 		isClearing = true;
 		try {
 			await clearAllData();
+			// Close modal first to prevent UI conflicts
+			showClearModal = false;
+			// Reset stores - this will trigger the app layout's routing check
+			// which will redirect to home, so we don't need to call goto() ourselves
 			localPlanStore.reset();
 			patientProfileStore.reset();
 			toastStore.success('All data cleared');
-			showClearModal = false;
-			// Navigate to home page
-			goto('/');
 		} catch {
 			toastStore.error('Failed to clear data');
-		} finally {
 			isClearing = false;
 		}
+		// Note: Don't reset isClearing in finally - the component will unmount during navigation
 	}
 </script>
 

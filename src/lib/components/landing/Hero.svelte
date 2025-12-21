@@ -10,6 +10,11 @@
 			<a href="/scan" class="btn btn-primary btn-large">Load My Plan</a>
 			<p class="supporting-text">Have a QR code? You can scan it with your camera.</p>
 		</div>
+		<div class="restore-wrapper">
+			<p class="restore-text">
+				Already have a backup? <a href="/restore" class="restore-link">Restore from file</a>
+			</p>
+		</div>
 	</div>
 </section>
 
@@ -59,5 +64,26 @@
 	.supporting-text {
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
+	}
+
+	.restore-wrapper {
+		margin-top: var(--space-8);
+		padding-top: var(--space-6);
+		border-top: 1px solid var(--color-gray-200);
+	}
+
+	.restore-text {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+	}
+
+	.restore-link {
+		color: var(--color-primary);
+		text-decoration: underline;
+		font-weight: 500;
+	}
+
+	.restore-link:hover {
+		color: var(--color-primary-dark, #004d42);
 	}
 </style>

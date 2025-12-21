@@ -13,7 +13,7 @@ import { expect, test } from '@playwright/test';
 test.describe('Provider Settings', () => {
 	test.describe('Access Control', () => {
 		test('settings page requires authentication', async ({ page }) => {
-			const response = await page.goto('/provider/settings');
+			await page.goto('/provider/settings');
 
 			// Should either redirect to /auth or show access denied
 			const url = page.url();
@@ -27,7 +27,7 @@ test.describe('Provider Settings', () => {
 		});
 
 		test('organization settings page requires authentication', async ({ page }) => {
-			const response = await page.goto('/provider/organization');
+			await page.goto('/provider/organization');
 
 			const url = page.url();
 			const isRedirected = url.includes('/auth');
@@ -40,7 +40,7 @@ test.describe('Provider Settings', () => {
 		});
 
 		test('team management page requires authentication', async ({ page }) => {
-			const response = await page.goto('/provider/organization/team');
+			await page.goto('/provider/organization/team');
 
 			const url = page.url();
 			const isRedirected = url.includes('/auth');

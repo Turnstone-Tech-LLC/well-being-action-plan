@@ -19,9 +19,11 @@ import { TEST_LOCAL_PLAN } from '../fixtures/test-plan';
  */
 export async function waitForTestHelpers(page: Page, timeout = 5000): Promise<boolean> {
 	try {
-		await page.waitForFunction(() => typeof (window as any).__testHelpers !== 'undefined', {
-			timeout
-		});
+		await page.waitForFunction(
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			() => typeof (window as any).__testHelpers !== 'undefined',
+			{ timeout }
+		);
 		return true;
 	} catch {
 		console.warn('Test helpers not available - is the app running in dev/preview mode?');
@@ -46,6 +48,7 @@ export async function seedPlanViaApp(
 
 	await page.evaluate(
 		async ({ planData, completeOnboarding }) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			await (window as any).__testHelpers.seedPlan(planData, { completeOnboarding });
 		},
 		{ planData: TEST_LOCAL_PLAN, completeOnboarding }
@@ -73,6 +76,7 @@ export async function seedCheckInsViaApp(
 
 	await page.evaluate(
 		async ({ checkIns, actionPlanId }) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const db = (window as any).__testDb;
 			if (!db) {
 				throw new Error('Test db not available');
@@ -110,6 +114,7 @@ export async function clearDataViaApp(page: Page): Promise<void> {
 	}
 
 	await page.evaluate(async () => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		await (window as any).__testHelpers.clearAll();
 	});
 }
@@ -124,6 +129,7 @@ export async function refreshStoresViaApp(page: Page): Promise<void> {
 	}
 
 	await page.evaluate(async () => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		await (window as any).__testHelpers.refreshStores();
 	});
 }
@@ -138,6 +144,7 @@ export async function hasLocalPlanViaApp(page: Page): Promise<boolean> {
 	}
 
 	return await page.evaluate(async () => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const db = (window as any).__testDb;
 		if (!db) return false;
 		const count = await db.localPlans.count();
@@ -155,6 +162,7 @@ export async function getCheckInCountViaApp(page: Page): Promise<number> {
 	}
 
 	return await page.evaluate(async () => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const db = (window as any).__testDb;
 		if (!db) return 0;
 		return await db.checkIns.count();

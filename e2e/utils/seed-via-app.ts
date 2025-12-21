@@ -10,7 +10,7 @@
  */
 
 import type { Page } from '@playwright/test';
-import { TEST_LOCAL_PLAN, TEST_PLAN_PAYLOAD } from '../fixtures/test-plan';
+import { TEST_LOCAL_PLAN } from '../fixtures/test-plan';
 
 /**
  * Seed a local plan using the app's db module.
@@ -26,6 +26,7 @@ export async function seedPlanViaApp(
 	await page.evaluate(
 		async ({ planData, completeOnboarding }) => {
 			// Access the app's db module (we'll need to expose it)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const db = (window as any).__testDb;
 			if (!db) {
 				throw new Error('Test db not exposed on window. Add test helper script.');
@@ -77,6 +78,7 @@ export async function seedCheckInsViaApp(
 ): Promise<void> {
 	await page.evaluate(
 		async ({ checkIns, actionPlanId }) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const db = (window as any).__testDb;
 			if (!db) {
 				throw new Error('Test db not exposed on window. Add test helper script.');
@@ -109,6 +111,7 @@ export async function seedCheckInsViaApp(
  */
 export async function clearDataViaApp(page: Page): Promise<void> {
 	await page.evaluate(async () => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const db = (window as any).__testDb;
 		if (!db) {
 			throw new Error('Test db not exposed on window. Add test helper script.');
@@ -124,6 +127,7 @@ export async function clearDataViaApp(page: Page): Promise<void> {
  */
 export async function refreshStores(page: Page): Promise<void> {
 	await page.evaluate(async () => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const stores = (window as any).__testStores;
 		if (stores) {
 			await stores.localPlanStore.refresh();

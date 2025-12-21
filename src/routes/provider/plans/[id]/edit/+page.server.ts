@@ -415,7 +415,10 @@ export const actions: Actions = {
 			.from('supportive_adult_types')
 			.select('*')
 			.eq('is_active', true);
-		let refHelpMethodsQuery = locals.supabase.from('help_methods').select('*').eq('is_active', true);
+		let refHelpMethodsQuery = locals.supabase
+			.from('help_methods')
+			.select('*')
+			.eq('is_active', true);
 		let refCrisisResourcesQuery = locals.supabase
 			.from('crisis_resources')
 			.select('*')

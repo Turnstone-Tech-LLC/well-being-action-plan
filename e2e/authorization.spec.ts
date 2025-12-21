@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { deleteDatabase, seedLocalPlan, clearLocalPlan, hasLocalPlan } from './utils/indexeddb';
+import { deleteDatabase, seedLocalPlan } from './utils/indexeddb';
 
 /**
  * Authorization Guards Tests

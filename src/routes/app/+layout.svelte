@@ -17,6 +17,10 @@
 	let initialized = $state(false);
 	let checking = $state(true);
 
+	// Non-reactive guard to prevent multiple navigations
+	// Using a plain variable instead of $state to avoid triggering effects
+	let hasNavigated = false;
+
 	// Check if we're on the onboarding page
 	let isOnboardingRoute = $derived($page.url.pathname === '/app/onboarding');
 
@@ -36,10 +40,14 @@
 		await checkRouting();
 	});
 
-	// Re-check routing when stores change
+	// Re-check routing when plan is cleared
 	$effect(() => {
-		if (initialized && browser) {
-			checkRouting();
+		// Read the reactive value to track it
+		const hasLocalPlan = $hasPlan;
+
+		if (initialized && browser && !hasLocalPlan && !hasNavigated) {
+			hasNavigated = true;
+			goto('/');
 		}
 	});
 

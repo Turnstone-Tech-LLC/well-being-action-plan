@@ -275,7 +275,7 @@ test.describe('Provider Authentication', () => {
 			// Note: The actual behavior depends on how the app handles unauthenticated access
 			// Some apps redirect, others show 404/403
 
-			const response = await page.goto('/provider');
+			await page.goto('/provider');
 
 			// Should either redirect to /auth or show an error
 			const url = page.url();
