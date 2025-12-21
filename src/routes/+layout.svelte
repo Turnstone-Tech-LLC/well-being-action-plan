@@ -20,12 +20,29 @@
 		$page.url.pathname.startsWith('/provider') || $page.url.pathname.startsWith('/app')
 	);
 
-	// Register service worker on mount
-	onMount(() => {
+	// Register service worker on mount and initialize test helpers if in test mode
+	onMount(async () => {
 		if (browser) {
 			registerServiceWorker().catch((err) => {
 				console.warn('Service worker registration failed:', err);
 			});
+
+			// Initialize test helpers for E2E testing
+			// Enabled in dev mode OR when URL contains ?__test_mode=true
+			// This exposes __testDb, __testStores, and __testHelpers on the window object
+			const urlParams = new URLSearchParams(window.location.search);
+			const testModeFromUrl = urlParams.get('__test_mode') === 'true';
+			const testModeFromStorage = sessionStorage.getItem('__test_mode') === 'true';
+
+			if (import.meta.env.DEV || testModeFromUrl || testModeFromStorage) {
+				// Persist test mode in session storage so it survives navigation
+				if (testModeFromUrl) {
+					sessionStorage.setItem('__test_mode', 'true');
+				}
+
+				const { initTestHelpers } = await import('$lib/test-helpers');
+				initTestHelpers();
+			}
 		}
 	});
 

@@ -61,7 +61,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const { error: installError } = await supabase.from('action_plan_installs').insert({
 		action_plan_id: tokenRow.action_plan_id,
 		revision_id: tokenRow.revision_id,
-		token_id: tokenRow.id,
+		install_token_id: tokenRow.id,
 		device_install_id: deviceInstallId,
 		installed_at: now.toISOString()
 	});

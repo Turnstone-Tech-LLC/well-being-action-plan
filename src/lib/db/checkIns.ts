@@ -66,6 +66,10 @@ export async function getCheckInsByDateRange(
 /**
  * Save a new check-in to the database.
  * Returns the ID of the created check-in.
+ *
+ * Note: We use spread operators to create plain arrays from the input arrays.
+ * This is necessary because Svelte 5's $state() creates Proxy objects for arrays,
+ * and IndexedDB's structured clone algorithm cannot clone Proxy objects.
  */
 export async function saveCheckIn(input: CreateCheckInInput): Promise<number | undefined> {
 	const db = getDB();
@@ -73,12 +77,13 @@ export async function saveCheckIn(input: CreateCheckInInput): Promise<number | u
 		return undefined;
 	}
 
+	// Create plain arrays from input arrays (they may be Svelte 5 Proxy objects)
 	const checkIn: Omit<CheckIn, 'id'> = {
 		actionPlanId: input.actionPlanId,
 		zone: input.zone,
-		strategiesUsed: input.strategiesUsed ?? [],
-		supportiveAdultsContacted: input.supportiveAdultsContacted ?? [],
-		helpMethodsSelected: input.helpMethodsSelected ?? [],
+		strategiesUsed: [...(input.strategiesUsed ?? [])],
+		supportiveAdultsContacted: [...(input.supportiveAdultsContacted ?? [])],
+		helpMethodsSelected: [...(input.helpMethodsSelected ?? [])],
 		notes: input.notes,
 		createdAt: new Date()
 	};

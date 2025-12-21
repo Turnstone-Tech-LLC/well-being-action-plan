@@ -2,11 +2,14 @@
  * IndexedDB utilities for E2E testing.
  * These functions run in the browser context via page.evaluate().
  *
- * Note: Database version must match the app's Dexie schema version (currently 2).
+ * Note: Database version must match the app's Dexie schema version (currently 4).
  */
 
 import type { Page } from '@playwright/test';
 import { TEST_LOCAL_PLAN } from '../fixtures/test-plan';
+
+const DB_VERSION = 4;
+const DB_NAME = 'WellBeingActionPlan';
 
 /**
  * Seed IndexedDB with a test plan and optionally a patient profile.
@@ -19,9 +22,9 @@ export async function seedLocalPlan(
 	const { withCompletedOnboarding = true } = options;
 
 	await page.evaluate(
-		({ planData, completeOnboarding }) => {
+		({ planData, completeOnboarding, dbName, dbVersion }) => {
 			return new Promise<void>((resolve, reject) => {
-				const request = indexedDB.open('WellBeingActionPlan', 2);
+				const request = indexedDB.open(dbName, dbVersion);
 
 				request.onerror = () => reject(request.error);
 
@@ -39,7 +42,7 @@ export async function seedLocalPlan(
 						store.createIndex('installedAt', 'installedAt', { unique: false });
 					}
 
-					// Create patientProfiles store if it doesn't exist (version 2)
+					// Create patientProfiles store if it doesn't exist
 					if (!db.objectStoreNames.contains('patientProfiles')) {
 						const profileStore = db.createObjectStore('patientProfiles', {
 							keyPath: 'id',
@@ -48,6 +51,17 @@ export async function seedLocalPlan(
 						profileStore.createIndex('actionPlanId', 'actionPlanId', { unique: true });
 						profileStore.createIndex('onboardingComplete', 'onboardingComplete', { unique: false });
 						profileStore.createIndex('createdAt', 'createdAt', { unique: false });
+					}
+
+					// Create checkIns store if it doesn't exist (version 4)
+					if (!db.objectStoreNames.contains('checkIns')) {
+						const checkInStore = db.createObjectStore('checkIns', {
+							keyPath: 'id',
+							autoIncrement: true
+						});
+						checkInStore.createIndex('actionPlanId', 'actionPlanId', { unique: false });
+						checkInStore.createIndex('zone', 'zone', { unique: false });
+						checkInStore.createIndex('createdAt', 'createdAt', { unique: false });
 					}
 				};
 
@@ -72,6 +86,9 @@ export async function seedLocalPlan(
 							actionPlanId: planData.actionPlanId,
 							displayName: planData.planPayload.patientNickname || 'Test User',
 							onboardingComplete: true,
+							notificationsEnabled: false,
+							notificationFrequency: 'none',
+							notificationTime: 'morning',
 							createdAt: new Date(),
 							updatedAt: new Date()
 						};
@@ -90,7 +107,12 @@ export async function seedLocalPlan(
 				};
 			});
 		},
-		{ planData: TEST_LOCAL_PLAN, completeOnboarding: withCompletedOnboarding }
+		{
+			planData: TEST_LOCAL_PLAN,
+			completeOnboarding: withCompletedOnboarding,
+			dbName: DB_NAME,
+			dbVersion: DB_VERSION
+		}
 	);
 }
 
