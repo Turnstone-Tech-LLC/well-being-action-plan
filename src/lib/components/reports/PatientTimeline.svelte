@@ -33,6 +33,9 @@
 
 	let hasCheckIns = $derived(checkIns.length > 0);
 
+	// Get the currently selected check-in for the details panel
+	let selectedCheckIn = $derived(sortedCheckIns.find((c) => c.id === expandedId) ?? null);
+
 	/**
 	 * Get coping skills used in a check-in.
 	 */
@@ -107,8 +110,7 @@
 			<!-- Check-in dots -->
 			<div class="timeline-dots">
 				{#each sortedCheckIns as checkIn, index (checkIn.id)}
-					{@const skills = getCopingSkills(checkIn)}
-					{@const isExpanded = expandedId === checkIn.id}
+					{@const isSelected = expandedId === checkIn.id}
 					{@const zoneInfo = getZoneInfo(checkIn.zone)}
 					<div class="timeline-point" role="listitem">
 						<!-- Date label (show for first, last, and every 5th) -->
@@ -120,58 +122,69 @@
 						<button
 							type="button"
 							class="zone-dot-btn"
+							class:selected={isSelected}
 							onclick={() => toggleExpanded(checkIn.id)}
 							onkeydown={(e) => handleKeydown(e, checkIn.id)}
-							aria-expanded={isExpanded}
+							aria-expanded={isSelected}
 							aria-label="{zoneInfo.label} on {formatRelativeDate(
 								checkIn.createdAt
-							)}. {zoneInfo.shape} shape. Click to expand."
+							)}. {zoneInfo.shape} shape. Click to view details."
 						>
 							<ZoneDot zone={checkIn.zone} size={28} />
 						</button>
-
-						<!-- Expanded card -->
-						{#if isExpanded}
-							<div class="expanded-card" role="region" aria-label="Check-in details">
-								<div class="card-header">
-									<span class="card-zone zone-{checkIn.zone}-text">{zoneInfo.label}</span>
-									<span class="card-date">{formatRelativeDate(checkIn.createdAt)}</span>
-								</div>
-
-								{#if skills.length > 0}
-									<div class="card-section">
-										<h4>Coping skills used:</h4>
-										<ul class="skills-list">
-											{#each skills as skill, i (i)}
-												<li>{skill}</li>
-											{/each}
-										</ul>
-									</div>
-								{/if}
-
-								{#if checkIn.notes}
-									<div class="card-section">
-										<h4>Notes:</h4>
-										<p class="notes-text">{checkIn.notes}</p>
-									</div>
-								{/if}
-
-								<button
-									type="button"
-									class="close-card-btn"
-									onclick={() => (expandedId = null)}
-									aria-label="Close details"
-								>
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M18 6L6 18M6 6l12 12" />
-									</svg>
-								</button>
-							</div>
-						{/if}
 					</div>
 				{/each}
 			</div>
 		</div>
+
+		<!-- Selected check-in details panel (below timeline) -->
+		{#if selectedCheckIn}
+			{@const skills = getCopingSkills(selectedCheckIn)}
+			{@const zoneInfo = getZoneInfo(selectedCheckIn.zone)}
+			<div class="details-panel" role="region" aria-label="Check-in details" aria-live="polite">
+				<div class="details-header">
+					<div class="details-title">
+						<ZoneDot zone={selectedCheckIn.zone} size={24} />
+						<span class="details-zone zone-{selectedCheckIn.zone}-text">{zoneInfo.label}</span>
+						<span class="details-date">{formatRelativeDate(selectedCheckIn.createdAt)}</span>
+					</div>
+					<button
+						type="button"
+						class="close-details-btn"
+						onclick={() => (expandedId = null)}
+						aria-label="Close details"
+					>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M18 6L6 18M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+
+				<div class="details-content">
+					{#if skills.length > 0}
+						<div class="details-section">
+							<h4>Coping skills used</h4>
+							<ul class="skills-list">
+								{#each skills as skill, i (i)}
+									<li>{skill}</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+
+					{#if selectedCheckIn.notes}
+						<div class="details-section">
+							<h4>Notes</h4>
+							<p class="notes-text">{selectedCheckIn.notes}</p>
+						</div>
+					{/if}
+
+					{#if skills.length === 0 && !selectedCheckIn.notes}
+						<p class="no-details">No additional details for this check-in.</p>
+					{/if}
+				</div>
+			</div>
+		{/if}
 
 		<!-- Legend -->
 		<div class="timeline-legend" role="img" aria-label="Zone legend">
@@ -258,7 +271,7 @@
 		height: 18px;
 	}
 
-	/* Timeline container */
+	/* Timeline scroll wrapper - handles horizontal scrolling */
 	.timeline-container {
 		position: relative;
 		padding: var(--space-8) var(--space-4);
@@ -318,33 +331,43 @@
 		outline-offset: 2px;
 	}
 
-	/* Expanded card */
-	.expanded-card {
-		position: absolute;
-		top: calc(100% + var(--space-2));
-		left: 50%;
-		transform: translateX(-50%);
-		width: 240px;
-		padding: var(--space-4);
-		background-color: var(--color-white);
-		border: 1px solid var(--color-gray-200);
-		border-radius: var(--radius-lg);
-		box-shadow: var(--shadow-lg);
-		z-index: 10;
+	.zone-dot-btn.selected {
+		transform: scale(1.2);
+		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 	}
 
-	.card-header {
+	/* Details panel (below timeline) */
+	.details-panel {
+		margin-top: var(--space-4);
+		padding: var(--space-4);
+		background-color: var(--color-gray-50);
+		border: 1px solid var(--color-gray-200);
+		border-radius: var(--radius-lg);
+	}
+
+	.details-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: var(--space-3);
-		padding-bottom: var(--space-2);
-		border-bottom: 1px solid var(--color-gray-100);
+		padding-bottom: var(--space-3);
+		border-bottom: 1px solid var(--color-gray-200);
 	}
 
-	.card-zone {
-		font-size: var(--font-size-sm);
+	.details-title {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.details-zone {
+		font-size: var(--font-size-base);
 		font-weight: 600;
+	}
+
+	.details-date {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
 	}
 
 	.zone-green-text {
@@ -359,20 +382,44 @@
 		color: #dc2626;
 	}
 
-	.card-date {
-		font-size: var(--font-size-xs);
+	.close-details-btn {
+		width: 32px;
+		height: 32px;
+		padding: 0;
+		border: none;
+		background: transparent;
 		color: var(--color-text-muted);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		min-height: 44px;
+		min-width: 44px;
 	}
 
-	.card-section {
-		margin-bottom: var(--space-3);
+	.close-details-btn:hover {
+		color: var(--color-text);
+		background-color: var(--color-gray-200);
 	}
 
-	.card-section:last-of-type {
-		margin-bottom: 0;
+	.close-details-btn:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
 	}
 
-	.card-section h4 {
+	.close-details-btn svg {
+		width: 20px;
+		height: 20px;
+	}
+
+	.details-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.details-section h4 {
 		font-size: var(--font-size-xs);
 		font-weight: 600;
 		color: var(--color-text-muted);
@@ -385,12 +432,18 @@
 		list-style: none;
 		margin: 0;
 		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
 	}
 
 	.skills-list li {
 		font-size: var(--font-size-sm);
 		color: var(--color-text);
-		padding: var(--space-1) 0;
+		padding: var(--space-1) var(--space-2);
+		background-color: var(--color-white);
+		border: 1px solid var(--color-gray-200);
+		border-radius: var(--radius-md);
 	}
 
 	.notes-text {
@@ -400,36 +453,10 @@
 		font-style: italic;
 	}
 
-	.close-card-btn {
-		position: absolute;
-		top: var(--space-2);
-		right: var(--space-2);
-		width: 24px;
-		height: 24px;
-		padding: 0;
-		border: none;
-		background: transparent;
+	.no-details {
+		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-sm);
-	}
-
-	.close-card-btn:hover {
-		color: var(--color-text);
-		background-color: var(--color-gray-100);
-	}
-
-	.close-card-btn:focus-visible {
-		outline: 2px solid var(--color-accent);
-		outline-offset: 1px;
-	}
-
-	.close-card-btn svg {
-		width: 16px;
-		height: 16px;
+		margin: 0;
 	}
 
 	/* Legend */
@@ -498,14 +525,14 @@
 			overflow: visible;
 		}
 
-		.expanded-card {
-			display: none;
+		.details-panel {
+			break-inside: avoid;
 		}
 	}
 
 	/* High contrast mode */
 	@media (forced-colors: active) {
-		.expanded-card {
+		.details-panel {
 			border: 2px solid currentColor;
 		}
 	}
@@ -523,10 +550,8 @@
 			gap: var(--space-2);
 		}
 
-		.expanded-card {
-			width: 200px;
-			left: 0;
-			transform: none;
+		.details-title {
+			flex-wrap: wrap;
 		}
 	}
 </style>

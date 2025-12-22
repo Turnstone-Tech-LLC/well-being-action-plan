@@ -4,6 +4,7 @@
 	import { patientProfile } from '$lib/stores/patientProfile';
 	import type { CheckIn, PlanPayload } from '$lib/db/index';
 	import { getRecentCheckIns, getCheckInsByDateRange } from '$lib/db/checkIns';
+	import { saveLastProviderReportDate, getLastProviderReportDate } from '$lib/db/profile';
 	import {
 		DateRangeFilter,
 		ZoneFilter,
@@ -16,6 +17,7 @@
 		type QuickFilter,
 		type ZoneFilterValue
 	} from '$lib/components/reports';
+	import AppointmentReminderModal from '$lib/components/reports/AppointmentReminderModal.svelte';
 	import { generateEhrPdf, generateEhrFilename } from '$lib/reports/ehrPdfGenerator';
 	import { downloadPdf } from '$lib/reports/pdfGenerator';
 
@@ -33,6 +35,10 @@
 	// PDF export modal state
 	let showExportModal: boolean = $state(false);
 	let ehrExportLoading: boolean = $state(false);
+	let showAppointmentModal: boolean = $state(false);
+
+	// Track last report generation dates (stored in memory, loaded from profile)
+	let lastProviderReportDate: Date | null = $state(null);
 
 	// Filter state
 	let activeQuickFilter: QuickFilter = $state('all');
@@ -233,6 +239,10 @@
 
 			const filename = generateEhrFilename(profile, dateRange);
 			downloadPdf(blob, filename);
+
+			// Track the last provider report generation date
+			lastProviderReportDate = new Date();
+			await saveLastProviderReportDate(plan.actionPlanId, lastProviderReportDate);
 		} catch (err) {
 			console.error('[Reports] EHR PDF generation failed:', err);
 		} finally {
@@ -245,6 +255,29 @@
 	 */
 	function handleTimelinePrint(): void {
 		window.print();
+	}
+
+	/**
+	 * Format the last generated date for display.
+	 */
+	function formatLastGenerated(date: Date): string {
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+		if (diffDays === 0) {
+			return 'Today';
+		} else if (diffDays === 1) {
+			return 'Yesterday';
+		} else if (diffDays < 7) {
+			return `${diffDays} days ago`;
+		} else {
+			return date.toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric',
+				year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+			});
+		}
 	}
 
 	// Derived values for summary counts by zone (before zone filter)
@@ -262,8 +295,16 @@
 	let hasCheckIns = $derived(filteredCheckIns.length > 0);
 	let hasAnyCheckIns = $derived(allCheckIns.length > 0);
 
-	onMount(() => {
+	onMount(async () => {
 		loadCheckIns();
+
+		// Load last provider report date
+		if (plan?.actionPlanId) {
+			const lastDate = await getLastProviderReportDate(plan.actionPlanId);
+			if (lastDate) {
+				lastProviderReportDate = lastDate;
+			}
+		}
 	});
 </script>
 
@@ -439,48 +480,95 @@
 
 		<!-- Export Options -->
 		{#if hasCheckIns}
-			<section class="export-section" aria-label="Export options">
-				<h2 class="export-heading">Export Reports</h2>
-				<div class="export-buttons">
-					<button
-						type="button"
-						class="export-btn"
-						onclick={() => (showExportModal = true)}
-						disabled={!profile || !payload}
-					>
-						<span class="export-icon" aria-hidden="true">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-								<polyline points="14 2 14 8 20 8" />
-								<line x1="12" y1="18" x2="12" y2="12" />
-								<line x1="9" y1="15" x2="12" y2="12" />
-								<line x1="15" y1="15" x2="12" y2="12" />
-							</svg>
-						</span>
-						Create PDF Report
-					</button>
+			<div class="export-sections">
+				<!-- Share With Your Provider Section -->
+				<section
+					class="export-section export-section-primary"
+					aria-label="Share with your provider"
+				>
+					<h2 class="export-heading">Share With Your Provider</h2>
+					<p class="export-description">
+						Generate a report before your appointment so your provider can see how you've been
+						doing.
+					</p>
 
 					<button
 						type="button"
-						class="export-btn export-btn-secondary"
-						onclick={handleEhrExport}
-						disabled={!profile || !payload || ehrExportLoading}
+						class="reminder-link"
+						onclick={() => (showAppointmentModal = true)}
+						aria-label="Set up appointment reminders"
 					>
-						<span class="export-icon" aria-hidden="true">
-							{#if ehrExportLoading}
-								<span class="loading-spinner-sm"></span>
-							{:else}
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path
-										d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-									/>
-								</svg>
-							{/if}
-						</span>
-						{ehrExportLoading ? 'Generating...' : 'EHR Export (PDF)'}
+						<svg
+							class="reminder-icon"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							aria-hidden="true"
+						>
+							<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+							<path d="M13.73 21a2 2 0 0 1-3.46 0" />
+						</svg>
+						Set up appointment reminders
 					</button>
-				</div>
-			</section>
+
+					<div class="export-buttons">
+						<button
+							type="button"
+							class="export-btn export-btn-primary"
+							onclick={handleEhrExport}
+							disabled={!profile || !payload || ehrExportLoading}
+						>
+							<span class="export-icon" aria-hidden="true">
+								{#if ehrExportLoading}
+									<span class="loading-spinner-sm"></span>
+								{:else}
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path
+											d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+										/>
+									</svg>
+								{/if}
+							</span>
+							{ehrExportLoading ? 'Generating...' : 'Create Provider Report'}
+						</button>
+					</div>
+
+					{#if lastProviderReportDate}
+						<p class="last-generated">
+							Last shared: {formatLastGenerated(lastProviderReportDate)}
+						</p>
+					{/if}
+				</section>
+
+				<!-- Personal Records Section -->
+				<section class="export-section export-section-secondary" aria-label="Personal records">
+					<h2 class="export-heading">Personal Records</h2>
+					<p class="export-description">
+						Save a summary for yourself or share with family, teachers, or counselors.
+					</p>
+
+					<div class="export-buttons">
+						<button
+							type="button"
+							class="export-btn export-btn-secondary"
+							onclick={() => (showExportModal = true)}
+							disabled={!profile || !payload}
+						>
+							<span class="export-icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+									<polyline points="14 2 14 8 20 8" />
+									<line x1="12" y1="18" x2="12" y2="12" />
+									<line x1="9" y1="15" x2="12" y2="12" />
+									<line x1="15" y1="15" x2="12" y2="12" />
+								</svg>
+							</span>
+							Create Personal Summary
+						</button>
+					</div>
+				</section>
+			</div>
 		{/if}
 	{/if}
 </div>
@@ -495,6 +583,15 @@
 		initialStartDate={startDate}
 		initialEndDate={endDate}
 		onClose={() => (showExportModal = false)}
+	/>
+{/if}
+
+<!-- Appointment Reminder Modal -->
+{#if plan}
+	<AppointmentReminderModal
+		open={showAppointmentModal}
+		actionPlanId={plan.actionPlanId}
+		onClose={() => (showAppointmentModal = false)}
 	/>
 {/if}
 
@@ -684,19 +781,74 @@
 		margin: 0 0 var(--space-4);
 	}
 
+	/* Export Sections Container */
+	.export-sections {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
 	/* Export Section */
 	.export-section {
 		padding: var(--space-6);
-		border-top: 1px solid var(--color-gray-200);
+		border: 1px solid var(--color-gray-200);
 		background-color: var(--color-gray-50);
 		border-radius: var(--radius-lg);
 	}
 
+	.export-section-primary {
+		background-color: color-mix(in srgb, var(--color-primary) 5%, white);
+		border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+	}
+
+	.export-section-secondary {
+		background-color: var(--color-gray-50);
+	}
+
 	.export-heading {
-		font-size: var(--font-size-sm);
+		font-size: var(--font-size-base);
 		font-weight: 600;
 		color: var(--color-text);
+		margin: 0 0 var(--space-2);
+	}
+
+	.export-description {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
 		margin: 0 0 var(--space-4);
+		line-height: 1.5;
+	}
+
+	.reminder-link {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) 0;
+		margin-bottom: var(--space-4);
+		background: none;
+		border: none;
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		color: var(--color-primary);
+		cursor: pointer;
+		text-decoration: none;
+		transition: color 0.2s ease;
+	}
+
+	.reminder-link:hover {
+		color: #004a3f;
+		text-decoration: underline;
+	}
+
+	.reminder-link:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+		border-radius: var(--radius-sm);
+	}
+
+	.reminder-icon {
+		width: 18px;
+		height: 18px;
 	}
 
 	.export-buttons {
@@ -710,12 +862,9 @@
 		align-items: center;
 		gap: var(--space-2);
 		padding: var(--space-3) var(--space-5);
-		background-color: var(--color-primary);
-		border: 1px solid var(--color-primary);
 		border-radius: var(--radius-lg);
 		font-size: var(--font-size-sm);
 		font-weight: 500;
-		color: var(--color-white);
 		cursor: pointer;
 		min-height: 44px;
 		transition:
@@ -723,7 +872,13 @@
 			border-color 0.2s ease;
 	}
 
-	.export-btn:hover:not(:disabled) {
+	.export-btn-primary {
+		background-color: var(--color-primary);
+		border: 1px solid var(--color-primary);
+		color: var(--color-white);
+	}
+
+	.export-btn-primary:hover:not(:disabled) {
 		background-color: #004a3f;
 	}
 
@@ -739,12 +894,13 @@
 
 	.export-btn-secondary {
 		background-color: var(--color-white);
-		border-color: var(--color-gray-300);
+		border: 1px solid var(--color-gray-300);
 		color: var(--color-text);
 	}
 
 	.export-btn-secondary:hover:not(:disabled) {
-		background-color: var(--color-gray-50);
+		background-color: var(--color-gray-100);
+		border-color: var(--color-gray-400);
 	}
 
 	.export-icon {
@@ -760,11 +916,17 @@
 		height: 100%;
 	}
 
+	.last-generated {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+		margin: var(--space-3) 0 0;
+	}
+
 	/* Print styles */
 	@media print {
 		.view-tabs,
 		.filters-section,
-		.export-section,
+		.export-sections,
 		.breadcrumb {
 			display: none;
 		}
@@ -826,6 +988,10 @@
 			height: 16px;
 		}
 
+		.export-section {
+			padding: var(--space-4);
+		}
+
 		.export-buttons {
 			flex-direction: column;
 		}
@@ -833,6 +999,10 @@
 		.export-btn {
 			width: 100%;
 			justify-content: center;
+		}
+
+		.reminder-link {
+			font-size: var(--font-size-xs);
 		}
 	}
 </style>

@@ -3,9 +3,11 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { localPlanStore, hasPlan } from '$lib/stores/localPlan';
+	import { localPlanStore, hasPlan, localPlan } from '$lib/stores/localPlan';
 	import { patientProfileStore, onboardingComplete } from '$lib/stores/patientProfile';
 	import { PatientNav } from '$lib/components/app';
+	import { getNextAppointmentDate } from '$lib/db/profile';
+	import { checkAndShowAppointmentReminder } from '$lib/notifications';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -38,7 +40,28 @@
 
 		// After initialization, check routing
 		await checkRouting();
+
+		// Check for appointment reminders after routing is done
+		await checkAppointmentReminder();
 	});
+
+	/**
+	 * Check if an appointment reminder should be shown.
+	 * This is done once when the app loads if the user has completed onboarding.
+	 */
+	async function checkAppointmentReminder() {
+		const plan = $localPlan;
+		if (!plan?.actionPlanId || !$onboardingComplete) return;
+
+		try {
+			const appointmentDate = await getNextAppointmentDate(plan.actionPlanId);
+			if (appointmentDate) {
+				await checkAndShowAppointmentReminder(appointmentDate);
+			}
+		} catch (err) {
+			console.warn('Failed to check appointment reminder:', err);
+		}
+	}
 
 	// Re-check routing when plan is cleared
 	$effect(() => {

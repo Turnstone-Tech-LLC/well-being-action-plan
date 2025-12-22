@@ -258,3 +258,68 @@ export async function restorePatientProfile(input: RestorePatientProfileInput): 
 		await db.patientProfiles.add(profileData);
 	}
 }
+
+/**
+ * Save the next appointment date for a patient profile.
+ */
+export async function saveNextAppointmentDate(
+	actionPlanId: string,
+	appointmentDate: Date | null
+): Promise<void> {
+	const db = getDB();
+	if (!db) {
+		return;
+	}
+
+	await db.patientProfiles
+		.where('actionPlanId')
+		.equals(actionPlanId)
+		.modify({
+			nextAppointmentDate: appointmentDate ?? undefined,
+			updatedAt: new Date()
+		});
+}
+
+/**
+ * Get the next appointment date for a patient profile.
+ */
+export async function getNextAppointmentDate(actionPlanId: string): Promise<Date | null> {
+	const db = getDB();
+	if (!db) {
+		return null;
+	}
+
+	const profile = await db.patientProfiles.where('actionPlanId').equals(actionPlanId).first();
+	return profile?.nextAppointmentDate ?? null;
+}
+
+/**
+ * Save the last provider report generation date for a patient profile.
+ */
+export async function saveLastProviderReportDate(
+	actionPlanId: string,
+	reportDate: Date
+): Promise<void> {
+	const db = getDB();
+	if (!db) {
+		return;
+	}
+
+	await db.patientProfiles.where('actionPlanId').equals(actionPlanId).modify({
+		lastProviderReportDate: reportDate,
+		updatedAt: new Date()
+	});
+}
+
+/**
+ * Get the last provider report generation date for a patient profile.
+ */
+export async function getLastProviderReportDate(actionPlanId: string): Promise<Date | null> {
+	const db = getDB();
+	if (!db) {
+		return null;
+	}
+
+	const profile = await db.patientProfiles.where('actionPlanId').equals(actionPlanId).first();
+	return profile?.lastProviderReportDate ?? null;
+}
