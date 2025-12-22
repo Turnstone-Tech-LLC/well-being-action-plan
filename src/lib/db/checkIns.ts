@@ -242,3 +242,48 @@ export function formatStrategiesSummary(strategiesUsed: string[]): string | null
 	if (count === 1) return 'Used 1 coping skill';
 	return `Used ${count} coping skills`;
 }
+
+/**
+ * Input type for restoring check-ins from backup.
+ */
+export interface RestoreCheckInInput {
+	actionPlanId: string;
+	zone: CheckInZone;
+	strategiesUsed: string[];
+	supportiveAdultsContacted: string[];
+	helpMethodsSelected: string[];
+	notes?: string;
+	createdAt: Date;
+}
+
+/**
+ * Restore multiple check-ins from backup data.
+ * Clears existing check-ins for the action plan before restoring.
+ */
+export async function restoreCheckIns(
+	actionPlanId: string,
+	checkIns: RestoreCheckInInput[]
+): Promise<void> {
+	const db = getDB();
+	if (!db) {
+		return;
+	}
+
+	// Clear existing check-ins for this action plan
+	await db.checkIns.where('actionPlanId').equals(actionPlanId).delete();
+
+	// Bulk add the restored check-ins
+	if (checkIns.length > 0) {
+		const checkInsToAdd = checkIns.map((checkIn) => ({
+			actionPlanId: checkIn.actionPlanId,
+			zone: checkIn.zone,
+			strategiesUsed: [...checkIn.strategiesUsed],
+			supportiveAdultsContacted: [...checkIn.supportiveAdultsContacted],
+			helpMethodsSelected: [...checkIn.helpMethodsSelected],
+			notes: checkIn.notes,
+			createdAt: new Date(checkIn.createdAt)
+		}));
+
+		await db.checkIns.bulkAdd(checkInsToAdd as CheckIn[]);
+	}
+}

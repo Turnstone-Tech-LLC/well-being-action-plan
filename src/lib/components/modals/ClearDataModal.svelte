@@ -10,7 +10,8 @@
 	let { open, onConfirm, onCancel }: Props = $props();
 
 	let modalElement: HTMLElement | null = $state(null);
-	let focusTrap: FocusTrap | null = $state(null);
+	// Use a plain variable for focusTrap - NOT $state - to avoid triggering effects when we modify it
+	let focusTrap: FocusTrap | null = null;
 
 	// Manage focus trap when modal opens/closes
 	$effect(() => {

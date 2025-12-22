@@ -208,3 +208,53 @@ export async function clearPatientProfiles(): Promise<void> {
 
 	await db.patientProfiles.clear();
 }
+
+/**
+ * Input type for restoring a patient profile from backup.
+ */
+export interface RestorePatientProfileInput {
+	actionPlanId: string;
+	displayName: string;
+	onboardingComplete: boolean;
+	notificationsEnabled: boolean;
+	notificationFrequency: NotificationFrequency;
+	notificationTime: NotificationTime;
+	lastReminderShown?: Date;
+}
+
+/**
+ * Restore a patient profile from backup data.
+ * If a profile already exists for this actionPlanId, it will be replaced.
+ */
+export async function restorePatientProfile(input: RestorePatientProfileInput): Promise<void> {
+	const db = getDB();
+	if (!db) {
+		return;
+	}
+
+	const now = new Date();
+
+	// Check if profile already exists
+	const existing = await db.patientProfiles
+		.where('actionPlanId')
+		.equals(input.actionPlanId)
+		.first();
+
+	const profileData = {
+		actionPlanId: input.actionPlanId,
+		displayName: input.displayName,
+		onboardingComplete: input.onboardingComplete,
+		notificationsEnabled: input.notificationsEnabled,
+		notificationFrequency: input.notificationFrequency,
+		notificationTime: input.notificationTime,
+		lastReminderShown: input.lastReminderShown,
+		createdAt: now,
+		updatedAt: now
+	};
+
+	if (existing) {
+		await db.patientProfiles.update(existing.id!, profileData);
+	} else {
+		await db.patientProfiles.add(profileData);
+	}
+}

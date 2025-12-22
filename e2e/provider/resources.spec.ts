@@ -16,7 +16,7 @@ import { expect, test } from '@playwright/test';
 test.describe('Resource Library', () => {
 	test.describe('Access Control', () => {
 		test('resources page requires authentication', async ({ page }) => {
-			const response = await page.goto('/provider/resources');
+			await page.goto('/provider/resources');
 
 			const url = page.url();
 			const isRedirected = url.includes('/auth');

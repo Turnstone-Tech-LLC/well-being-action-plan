@@ -404,7 +404,8 @@ describe('planPayload utility', () => {
 			expect(methodRecords[0]).toEqual({
 				action_plan_id: 'plan-123',
 				help_method_id: null,
-				additional_info: 'Details',
+				// Custom help methods store "title: additionalInfo" format
+				additional_info: 'Custom Method: Details',
 				is_custom: true,
 				display_order: 0
 			});

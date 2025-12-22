@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { restoreBackup, isValidBackupFile, BACKUP_FILE_EXTENSION } from '$lib/crypto/backup';
-	import { saveLocalPlan, generateDeviceInstallId } from '$lib/db/index';
+	import { generateDeviceInstallId } from '$lib/db/index';
+	import { saveLocalPlan } from '$lib/db/plans';
+	import { restorePatientProfile } from '$lib/db/profile';
+	import { restoreCheckIns } from '$lib/db/checkIns';
 	import { goto } from '$app/navigation';
 	import RestoreError from './RestoreError.svelte';
 	import {
@@ -82,22 +85,57 @@
 
 		try {
 			const fileContent = await selectedFile.text();
-			const { plan } = await restoreBackup(fileContent, passphrase);
+			const { plan, profile, checkIns } = await restoreBackup(fileContent, passphrase);
 
 			// Generate a new device install ID for this restore
 			const deviceInstallId = generateDeviceInstallId();
 
+			// Save the plan
 			await saveLocalPlan({
-				...plan,
+				actionPlanId: plan.actionPlanId,
+				revisionId: plan.revisionId,
+				revisionVersion: plan.revisionVersion,
+				accessCode: plan.accessCode,
+				planPayload: plan.planPayload,
 				deviceInstallId
 			});
+
+			// Restore the patient profile if present
+			if (profile) {
+				await restorePatientProfile({
+					actionPlanId: profile.actionPlanId,
+					displayName: profile.displayName,
+					onboardingComplete: profile.onboardingComplete,
+					notificationsEnabled: profile.notificationsEnabled,
+					notificationFrequency: profile.notificationFrequency,
+					notificationTime: profile.notificationTime,
+					lastReminderShown: profile.lastReminderShown
+				});
+			}
+
+			// Restore check-ins if present
+			if (checkIns && checkIns.length > 0) {
+				await restoreCheckIns(
+					plan.actionPlanId,
+					checkIns.map((checkIn) => ({
+						actionPlanId: checkIn.actionPlanId,
+						zone: checkIn.zone,
+						strategiesUsed: checkIn.strategiesUsed,
+						supportiveAdultsContacted: checkIn.supportiveAdultsContacted,
+						helpMethodsSelected: checkIn.helpMethodsSelected,
+						notes: checkIn.notes,
+						createdAt: checkIn.createdAt
+					}))
+				);
+			}
 
 			restoreState = 'success';
 			failureCount = 0;
 
-			// Redirect after brief success message
+			// Redirect to the app after brief success message
+			// The /app layout will initialize the stores from IndexedDB
 			setTimeout(() => {
-				goto('/');
+				goto('/app');
 			}, 1500);
 		} catch (err) {
 			handleRestoreError(err);

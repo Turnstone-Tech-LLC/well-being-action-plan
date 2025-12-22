@@ -21,6 +21,7 @@ declare global {
 			patientProfileStore: typeof patientProfileStore;
 		};
 		__testHelpers: {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			seedPlan: (planData: any, options?: { completeOnboarding?: boolean }) => Promise<void>;
 			clearAll: () => Promise<void>;
 			refreshStores: () => Promise<void>;
@@ -49,6 +50,7 @@ export function initTestHelpers(): void {
 
 	// Expose helper functions
 	window.__testHelpers = {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		async seedPlan(planData: any, options: { completeOnboarding?: boolean } = {}) {
 			const { completeOnboarding = true } = options;
 

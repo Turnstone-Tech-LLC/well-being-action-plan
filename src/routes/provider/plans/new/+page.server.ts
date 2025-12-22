@@ -175,12 +175,7 @@ export const actions: Actions = {
 		}
 
 		const [skillsResult, adultTypesResult, helpMethodsResult, crisisResourcesResult] =
-			await Promise.all([
-				skillsQuery,
-				adultTypesQuery,
-				helpMethodsQuery,
-				crisisResourcesQuery
-			]);
+			await Promise.all([skillsQuery, adultTypesQuery, helpMethodsQuery, crisisResourcesQuery]);
 
 		// Build the plan payload using shared utility
 		const planPayload = buildPlanPayload(draft, {
