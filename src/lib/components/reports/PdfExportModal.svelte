@@ -38,7 +38,8 @@
 	}: Props = $props();
 
 	let modalElement: HTMLElement | null = $state(null);
-	let focusTrap: FocusTrap | null = $state(null);
+	// Use a plain variable for focusTrap - NOT $state - to avoid triggering effects when we modify it
+	let focusTrap: FocusTrap | null = null;
 
 	// Form state
 	let selectedOption: QuickOption = $state('last7');
@@ -150,14 +151,56 @@
 		return `${year}-${month}-${day}`;
 	}
 
-	// Manage focus trap when modal opens/closes
+	// Track whether we've initialized for the current open session
+	// Using plain variables to avoid reactivity issues
+	let hasInitializedForSession = false;
+	let prevOption: QuickOption | null = null;
+	let prevStartDate: string | null = null;
+	let prevEndDate: string | null = null;
+
+	// Effect to handle modal open - only runs initialization once per session
 	$effect(() => {
-		if (open) {
+		if (open && !hasInitializedForSession) {
+			hasInitializedForSession = true;
 			initializeDates();
 			loadPreview();
+			// Capture initial values after initialization
+			prevOption = selectedOption;
+			prevStartDate = customStartDate;
+			prevEndDate = customEndDate;
+		} else if (!open && hasInitializedForSession) {
+			hasInitializedForSession = false;
+			prevOption = null;
+			prevStartDate = null;
+			prevEndDate = null;
 		}
 	});
 
+	// Separate effect to handle date changes while modal is open
+	$effect(() => {
+		// Only track changes if modal is open and we've already initialized
+		if (!open || !hasInitializedForSession) return;
+
+		const currentOption = selectedOption;
+		const currentStartDate = customStartDate;
+		const currentEndDate = customEndDate;
+
+		// Check if values have changed from what we last tracked
+		const optionChanged = prevOption !== null && currentOption !== prevOption;
+		const startChanged = prevStartDate !== null && currentStartDate !== prevStartDate;
+		const endChanged = prevEndDate !== null && currentEndDate !== prevEndDate;
+
+		if (optionChanged || startChanged || endChanged) {
+			loadPreview();
+		}
+
+		// Update tracking values
+		prevOption = currentOption;
+		prevStartDate = currentStartDate;
+		prevEndDate = currentEndDate;
+	});
+
+	// Separate effect for focus trap management
 	$effect(() => {
 		if (open && modalElement) {
 			focusTrap = createFocusTrap(modalElement, {
@@ -172,13 +215,6 @@
 				focusTrap = null;
 			}
 		};
-	});
-
-	// Reload preview when option or dates change
-	$effect(() => {
-		if (open && (selectedOption || customStartDate || customEndDate || true)) {
-			loadPreview();
-		}
 	});
 
 	function handleBackdropClick(event: MouseEvent) {

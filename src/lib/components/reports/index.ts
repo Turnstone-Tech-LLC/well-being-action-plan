@@ -13,3 +13,7 @@ export { default as CheckInHistoryFull } from './CheckInHistoryFull.svelte';
 export { default as EmptyState } from './EmptyState.svelte';
 
 export { default as PdfExportModal } from './PdfExportModal.svelte';
+
+// Three-View Architecture components
+export { default as PatientTimeline } from './PatientTimeline.svelte';
+export { default as ProviderSummary } from './ProviderSummary.svelte';
