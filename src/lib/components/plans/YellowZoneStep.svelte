@@ -73,6 +73,35 @@
 		</p>
 	</div>
 
+	<!-- Educational Framing Section -->
+	<div class="educational-framing" role="region" aria-labelledby="yellow-zone-framing">
+		<h3 id="yellow-zone-framing" class="framing-title">
+			"You are saying you feel sad, upset, stressed, or worried most of the day, most days of the
+			week."
+		</h3>
+		<p class="framing-intro">When you're in the Yellow Zone, you:</p>
+		<ol class="framing-steps">
+			<li>
+				<span class="step-number" aria-hidden="true">1</span>
+				<span class="step-content">
+					<strong>Continue</strong> using your Green Zone coping skills
+				</span>
+			</li>
+			<li>
+				<span class="step-number" aria-hidden="true">2</span>
+				<span class="step-content">
+					<strong>Check in</strong> with your supportive adult
+				</span>
+			</li>
+			<li>
+				<span class="step-number" aria-hidden="true">3</span>
+				<span class="step-content">
+					<strong>Ask for</strong> the help you need (select below)
+				</span>
+			</li>
+		</ol>
+	</div>
+
 	<div class="methods-content">
 		<div class="methods-grid">
 			{#each helpMethods as method (method.id)}
@@ -230,6 +259,70 @@
 		font-size: var(--font-size-base);
 		max-width: 36rem;
 		margin: 0 auto;
+	}
+
+	/* Educational Framing Section */
+	.educational-framing {
+		padding: var(--space-5);
+		background: linear-gradient(135deg, #fffde7 0%, #fff9c4 100%);
+		border: 2px solid #fbbf24;
+		border-radius: var(--radius-lg);
+		margin-bottom: var(--space-6);
+	}
+
+	.framing-title {
+		font-size: var(--font-size-lg);
+		font-weight: 600;
+		color: #92400e;
+		margin: 0 0 var(--space-4) 0;
+		line-height: 1.4;
+		font-style: italic;
+	}
+
+	.framing-intro {
+		font-size: var(--font-size-base);
+		color: #78350f;
+		margin: 0 0 var(--space-3) 0;
+		font-weight: 500;
+	}
+
+	.framing-steps {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.framing-steps li {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--space-3);
+	}
+
+	.step-number {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		background-color: #fbbf24;
+		color: #78350f;
+		font-weight: 700;
+		font-size: var(--font-size-sm);
+		border-radius: 50%;
+	}
+
+	.step-content {
+		font-size: var(--font-size-base);
+		color: #78350f;
+		padding-top: 2px;
+	}
+
+	.step-content strong {
+		font-weight: 600;
 	}
 
 	.methods-content {

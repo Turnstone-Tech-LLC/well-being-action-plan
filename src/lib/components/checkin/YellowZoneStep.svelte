@@ -20,13 +20,18 @@
 	interface Props {
 		adults: SupportiveAdult[];
 		helpMethods: HelpMethod[];
-		onComplete: (selectedAdultIds: string[], selectedMethodIds: string[]) => void;
+		onComplete: (
+			selectedAdultIds: string[],
+			selectedMethodIds: string[],
+			feelingNotes?: string
+		) => void;
 	}
 
 	let { adults, helpMethods, onComplete }: Props = $props();
 
 	let selectedAdultIds: string[] = $state([]);
 	let selectedMethodIds: string[] = $state([]);
+	let feelingNotes: string = $state('');
 
 	function handleAdultToggle(id: string) {
 		if (selectedAdultIds.includes(id)) {
@@ -68,7 +73,7 @@
 		}
 		announce(message);
 
-		onComplete(selectedAdultIds, selectedMethodIds);
+		onComplete(selectedAdultIds, selectedMethodIds, feelingNotes.trim() || undefined);
 	}
 </script>
 
@@ -119,6 +124,25 @@
 					{/each}
 				</div>
 			{/if}
+		</section>
+
+		<!-- Feeling Notes Section -->
+		<section class="section" aria-labelledby="feelings-heading">
+			<h2 id="feelings-heading" class="section-title">What's going on?</h2>
+			<label for="feeling-notes" class="section-description">
+				I'm feeling this way because...
+			</label>
+			<textarea
+				id="feeling-notes"
+				class="feeling-textarea"
+				placeholder="It's okay to share what's on your mind..."
+				bind:value={feelingNotes}
+				rows="4"
+				aria-describedby="feeling-notes-hint"
+			></textarea>
+			<p id="feeling-notes-hint" class="hint-text">
+				Optional - share as much or as little as you'd like
+			</p>
 		</section>
 
 		<p class="encouragement">Remember, your supportive adult wants to help.</p>
@@ -270,6 +294,41 @@
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
 		line-height: 1.4;
+	}
+
+	/* Feeling Notes */
+	.feeling-textarea {
+		width: 100%;
+		padding: var(--space-3);
+		font-size: var(--font-size-base);
+		font-family: inherit;
+		color: var(--color-text);
+		background-color: var(--color-white);
+		border: 2px solid var(--color-gray-200);
+		border-radius: var(--radius-lg);
+		resize: vertical;
+		min-height: 100px;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+
+	.feeling-textarea:focus {
+		outline: none;
+		border-color: #ffca28;
+		box-shadow: 0 0 0 3px rgba(255, 202, 40, 0.2);
+	}
+
+	.feeling-textarea::placeholder {
+		color: var(--color-text-muted);
+		font-style: italic;
+	}
+
+	.hint-text {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+		margin: var(--space-2) 0 0 0;
+		font-style: italic;
 	}
 
 	.encouragement {

@@ -22,10 +22,18 @@
 	interface Props {
 		crisisResources?: CrisisResource[];
 		supportiveAdults: SupportiveAdult[];
-		onComplete: () => void;
+		onComplete: (
+			feelingNotes?: string,
+			contactedAdultId?: string,
+			contactedAdultName?: string
+		) => void;
 	}
 
 	let { crisisResources = [], supportiveAdults, onComplete }: Props = $props();
+
+	// State for feeling notes and selected adult
+	let feelingNotes: string = $state('');
+	let selectedAdultId: string | null = $state(null);
 
 	// Default crisis resources if none provided
 	const defaultCrisisResources: CrisisResource[] = [
@@ -58,37 +66,31 @@
 		})
 	);
 
-	function handleComplete() {
-		announce('Check-in saved. You did the right thing by reaching out.');
-		onComplete();
+	function handleSelectAdult(adultId: string) {
+		if (selectedAdultId === adultId) {
+			selectedAdultId = null;
+		} else {
+			selectedAdultId = adultId;
+		}
 	}
 
-	function getContactHref(adult: SupportiveAdult): string | null {
-		const contact = adult.contactInfo.trim();
-		if (!contact) return null;
+	function getSelectedAdult(): SupportiveAdult | null {
+		if (!selectedAdultId) return null;
+		return sortedAdults.find((a) => a.id === selectedAdultId) ?? null;
+	}
 
-		// Check if it looks like a phone number
-		const phoneMatch = contact.match(/[\d\-+() ]{7,}/);
+	function getPhoneNumber(contactInfo: string): string | null {
+		const phoneMatch = contactInfo.match(/[\d\-+() ]{7,}/);
 		if (phoneMatch) {
-			const cleaned = phoneMatch[0].replace(/[\s\-()]/g, '');
-			return `tel:${cleaned}`;
+			return phoneMatch[0].replace(/[\s\-()]/g, '');
 		}
-
-		// Check if it looks like an email
-		if (contact.includes('@')) {
-			return `mailto:${contact}`;
-		}
-
 		return null;
 	}
 
-	function getContactIcon(adult: SupportiveAdult): 'phone' | 'email' | null {
-		const contact = adult.contactInfo.trim();
-		if (!contact) return null;
-
-		if (contact.match(/[\d\-+() ]{7,}/)) return 'phone';
-		if (contact.includes('@')) return 'email';
-		return null;
+	function handleComplete() {
+		const selectedAdult = getSelectedAdult();
+		announce('Check-in saved. You did the right thing by reaching out.');
+		onComplete(feelingNotes.trim() || undefined, selectedAdult?.id, selectedAdult?.name);
 	}
 </script>
 
@@ -118,46 +120,88 @@
 		<!-- Supportive Adults Section -->
 		{#if sortedAdults.length > 0}
 			<section class="section adults-section" aria-labelledby="adults-heading">
-				<h2 id="adults-heading" class="section-title">Or reach out to your supportive adult:</h2>
-				<ul class="adults-list" role="list">
+				<h2 id="adults-heading" class="section-title">Who are you reaching out to?</h2>
+				<div
+					class="adults-select-list"
+					role="group"
+					aria-label="Select a supportive adult to contact"
+				>
 					{#each sortedAdults as adult (adult.id)}
-						{@const href = getContactHref(adult)}
-						{@const icon = getContactIcon(adult)}
-						<li class="adult-item">
-							<div class="adult-info">
-								<span class="adult-name">
-									{adult.name}
-									{#if adult.isPrimary}
-										<span class="primary-badge" aria-label="Primary contact">Primary</span>
+						{@const isSelected = selectedAdultId === adult.id}
+						{@const phoneNumber = getPhoneNumber(adult.contactInfo)}
+						<div class="adult-select-card" class:selected={isSelected}>
+							<button
+								type="button"
+								class="adult-select-button"
+								onclick={() => handleSelectAdult(adult.id)}
+								aria-pressed={isSelected}
+							>
+								<span class="select-indicator" aria-hidden="true">
+									{#if isSelected}
+										<svg viewBox="0 0 24 24" fill="currentColor">
+											<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+										</svg>
 									{/if}
 								</span>
-								<span class="adult-type">{adult.typeDescription || adult.type}</span>
-								{#if adult.contactInfo}
-									<span class="adult-contact">{adult.contactInfo}</span>
-								{/if}
-							</div>
-							{#if href}
-								<a {href} class="contact-action" aria-label="Contact {adult.name}">
-									{#if icon === 'phone'}
+								<div class="adult-info">
+									<span class="adult-name">
+										{adult.name}
+										{#if adult.isPrimary}
+											<span class="primary-badge" aria-label="Primary contact">Primary</span>
+										{/if}
+									</span>
+									<span class="adult-type">{adult.typeDescription || adult.type}</span>
+								</div>
+							</button>
+
+							{#if isSelected && phoneNumber}
+								<div class="contact-actions">
+									<a
+										href="tel:{phoneNumber}"
+										class="contact-action-btn contact-action-call"
+										aria-label="Call {adult.name}"
+									>
 										<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 											<path
 												d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
 											/>
 										</svg>
-									{:else}
+										Call
+									</a>
+									<a
+										href="sms:{phoneNumber}"
+										class="contact-action-btn contact-action-message"
+										aria-label="Message {adult.name}"
+									>
 										<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 											<path
-												d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
+												d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"
 											/>
 										</svg>
-									{/if}
-								</a>
+										Message
+									</a>
+								</div>
 							{/if}
-						</li>
+						</div>
 					{/each}
-				</ul>
+				</div>
 			</section>
 		{/if}
+
+		<!-- Feeling Notes Section (after crisis resources and adults) -->
+		<section class="section feelings-section" aria-labelledby="feelings-heading">
+			<h2 id="feelings-heading" class="section-title">What's going on?</h2>
+			<label for="feeling-notes" class="feeling-label"> I'm feeling this way because... </label>
+			<textarea
+				id="feeling-notes"
+				class="feeling-textarea"
+				placeholder="It's okay to share what's on your mind..."
+				bind:value={feelingNotes}
+				rows="3"
+				aria-describedby="feeling-notes-hint"
+			></textarea>
+			<p id="feeling-notes-hint" class="hint-text">Optional - getting help is what matters most</p>
+		</section>
 
 		<!-- Reassuring Message -->
 		<div class="reassurance" aria-live="polite">
@@ -240,30 +284,71 @@
 		gap: var(--space-3);
 	}
 
-	/* Supportive Adults */
-	.adults-list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
+	/* Supportive Adults - Selectable Cards */
+	.adults-select-list {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-2);
+		gap: var(--space-3);
 	}
 
-	.adult-item {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
-		padding: var(--space-3) var(--space-4);
+	.adult-select-card {
 		background: var(--color-white);
 		border: 2px solid var(--color-gray-200);
 		border-radius: var(--radius-lg);
+		overflow: hidden;
 		transition: border-color 0.15s ease;
 	}
 
-	.adult-item:hover {
+	.adult-select-card:hover {
 		border-color: var(--color-gray-300);
+	}
+
+	.adult-select-card.selected {
+		border-color: #c62828;
+		background-color: #ffebee;
+	}
+
+	.adult-select-button {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		width: 100%;
+		padding: var(--space-4);
+		background: none;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.adult-select-button:focus-visible {
+		outline: 3px solid #e57373;
+		outline-offset: -3px;
+	}
+
+	.select-indicator {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		border: 2px solid var(--color-gray-300);
+		border-radius: 50%;
+		background-color: var(--color-white);
+		color: var(--color-white);
+		transition:
+			border-color 0.15s ease,
+			background-color 0.15s ease;
+	}
+
+	.adult-select-card.selected .select-indicator {
+		border-color: #c62828;
+		background-color: #c62828;
+	}
+
+	.select-indicator svg {
+		width: 16px;
+		height: 16px;
 	}
 
 	.adult-info {
@@ -296,43 +381,110 @@
 		color: var(--color-text-muted);
 	}
 
-	.adult-contact {
-		font-size: var(--font-size-sm);
-		color: var(--color-gray-600);
+	/* Contact Actions (Message/Call buttons) */
+	.contact-actions {
+		display: flex;
+		gap: var(--space-3);
+		padding: 0 var(--space-4) var(--space-4);
 	}
 
-	.contact-action {
+	.contact-action-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 44px;
-		height: 44px;
-		min-width: 44px;
-		background-color: #c62828;
-		border-radius: 50%;
-		color: var(--color-white);
+		gap: var(--space-2);
+		flex: 1;
+		padding: var(--space-3) var(--space-4);
+		border-radius: var(--radius-md);
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		text-decoration: none;
 		transition:
 			background-color 0.15s ease,
 			transform 0.15s ease;
 	}
 
-	.contact-action:hover {
-		background-color: #b71c1c;
-		transform: scale(1.05);
+	.contact-action-btn svg {
+		width: 18px;
+		height: 18px;
 	}
 
-	.contact-action:focus-visible {
-		outline: 3px solid #e57373;
+	.contact-action-call {
+		background-color: var(--color-primary);
+		color: var(--color-white);
+	}
+
+	.contact-action-call:hover {
+		background-color: #004d41;
+	}
+
+	.contact-action-message {
+		background-color: var(--color-white);
+		color: var(--color-primary);
+		border: 2px solid var(--color-primary);
+	}
+
+	.contact-action-message:hover {
+		background-color: var(--color-gray-50);
+	}
+
+	.contact-action-btn:focus-visible {
+		outline: 3px solid var(--color-accent);
 		outline-offset: 2px;
 	}
 
-	.contact-action:active {
-		transform: scale(0.95);
+	.contact-action-btn:active {
+		transform: scale(0.98);
 	}
 
-	.contact-action svg {
-		width: 20px;
-		height: 20px;
+	/* Feeling Notes */
+	.feelings-section {
+		background-color: var(--color-white);
+		padding: var(--space-4);
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--color-gray-200);
+	}
+
+	.feeling-label {
+		display: block;
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	.feeling-textarea {
+		width: 100%;
+		padding: var(--space-3);
+		font-size: var(--font-size-base);
+		font-family: inherit;
+		color: var(--color-text);
+		background-color: var(--color-gray-50);
+		border: 1px solid var(--color-gray-200);
+		border-radius: var(--radius-md);
+		resize: vertical;
+		min-height: 80px;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+
+	.feeling-textarea:focus {
+		outline: none;
+		border-color: #c62828;
+		box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.1);
+		background-color: var(--color-white);
+	}
+
+	.feeling-textarea::placeholder {
+		color: var(--color-text-muted);
+		font-style: italic;
+	}
+
+	.hint-text {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+		margin: var(--space-2) 0 0 0;
+		font-style: italic;
 	}
 
 	/* Reassurance */
@@ -440,8 +592,10 @@
 
 	/* Reduced motion support */
 	@media (prefers-reduced-motion: reduce) {
-		.adult-item,
-		.contact-action,
+		.adult-select-card,
+		.select-indicator,
+		.contact-action-btn,
+		.feeling-textarea,
 		.complete-button {
 			transition: none;
 		}
@@ -449,20 +603,23 @@
 
 	/* Touch device optimizations */
 	@media (pointer: coarse) {
-		.adult-item {
-			padding: var(--space-4);
+		.adult-select-button {
 			min-height: 56px;
 		}
 
-		.contact-action {
-			width: 48px;
-			height: 48px;
-			min-width: 48px;
+		.select-indicator {
+			width: 32px;
+			height: 32px;
+			min-width: 32px;
 		}
 
-		.contact-action svg {
-			width: 24px;
-			height: 24px;
+		.select-indicator svg {
+			width: 20px;
+			height: 20px;
+		}
+
+		.contact-action-btn {
+			min-height: 48px;
 		}
 
 		.complete-button {
@@ -472,11 +629,19 @@
 
 	/* High contrast mode support */
 	@media (forced-colors: active) {
-		.adult-item {
+		.adult-select-card {
 			border: 2px solid currentColor;
 		}
 
-		.contact-action {
+		.adult-select-card.selected {
+			outline: 3px solid highlight;
+		}
+
+		.select-indicator {
+			border: 2px solid currentColor;
+		}
+
+		.contact-action-btn {
 			border: 2px solid currentColor;
 		}
 

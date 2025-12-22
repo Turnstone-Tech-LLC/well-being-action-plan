@@ -172,6 +172,20 @@
 						</div>
 					{/if}
 
+					{#if selectedCheckIn.feelingNotes}
+						<div class="details-section">
+							<h4>What was going on</h4>
+							<p class="feeling-notes-text">{selectedCheckIn.feelingNotes}</p>
+						</div>
+					{/if}
+
+					{#if selectedCheckIn.contactedAdultName}
+						<div class="details-section">
+							<h4>Reached out to</h4>
+							<p class="contacted-adult-text">{selectedCheckIn.contactedAdultName}</p>
+						</div>
+					{/if}
+
 					{#if selectedCheckIn.notes}
 						<div class="details-section">
 							<h4>Notes</h4>
@@ -179,7 +193,7 @@
 						</div>
 					{/if}
 
-					{#if skills.length === 0 && !selectedCheckIn.notes}
+					{#if skills.length === 0 && !selectedCheckIn.notes && !selectedCheckIn.feelingNotes && !selectedCheckIn.contactedAdultName}
 						<p class="no-details">No additional details for this check-in.</p>
 					{/if}
 				</div>
@@ -451,6 +465,27 @@
 		color: var(--color-text);
 		margin: 0;
 		font-style: italic;
+	}
+
+	.feeling-notes-text {
+		font-size: var(--font-size-sm);
+		color: var(--color-text);
+		margin: 0;
+		padding: var(--space-2) var(--space-3);
+		background-color: var(--color-white);
+		border-left: 3px solid var(--color-gray-300);
+		border-radius: var(--radius-sm);
+	}
+
+	.contacted-adult-text {
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		color: #991b1b;
+		margin: 0;
+		padding: var(--space-1) var(--space-2);
+		background-color: #fee2e2;
+		border-radius: var(--radius-sm);
+		display: inline-block;
 	}
 
 	.no-details {
