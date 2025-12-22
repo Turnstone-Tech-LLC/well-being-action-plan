@@ -316,12 +316,27 @@ export async function generateEhrPdf(options: EhrPdfOptions): Promise<Blob> {
 							.filter(Boolean)
 							.join(', ')
 					: '-';
-			return [date, zone, skills];
+
+			// Build notes column with feeling notes and contacted adult
+			const noteParts: string[] = [];
+			if (checkIn.feelingNotes) {
+				const truncated =
+					checkIn.feelingNotes.length > 50
+						? checkIn.feelingNotes.substring(0, 50) + '...'
+						: checkIn.feelingNotes;
+				noteParts.push(truncated);
+			}
+			if (checkIn.contactedAdultName) {
+				noteParts.push(`Reached out to: ${checkIn.contactedAdultName}`);
+			}
+			const notes = noteParts.length > 0 ? noteParts.join(' | ') : '-';
+
+			return [date, zone, skills, notes];
 		});
 
 		autoTable(doc, {
 			startY: yPos,
-			head: [['Date', 'Zone', 'Coping Skills Used']],
+			head: [['Date', 'Zone', 'Coping Skills Used', 'Notes']],
 			body: tableData,
 			headStyles: {
 				fillColor: primaryColor,
@@ -335,9 +350,10 @@ export async function generateEhrPdf(options: EhrPdfOptions): Promise<Blob> {
 				cellPadding: 2
 			},
 			columnStyles: {
-				0: { cellWidth: 25 },
-				1: { cellWidth: 20 },
-				2: { cellWidth: 'auto' }
+				0: { cellWidth: 22 },
+				1: { cellWidth: 18 },
+				2: { cellWidth: 45 },
+				3: { cellWidth: 'auto' }
 			},
 			alternateRowStyles: {
 				fillColor: [248, 249, 250]

@@ -10,6 +10,12 @@ export interface CreateCheckInInput {
 	supportiveAdultsContacted?: string[];
 	helpMethodsSelected?: string[];
 	notes?: string;
+	/** Open-ended "why" context for yellow/red zone check-ins */
+	feelingNotes?: string;
+	/** ID of supportive adult contacted during red zone check-in */
+	contactedAdultId?: string;
+	/** Denormalized name of contacted adult for display */
+	contactedAdultName?: string;
 }
 
 /**
@@ -85,6 +91,9 @@ export async function saveCheckIn(input: CreateCheckInInput): Promise<number | u
 		supportiveAdultsContacted: [...(input.supportiveAdultsContacted ?? [])],
 		helpMethodsSelected: [...(input.helpMethodsSelected ?? [])],
 		notes: input.notes,
+		feelingNotes: input.feelingNotes,
+		contactedAdultId: input.contactedAdultId,
+		contactedAdultName: input.contactedAdultName,
 		createdAt: new Date()
 	};
 
@@ -253,6 +262,9 @@ export interface RestoreCheckInInput {
 	supportiveAdultsContacted: string[];
 	helpMethodsSelected: string[];
 	notes?: string;
+	feelingNotes?: string;
+	contactedAdultId?: string;
+	contactedAdultName?: string;
 	createdAt: Date;
 }
 
@@ -281,6 +293,9 @@ export async function restoreCheckIns(
 			supportiveAdultsContacted: [...checkIn.supportiveAdultsContacted],
 			helpMethodsSelected: [...checkIn.helpMethodsSelected],
 			notes: checkIn.notes,
+			feelingNotes: checkIn.feelingNotes,
+			contactedAdultId: checkIn.contactedAdultId,
+			contactedAdultName: checkIn.contactedAdultName,
 			createdAt: new Date(checkIn.createdAt)
 		}));
 

@@ -71,7 +71,9 @@
 		checkIn.strategiesUsed.length > 0 ||
 			checkIn.supportiveAdultsContacted.length > 0 ||
 			checkIn.helpMethodsSelected.length > 0 ||
-			checkIn.notes
+			checkIn.notes ||
+			checkIn.feelingNotes ||
+			checkIn.contactedAdultName
 	);
 </script>
 
@@ -190,6 +192,40 @@
 							</li>
 						{/each}
 					</ul>
+				</div>
+			{/if}
+
+			<!-- Feeling Notes (Yellow/Red zone context) -->
+			{#if checkIn.feelingNotes}
+				<div class="detail-section">
+					<h4 class="detail-title">
+						<span class="detail-icon" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+							</svg>
+						</span>
+						What was going on
+					</h4>
+					<p class="notes-text feeling-notes">{checkIn.feelingNotes}</p>
+				</div>
+			{/if}
+
+			<!-- Contacted Adult (Red zone) -->
+			{#if checkIn.contactedAdultName}
+				<div class="detail-section">
+					<h4 class="detail-title">
+						<span class="detail-icon" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path
+									d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+								/>
+							</svg>
+						</span>
+						Reached out to
+					</h4>
+					<div class="contacted-adult">
+						<span class="contacted-adult-name">{checkIn.contactedAdultName}</span>
+					</div>
 				</div>
 			{/if}
 
@@ -423,6 +459,33 @@
 		background-color: var(--color-bg-subtle);
 		border-radius: var(--radius-md);
 		white-space: pre-wrap;
+	}
+
+	.notes-text.feeling-notes {
+		border-left: 3px solid var(--color-gray-300);
+	}
+
+	.zone-yellow .notes-text.feeling-notes {
+		border-left-color: #eab308;
+	}
+
+	.zone-red .notes-text.feeling-notes {
+		border-left-color: #ef4444;
+	}
+
+	.contacted-adult {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		background-color: #fee2e2;
+		border-radius: var(--radius-md);
+	}
+
+	.contacted-adult-name {
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		color: #991b1b;
 	}
 
 	/* Reduced motion preference */

@@ -135,6 +135,12 @@ export interface CheckIn {
 	helpMethodsSelected: string[];
 	/** Optional notes from the patient */
 	notes?: string;
+	/** Open-ended "why" context for yellow/red zone check-ins */
+	feelingNotes?: string;
+	/** ID of supportive adult contacted during red zone check-in */
+	contactedAdultId?: string;
+	/** Denormalized name of contacted adult for display */
+	contactedAdultName?: string;
 	/** When this check-in was created */
 	createdAt: Date;
 }

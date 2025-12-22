@@ -19,7 +19,11 @@
 		}
 	});
 
-	async function handleComplete() {
+	async function handleComplete(
+		feelingNotes?: string,
+		contactedAdultId?: string,
+		contactedAdultName?: string
+	) {
 		if (saving) return;
 
 		saving = true;
@@ -31,13 +35,16 @@
 				throw new Error('No action plan found');
 			}
 
-			// Save minimal check-in record for red zone
+			// Save check-in record for red zone
 			await saveCheckIn({
 				actionPlanId: planData.actionPlanId,
 				zone: 'red',
 				strategiesUsed: [],
-				supportiveAdultsContacted: [],
-				helpMethodsSelected: []
+				supportiveAdultsContacted: contactedAdultId ? [contactedAdultId] : [],
+				helpMethodsSelected: [],
+				feelingNotes,
+				contactedAdultId,
+				contactedAdultName
 			});
 
 			showSuccess = true;

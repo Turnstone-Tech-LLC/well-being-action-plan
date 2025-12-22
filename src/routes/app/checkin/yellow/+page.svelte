@@ -19,7 +19,11 @@
 		}
 	});
 
-	async function handleComplete(selectedAdultIds: string[], selectedMethodIds: string[]) {
+	async function handleComplete(
+		selectedAdultIds: string[],
+		selectedMethodIds: string[],
+		feelingNotes?: string
+	) {
 		if (saving) return;
 
 		saving = true;
@@ -36,7 +40,8 @@
 				zone: 'yellow',
 				strategiesUsed: [],
 				supportiveAdultsContacted: selectedAdultIds,
-				helpMethodsSelected: selectedMethodIds
+				helpMethodsSelected: selectedMethodIds,
+				feelingNotes
 			});
 
 			showSuccess = true;
