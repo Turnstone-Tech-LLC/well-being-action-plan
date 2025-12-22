@@ -335,3 +335,90 @@ export function getFrequencyDescription(frequency: NotificationFrequency): strin
 			return 'No reminders';
 	}
 }
+
+/**
+ * Check if an appointment reminder should be shown.
+ * Returns true if the appointment is 1-2 days away.
+ */
+export function isAppointmentReminderDue(appointmentDate: Date): boolean {
+	const now = new Date();
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const appointment = new Date(appointmentDate);
+	const appointmentDay = new Date(
+		appointment.getFullYear(),
+		appointment.getMonth(),
+		appointment.getDate()
+	);
+
+	// Calculate days until appointment
+	const diffMs = appointmentDay.getTime() - today.getTime();
+	const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+	// Show reminder 1-2 days before appointment
+	return diffDays >= 1 && diffDays <= 2;
+}
+
+/**
+ * Check and show appointment reminder notification if due.
+ */
+export async function checkAndShowAppointmentReminder(
+	appointmentDate: Date | null | undefined
+): Promise<boolean> {
+	// No appointment set
+	if (!appointmentDate) {
+		return false;
+	}
+
+	// Check if notifications are enabled and permission granted
+	if (!isNotificationSupported() || Notification.permission !== 'granted') {
+		return false;
+	}
+
+	// Check if reminder is due
+	if (!isAppointmentReminderDue(appointmentDate)) {
+		return false;
+	}
+
+	// Format the date for the notification
+	const appointment = new Date(appointmentDate);
+	const dateStr = appointment.toLocaleDateString('en-US', {
+		weekday: 'long',
+		month: 'long',
+		day: 'numeric'
+	});
+
+	// Show the notification
+	return await showNotification('Appointment Coming Up!', {
+		body: `Your appointment is on ${dateStr}. Generate a provider report now so you're ready to share how you've been doing.`,
+		tag: 'appointment-reminder',
+		data: { url: '/app/reports' }
+	});
+}
+
+/**
+ * Get days until appointment.
+ * Returns null if no appointment is set or appointment is in the past.
+ */
+export function getDaysUntilAppointment(appointmentDate: Date | null | undefined): number | null {
+	if (!appointmentDate) {
+		return null;
+	}
+
+	const now = new Date();
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const appointment = new Date(appointmentDate);
+	const appointmentDay = new Date(
+		appointment.getFullYear(),
+		appointment.getMonth(),
+		appointment.getDate()
+	);
+
+	const diffMs = appointmentDay.getTime() - today.getTime();
+	const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+	if (diffDays < 0) {
+		return null;
+	}
+
+	return diffDays;
+}

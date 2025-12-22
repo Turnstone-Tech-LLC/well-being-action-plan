@@ -98,6 +98,10 @@ export interface PatientProfile {
 	notificationTime: NotificationTime;
 	/** Last time a reminder was shown */
 	lastReminderShown?: Date;
+	/** Next appointment date for reminder scheduling */
+	nextAppointmentDate?: Date;
+	/** Last time a provider report was generated */
+	lastProviderReportDate?: Date;
 	/** When this profile was created */
 	createdAt: Date;
 	/** Last time the profile was updated */
@@ -183,6 +187,24 @@ class WellBeingDB extends Dexie {
 			patientProfiles: '++id, &actionPlanId, onboardingComplete, createdAt',
 			checkIns: '++id, actionPlanId, zone, createdAt'
 		});
+
+		// Version 5: Add appointment reminder fields to patient profiles
+		this.version(5)
+			.stores({
+				localPlans: '++id, &actionPlanId, accessCode, installedAt',
+				patientProfiles: '++id, &actionPlanId, onboardingComplete, createdAt',
+				checkIns: '++id, actionPlanId, zone, createdAt'
+			})
+			.upgrade((tx) => {
+				// Migrate existing profiles to have appointment fields (undefined by default)
+				return tx
+					.table('patientProfiles')
+					.toCollection()
+					.modify((profile) => {
+						profile.nextAppointmentDate = undefined;
+						profile.lastProviderReportDate = undefined;
+					});
+			});
 	}
 }
 

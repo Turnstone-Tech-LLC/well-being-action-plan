@@ -14,6 +14,8 @@ export { default as EmptyState } from './EmptyState.svelte';
 
 export { default as PdfExportModal } from './PdfExportModal.svelte';
 
+export { default as AppointmentReminderModal } from './AppointmentReminderModal.svelte';
+
 // Three-View Architecture components
 export { default as PatientTimeline } from './PatientTimeline.svelte';
 export { default as ProviderSummary } from './ProviderSummary.svelte';
