@@ -262,17 +262,9 @@ test.describe('Patient Check-In Flow', () => {
 		});
 
 		test('crisis contacts are tappable (tel: links)', async ({ page }) => {
-			// Phone links should have tel: href - may also be a primary button
+			// Crisis buttons use tel: hrefs
 			const phoneLink = page.locator('a[href^="tel:"]');
-			const hasPhoneLink = (await phoneLink.count()) > 0;
-
-			// If no tel: links, check for crisis call buttons
-			if (!hasPhoneLink) {
-				const crisisButton = page.getByRole('button', { name: /call|988/i });
-				await expect(crisisButton).toBeVisible();
-			} else {
-				expect(hasPhoneLink).toBe(true);
-			}
+			await expect(phoneLink.first()).toBeVisible();
 		});
 
 		test('shows supportive adults prominently', async ({ page }) => {
@@ -363,16 +355,15 @@ test.describe('Patient Check-In Flow', () => {
 			// Wait for page to load
 			await expect(page.getByText(/feeling good/i)).toBeVisible({ timeout: 5000 });
 
-			// Focus on first zone card using Tab (may need multiple tabs to skip nav)
-			await page.keyboard.press('Tab');
-			await page.keyboard.press('Tab');
-			await page.keyboard.press('Tab');
+			// Focus on the green zone card button
+			const greenCard = page.getByRole('button', { name: /feeling good/i });
+			await greenCard.focus();
 
-			// Should be able to select with Enter
+			// Should be able to activate with Enter
 			await page.keyboard.press('Enter');
 
-			// Should navigate to zone page
-			await expect(page).toHaveURL(/\/app\/checkin\/(green|yellow|red)/, { timeout: 5000 });
+			// Should navigate to green zone page
+			await expect(page).toHaveURL(/\/app\/checkin\/green/, { timeout: 5000 });
 		});
 
 		test('check-in page announces zone selection', async ({ page }) => {
