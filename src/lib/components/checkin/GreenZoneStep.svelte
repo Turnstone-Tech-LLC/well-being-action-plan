@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { announce } from '$lib/a11y';
 	import StrategySelector from './StrategySelector.svelte';
+	import SupportiveAdultContactCard from './SupportiveAdultContactCard.svelte';
 
 	interface Skill {
 		id: string;
@@ -9,14 +10,29 @@
 		category: string;
 	}
 
-	interface Props {
-		skills: Skill[];
-		onComplete: (selectedSkillIds: string[]) => void;
+	interface SupportiveAdult {
+		id: string;
+		name: string;
+		type: string;
+		typeDescription?: string;
+		contactInfo: string;
+		isPrimary: boolean;
 	}
 
-	let { skills, onComplete }: Props = $props();
+	interface Props {
+		skills: Skill[];
+		supportiveAdults?: SupportiveAdult[];
+		onComplete: (
+			selectedSkillIds: string[],
+			contactedAdultId?: string,
+			contactedAdultName?: string
+		) => void;
+	}
+
+	let { skills, supportiveAdults = [], onComplete }: Props = $props();
 
 	let selectedSkillIds: string[] = $state([]);
+	let selectedAdultId: string | null = $state(null);
 
 	function handleToggle(id: string) {
 		if (selectedSkillIds.includes(id)) {
@@ -26,16 +42,31 @@
 		}
 	}
 
+	function handleAdultSelect(adultId: string | null) {
+		selectedAdultId = adultId;
+	}
+
+	function getSelectedAdultName(): string | undefined {
+		if (!selectedAdultId) return undefined;
+		const adult = supportiveAdults.find((a) => a.id === selectedAdultId);
+		return adult?.name;
+	}
+
 	function handleDone() {
 		const count = selectedSkillIds.length;
+		let message = 'Saving check-in';
 		if (count === 0) {
-			announce('Saving check-in without any coping skills selected.');
+			message = 'Saving check-in without any coping skills selected';
 		} else if (count === 1) {
-			announce('Saving check-in with 1 coping skill selected.');
+			message = 'Saving check-in with 1 coping skill selected';
 		} else {
-			announce(`Saving check-in with ${count} coping skills selected.`);
+			message = `Saving check-in with ${count} coping skills selected`;
 		}
-		onComplete(selectedSkillIds);
+		if (selectedAdultId) {
+			message += ` and contact with ${getSelectedAdultName()}`;
+		}
+		announce(message + '.');
+		onComplete(selectedSkillIds, selectedAdultId ?? undefined, getSelectedAdultName());
 	}
 </script>
 
@@ -47,6 +78,19 @@
 
 	<div class="step-content">
 		<StrategySelector {skills} selectedIds={selectedSkillIds} onToggle={handleToggle} />
+
+		{#if supportiveAdults.length > 0}
+			<div class="supportive-adults-container">
+				<SupportiveAdultContactCard
+					adults={supportiveAdults}
+					{selectedAdultId}
+					onSelect={handleAdultSelect}
+					optional={true}
+					variant="green"
+					heading="Talk to a supportive adult"
+				/>
+			</div>
+		{/if}
 	</div>
 
 	<footer class="step-footer">
@@ -88,6 +132,14 @@
 	.step-content {
 		flex: 1;
 		margin-bottom: var(--space-6);
+	}
+
+	.supportive-adults-container {
+		margin-top: var(--space-6);
+		padding: var(--space-4);
+		background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+		border-radius: var(--radius-lg);
+		border: 2px solid #81c784;
 	}
 
 	.step-footer {
