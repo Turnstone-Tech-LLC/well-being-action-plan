@@ -20,19 +20,20 @@
 		{
 			zone: 'green',
 			title: "I'm feeling good",
-			subtitle: "I'm happy most of the day",
+			subtitle: 'I am feeling happy most of the day/week!',
 			emoji: '😊'
 		},
 		{
 			zone: 'yellow',
 			title: "I'm struggling",
-			subtitle: "My coping skills aren't helping enough",
+			subtitle:
+				'My coping skills are not helping enough. I feel sad, upset, stressed, or worried most of the day, most days of the week.',
 			emoji: '😟'
 		},
 		{
 			zone: 'red',
 			title: 'I need help now',
-			subtitle: 'I feel unsafe or am thinking about hurting myself',
+			subtitle: 'I feel unsafe or am thinking about hurting myself.',
 			emoji: '😢'
 		}
 	];

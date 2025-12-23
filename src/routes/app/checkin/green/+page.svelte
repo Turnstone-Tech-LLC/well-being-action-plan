@@ -19,7 +19,11 @@
 		}
 	});
 
-	async function handleComplete(selectedSkillIds: string[]) {
+	async function handleComplete(
+		selectedSkillIds: string[],
+		contactedAdultId?: string,
+		contactedAdultName?: string
+	) {
 		if (saving) return;
 
 		saving = true;
@@ -35,8 +39,10 @@
 				actionPlanId: planData.actionPlanId,
 				zone: 'green',
 				strategiesUsed: selectedSkillIds,
-				supportiveAdultsContacted: [],
-				helpMethodsSelected: []
+				supportiveAdultsContacted: contactedAdultId ? [contactedAdultId] : [],
+				helpMethodsSelected: [],
+				contactedAdultId,
+				contactedAdultName
 			});
 
 			showSuccess = true;
@@ -66,7 +72,11 @@
 		<button type="button" onclick={() => goto('/app')}>Back to Dashboard</button>
 	</div>
 {:else}
-	<GreenZoneStep skills={$planPayload?.skills ?? []} onComplete={handleComplete} />
+	<GreenZoneStep
+		skills={$planPayload?.skills ?? []}
+		supportiveAdults={$planPayload?.supportiveAdults ?? []}
+		onComplete={handleComplete}
+	/>
 {/if}
 
 <style>

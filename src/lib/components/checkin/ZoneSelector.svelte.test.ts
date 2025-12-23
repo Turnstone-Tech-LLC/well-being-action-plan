@@ -27,11 +27,15 @@ describe('ZoneSelector', () => {
 		const yellowCard = page.getByRole('button', { name: /I'm struggling/i });
 		const redCard = page.getByRole('button', { name: /I need help now/i });
 
-		await expect.element(greenCard).toHaveTextContent("I'm happy most of the day");
-		await expect.element(yellowCard).toHaveTextContent("My coping skills aren't helping enough");
+		await expect.element(greenCard).toHaveTextContent('I am feeling happy most of the day/week!');
+		await expect
+			.element(yellowCard)
+			.toHaveTextContent(
+				'My coping skills are not helping enough. I feel sad, upset, stressed, or worried most of the day, most days of the week.'
+			);
 		await expect
 			.element(redCard)
-			.toHaveTextContent('I feel unsafe or am thinking about hurting myself');
+			.toHaveTextContent('I feel unsafe or am thinking about hurting myself.');
 	});
 
 	it('calls onZoneSelect with "green" when green zone is clicked', async () => {
