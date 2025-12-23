@@ -541,7 +541,7 @@
 				<div class="skills-review">
 					<h3>Current Coping Skills</h3>
 					<div class="skills-list">
-						{#each [...data.existingData.selectedSkills.map((s) => s.skillId), ...data.existingData.customSkills.map((s) => s.id)] as skillId}
+						{#each [...data.existingData.selectedSkills.map((s) => s.skillId), ...data.existingData.customSkills.map((s) => s.id)] as skillId (skillId)}
 							<label class="skill-toggle" class:removed={skillsToRemove.has(skillId)}>
 								<input
 									type="checkbox"
@@ -560,7 +560,7 @@
 					{#if newSkills.length > 0}
 						<h4 class="new-items-heading">New Skills to Add</h4>
 						<div class="skills-list">
-							{#each newSkills as skill}
+							{#each newSkills as skill (skill.id)}
 								<div class="new-item-card">
 									<div class="new-item-info">
 										<span class="new-item-title">{skill.title}</span>
@@ -582,7 +582,7 @@
 								These are skills from the resource library that aren't currently in the plan.
 							</p>
 							<div class="library-skills-list">
-								{#each availableLibrarySkills as skill}
+								{#each availableLibrarySkills as skill (skill.id)}
 									<button
 										type="button"
 										class="library-skill-item"
@@ -615,7 +615,7 @@
 					{#if addedLibrarySkills.size > 0}
 						<h4 class="new-items-heading">Skills Added from Library</h4>
 						<div class="skills-list">
-							{#each Array.from(addedLibrarySkills) as skillId}
+							{#each Array.from(addedLibrarySkills) as skillId (skillId)}
 								{@const skill = data.skills.find((s) => s.id === skillId)}
 								{#if skill}
 									<div class="new-item-card library-added">
@@ -653,7 +653,7 @@
 								<div class="form-field">
 									<label for="new-skill-category">Category</label>
 									<select id="new-skill-category" bind:value={newSkillCategory}>
-										{#each data.categories as category}
+										{#each data.categories as category (category)}
 											<option value={category}>{getCategoryLabel(category)}</option>
 										{/each}
 									</select>
@@ -731,7 +731,7 @@
 							patient to understand why they weren't helpful.
 						</p>
 						<div class="removed-skills-list">
-							{#each removedSkillsList as skill}
+							{#each removedSkillsList as skill (skill.id)}
 								<div class="removed-skill-item">
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
@@ -786,7 +786,7 @@
 				</p>
 
 				<div class="adults-list">
-					{#each selectedSupportiveAdults as adult, index}
+					{#each selectedSupportiveAdults as adult, index (adult.typeId)}
 						{@const isEditing = editingAdultId === `type-${adult.typeId}`}
 						<div class="adult-card" class:editing={isEditing}>
 							{#if isEditing}
@@ -865,7 +865,7 @@
 							{/if}
 						</div>
 					{/each}
-					{#each customSupportiveAdults as adult, index}
+					{#each customSupportiveAdults as adult, index (adult.id)}
 						{@const isEditing = editingAdultId === `custom-${adult.id}`}
 						<div class="adult-card" class:editing={isEditing}>
 							{#if isEditing}
@@ -969,7 +969,7 @@
 									<label for="new-adult-type">Adult Type</label>
 									<select id="new-adult-type" bind:value={newAdultTypeId}>
 										<option value="">Select a type...</option>
-										{#each data.supportiveAdultTypes.filter((t) => !selectedSupportiveAdults.some((a) => a.typeId === t.id)) as adultType}
+										{#each data.supportiveAdultTypes.filter((t) => !selectedSupportiveAdults.some((a) => a.typeId === t.id)) as adultType (adultType.id)}
 											<option value={adultType.id}>{adultType.label}</option>
 										{/each}
 									</select>
@@ -1058,7 +1058,7 @@
 				</p>
 
 				<div class="methods-list">
-					{#each selectedHelpMethods as method, index}
+					{#each selectedHelpMethods as method, index (method.helpMethodId)}
 						{@const isEditing = editingMethodId === `method-${method.helpMethodId}`}
 						<div class="method-card" class:editing={isEditing}>
 							{#if isEditing}
@@ -1116,7 +1116,7 @@
 							{/if}
 						</div>
 					{/each}
-					{#each customHelpMethods as method, index}
+					{#each customHelpMethods as method, index (method.id)}
 						{@const isEditing = editingMethodId === `custom-${method.id}`}
 						<div class="method-card" class:editing={isEditing}>
 							{#if isEditing}
@@ -1199,7 +1199,7 @@
 									<label for="new-method-id">Help Method</label>
 									<select id="new-method-id" bind:value={newMethodId}>
 										<option value="">Select a method...</option>
-										{#each data.helpMethods.filter((m) => !selectedHelpMethods.some((sm) => sm.helpMethodId === m.id)) as helpMethod}
+										{#each data.helpMethods.filter((m) => !selectedHelpMethods.some((sm) => sm.helpMethodId === m.id)) as helpMethod (helpMethod.id)}
 											<option value={helpMethod.id}>{helpMethod.title}</option>
 										{/each}
 									</select>

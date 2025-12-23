@@ -147,7 +147,7 @@
 						<div class="compare-section">
 							<h4>Coping Skills ({revision1.plan_payload.skills.length})</h4>
 							<ul>
-								{#each revision1.plan_payload.skills as skill}
+								{#each revision1.plan_payload.skills as skill (skill.id)}
 									<li>{skill.title}</li>
 								{/each}
 							</ul>
@@ -155,7 +155,7 @@
 						<div class="compare-section">
 							<h4>Supportive Adults ({revision1.plan_payload.supportiveAdults.length})</h4>
 							<ul>
-								{#each revision1.plan_payload.supportiveAdults as adult}
+								{#each revision1.plan_payload.supportiveAdults as adult (adult.id)}
 									<li>{adult.name} ({adult.type})</li>
 								{/each}
 							</ul>
@@ -163,7 +163,7 @@
 						<div class="compare-section">
 							<h4>Help Methods ({revision1.plan_payload.helpMethods.length})</h4>
 							<ul>
-								{#each revision1.plan_payload.helpMethods as method}
+								{#each revision1.plan_payload.helpMethods as method (method.id)}
 									<li>{method.title}</li>
 								{/each}
 							</ul>
@@ -183,7 +183,7 @@
 						<div class="compare-section">
 							<h4>Coping Skills ({revision2.plan_payload.skills.length})</h4>
 							<ul>
-								{#each revision2.plan_payload.skills as skill}
+								{#each revision2.plan_payload.skills as skill (skill.id)}
 									<li>{skill.title}</li>
 								{/each}
 							</ul>
@@ -191,7 +191,7 @@
 						<div class="compare-section">
 							<h4>Supportive Adults ({revision2.plan_payload.supportiveAdults.length})</h4>
 							<ul>
-								{#each revision2.plan_payload.supportiveAdults as adult}
+								{#each revision2.plan_payload.supportiveAdults as adult (adult.id)}
 									<li>{adult.name} ({adult.type})</li>
 								{/each}
 							</ul>
@@ -199,7 +199,7 @@
 						<div class="compare-section">
 							<h4>Help Methods ({revision2.plan_payload.helpMethods.length})</h4>
 							<ul>
-								{#each revision2.plan_payload.helpMethods as method}
+								{#each revision2.plan_payload.helpMethods as method (method.id)}
 									<li>{method.title}</li>
 								{/each}
 							</ul>

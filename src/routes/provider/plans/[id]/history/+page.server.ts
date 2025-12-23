@@ -73,7 +73,7 @@ export const load: PageServerLoad = async ({
 	// Get creator names for all revisions
 	const creatorIds = [...new Set(revisions.map((r) => r.created_by).filter(Boolean))] as string[];
 
-	let creatorMap: Map<string, string> = new Map();
+	const creatorMap: Map<string, string> = new Map();
 	if (creatorIds.length > 0) {
 		const { data: creators } = await locals.supabase
 			.from('provider_profiles')

@@ -105,8 +105,8 @@ test.describe('Happy Path', () => {
 		// Get initial count
 		const initialCount = await getCheckInCountViaApp(page);
 
-		// Click Done to submit
-		const doneButton = page.getByRole('button', { name: /done/i });
+		// Click "I've reached out" button to complete yellow zone
+		const doneButton = page.getByRole('button', { name: /reached out/i });
 		await doneButton.click();
 
 		// Should redirect to dashboard
