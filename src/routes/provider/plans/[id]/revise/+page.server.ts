@@ -8,6 +8,7 @@ import type {
 	CrisisResource
 } from '$lib/types/database';
 import type { PlanPayload } from '$lib/db/index';
+import type { CheckInSummary } from '$lib/server/types';
 import { createInstallToken } from '$lib/server/utils/token';
 import {
 	buildPlanPayload,
@@ -15,10 +16,9 @@ import {
 	type ActionPlanDraftData
 } from '$lib/server/utils/planPayload';
 
-export interface EditPlanPageData {
+export interface RevisePlanPageData {
 	planId: string;
-	status: 'draft' | 'active' | 'archived';
-	updatedAt: string;
+	currentVersion: number;
 	skills: Skill[];
 	categories: SkillCategory[];
 	supportiveAdultTypes: SupportiveAdultType[];
@@ -46,21 +46,17 @@ export interface EditPlanPageData {
 		selectedHelpMethods: Array<{ helpMethodId: string; additionalInfo?: string }>;
 		customHelpMethods: Array<{ id: string; title: string; additionalInfo?: string }>;
 	};
-	activeToken: {
-		token: string;
-		expiresAt: string;
-	} | null;
 }
 
 export const load: PageServerLoad = async ({
 	params,
 	locals,
 	parent
-}): Promise<EditPlanPageData> => {
+}): Promise<RevisePlanPageData> => {
 	const { provider } = await parent();
 
 	if (!provider?.organization_id) {
-		error(403, 'You must be associated with an organization to edit action plans');
+		error(403, 'You must be associated with an organization to revise action plans');
 	}
 
 	const orgId = provider.organization_id;
@@ -76,7 +72,6 @@ export const load: PageServerLoad = async ({
 			status,
 			happy_when,
 			happy_because,
-			updated_at,
 			archived_at,
 			action_plan_skills (
 				id,
@@ -112,8 +107,24 @@ export const load: PageServerLoad = async ({
 
 	// Verify the plan belongs to the provider's organization
 	if (actionPlan.organization_id !== provider.organization_id) {
-		error(403, 'You can only edit action plans from your organization');
+		error(403, 'You can only revise action plans from your organization');
 	}
+
+	// Cannot revise archived plans
+	if (actionPlan.archived_at) {
+		error(400, 'Cannot revise an archived action plan');
+	}
+
+	// Get current version
+	const { data: latestRevision } = await locals.supabase
+		.from('action_plan_revisions')
+		.select('version, plan_payload')
+		.eq('action_plan_id', params.id)
+		.order('version', { ascending: false })
+		.limit(1)
+		.single();
+
+	const currentVersion = latestRevision?.version || 1;
 
 	// Fetch reference data
 	let skillsQuery = locals.supabase
@@ -156,25 +167,8 @@ export const load: PageServerLoad = async ({
 		crisisResourcesQuery = crisisResourcesQuery.is('organization_id', null);
 	}
 
-	// Fetch active token
-	const tokenQuery = locals.supabase
-		.from('action_plan_install_tokens')
-		.select('token, expires_at')
-		.eq('action_plan_id', params.id)
-		.is('revoked_at', null)
-		.gt('expires_at', new Date().toISOString())
-		.order('created_at', { ascending: false })
-		.limit(1)
-		.single();
-
-	const [skillsResult, adultTypesResult, helpMethodsResult, crisisResourcesResult, tokenResult] =
-		await Promise.all([
-			skillsQuery,
-			adultTypesQuery,
-			helpMethodsQuery,
-			crisisResourcesQuery,
-			tokenQuery
-		]);
+	const [skillsResult, adultTypesResult, helpMethodsResult, crisisResourcesResult] =
+		await Promise.all([skillsQuery, adultTypesQuery, helpMethodsQuery, crisisResourcesQuery]);
 
 	const skills = skillsResult.data || [];
 	const adultTypes = adultTypesResult.data || [];
@@ -194,11 +188,10 @@ export const load: PageServerLoad = async ({
 			a.display_order - b.display_order
 	)) {
 		if (planSkill.is_custom) {
-			// Custom skill - generate a unique id and get title from additional_info
 			customSkills.push({
 				id: `custom-${planSkill.id}`,
 				title: planSkill.additional_info || '',
-				category: 'mindfulness' // Default category for custom skills
+				category: 'mindfulness'
 			});
 		} else if (planSkill.skill_id) {
 			selectedSkills.push({
@@ -228,11 +221,9 @@ export const load: PageServerLoad = async ({
 			a.display_order - b.display_order
 	)) {
 		if (planAdult.is_custom) {
-			// Custom adult - we need to get the label from somewhere
-			// For custom adults, we stored the type label, so we'll get it from the plan revision
 			customSupportiveAdults.push({
 				id: `custom-adult-${planAdult.id}`,
-				label: 'Other', // Default label for custom adults
+				label: 'Other',
 				name: planAdult.name || '',
 				contactInfo: planAdult.contact_info || undefined,
 				isPrimary: planAdult.is_primary
@@ -256,11 +247,9 @@ export const load: PageServerLoad = async ({
 			a.display_order - b.display_order
 	)) {
 		if (planMethod.is_custom) {
-			// For custom help methods, the title was stored in additional_info during create
-			// We need to look it up from the revision payload
 			customHelpMethods.push({
 				id: `custom-help-${planMethod.id}`,
-				title: 'Custom Method', // Will be enhanced from revision data
+				title: 'Custom Method',
 				additionalInfo: planMethod.additional_info || undefined
 			});
 		} else if (planMethod.help_method_id) {
@@ -271,19 +260,10 @@ export const load: PageServerLoad = async ({
 		}
 	}
 
-	// Try to get more accurate custom data from the latest revision
-	const { data: latestRevision } = await locals.supabase
-		.from('action_plan_revisions')
-		.select('plan_payload')
-		.eq('action_plan_id', params.id)
-		.order('version', { ascending: false })
-		.limit(1)
-		.single();
-
+	// Enhance custom data from revision payload
 	if (latestRevision?.plan_payload) {
 		const payload = latestRevision.plan_payload as PlanPayload;
 
-		// Update custom skills with correct data from revision
 		for (let i = 0; i < customSkills.length && i < payload.skills.length; i++) {
 			const payloadSkill = payload.skills.find(
 				(s) =>
@@ -295,7 +275,6 @@ export const load: PageServerLoad = async ({
 			}
 		}
 
-		// Update custom supportive adults with correct label
 		for (const customAdult of customSupportiveAdults) {
 			const payloadAdult = payload.supportiveAdults.find(
 				(a) => a.name === customAdult.name && a.isPrimary === customAdult.isPrimary
@@ -305,7 +284,6 @@ export const load: PageServerLoad = async ({
 			}
 		}
 
-		// Update custom help methods with correct title
 		for (const customMethod of customHelpMethods) {
 			const payloadMethod = payload.helpMethods.find(
 				(m) => m.additionalInfo === customMethod.additionalInfo
@@ -320,8 +298,7 @@ export const load: PageServerLoad = async ({
 
 	return {
 		planId: actionPlan.id,
-		status: actionPlan.archived_at ? 'archived' : (actionPlan.status as 'draft' | 'active'),
-		updatedAt: actionPlan.updated_at,
+		currentVersion,
 		skills,
 		categories,
 		supportiveAdultTypes: adultTypes,
@@ -337,20 +314,12 @@ export const load: PageServerLoad = async ({
 			customSupportiveAdults,
 			selectedHelpMethods,
 			customHelpMethods
-		},
-		activeToken: tokenResult.data
-			? {
-					token: tokenResult.data.token,
-					expiresAt: tokenResult.data.expires_at
-				}
-			: null
+		}
 	};
 };
 
-// ActionPlanDraftData type imported from shared utility
-
 export const actions: Actions = {
-	updatePlan: async ({ params, request, locals }) => {
+	createRevision: async ({ params, request, locals }) => {
 		if (!locals.session || !locals.user) {
 			return fail(401, { error: 'Not authenticated' });
 		}
@@ -373,7 +342,7 @@ export const actions: Actions = {
 		// Verify the plan exists and belongs to the organization
 		const { data: existingPlan, error: planError } = await locals.supabase
 			.from('action_plans')
-			.select('id, organization_id, updated_at')
+			.select('id, organization_id, archived_at')
 			.eq('id', params.id)
 			.single();
 
@@ -382,23 +351,23 @@ export const actions: Actions = {
 		}
 
 		if (existingPlan.organization_id !== orgId) {
-			return fail(403, { error: 'You can only edit plans from your organization' });
+			return fail(403, { error: 'You can only revise plans from your organization' });
+		}
+
+		if (existingPlan.archived_at) {
+			return fail(400, { error: 'Cannot revise an archived action plan' });
 		}
 
 		// Parse form data
 		const formData = await request.formData();
 		const draftJson = formData.get('draft');
-		const expectedUpdatedAt = formData.get('updatedAt');
+		const revisionNotes = formData.get('revisionNotes') as string;
+		const whatWorkedNotes = formData.get('whatWorkedNotes') as string;
+		const whatDidntWorkNotes = formData.get('whatDidntWorkNotes') as string;
+		const checkInSummaryJson = formData.get('checkInSummary');
 
 		if (!draftJson || typeof draftJson !== 'string') {
 			return fail(400, { error: 'Missing action plan data' });
-		}
-
-		// Optimistic locking - check if plan was modified by another user
-		if (expectedUpdatedAt && existingPlan.updated_at !== expectedUpdatedAt) {
-			return fail(409, {
-				error: 'This plan has been modified by another user. Please refresh and try again.'
-			});
 		}
 
 		let draft: ActionPlanDraftData;
@@ -408,8 +377,16 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid action plan data' });
 		}
 
+		let checkInSummary: CheckInSummary | null = null;
+		if (checkInSummaryJson && typeof checkInSummaryJson === 'string') {
+			try {
+				checkInSummary = JSON.parse(checkInSummaryJson);
+			} catch {
+				// Ignore invalid check-in summary
+			}
+		}
+
 		// Fetch reference data for building the plan payload
-		// Build queries that handle both org-specific and global resources
 		let refSkillsQuery = locals.supabase.from('skills').select('*').eq('is_active', true);
 		let refAdultTypesQuery = locals.supabase
 			.from('supportive_adult_types')
@@ -425,7 +402,6 @@ export const actions: Actions = {
 			.eq('is_active', true)
 			.order('display_order', { ascending: true });
 
-		// Filter by organization - show global and org-specific
 		if (orgId) {
 			refSkillsQuery = refSkillsQuery.or(`organization_id.is.null,organization_id.eq.${orgId}`);
 			refAdultTypesQuery = refAdultTypesQuery.or(
@@ -438,7 +414,6 @@ export const actions: Actions = {
 				`organization_id.is.null,organization_id.eq.${orgId}`
 			);
 		} else {
-			// If no org, show only global
 			refSkillsQuery = refSkillsQuery.is('organization_id', null);
 			refAdultTypesQuery = refAdultTypesQuery.is('organization_id', null);
 			refHelpMethodsQuery = refHelpMethodsQuery.is('organization_id', null);
@@ -453,7 +428,7 @@ export const actions: Actions = {
 				refCrisisResourcesQuery
 			]);
 
-		// Build the plan payload using shared utility
+		// Build the plan payload
 		const planPayload = buildPlanPayload(draft, {
 			skills: skillsResult.data || [],
 			supportiveAdultTypes: adultTypesResult.data || [],
@@ -495,7 +470,11 @@ export const actions: Actions = {
 					action_plan_id: params.id,
 					version: newVersion,
 					plan_payload: planPayload,
-					revision_type: 'edit',
+					revision_type: 'revision',
+					revision_notes: revisionNotes || null,
+					what_worked_notes: whatWorkedNotes || null,
+					what_didnt_work_notes: whatDidntWorkNotes || null,
+					check_in_summary: checkInSummary,
 					created_by: userId
 				})
 				.select('id')
@@ -506,7 +485,7 @@ export const actions: Actions = {
 				return fail(500, { error: 'Failed to create action plan revision' });
 			}
 
-			// 3. Delete existing join records (simpler than diffing)
+			// 3. Delete existing join records
 			await Promise.all([
 				locals.supabase.from('action_plan_skills').delete().eq('action_plan_id', params.id),
 				locals.supabase
@@ -516,7 +495,7 @@ export const actions: Actions = {
 				locals.supabase.from('action_plan_help_methods').delete().eq('action_plan_id', params.id)
 			]);
 
-			// 4. Insert new join records using shared utility
+			// 4. Insert new join records
 			const { skillRecords, adultRecords, methodRecords } = buildJoinRecords(params.id, draft);
 
 			if (skillRecords.length > 0) {
@@ -546,160 +525,31 @@ export const actions: Actions = {
 				}
 			}
 
-			return { success: true };
+			// 5. Generate new token for the updated plan
+			const token = createInstallToken();
+			const expiresAt = new Date();
+			expiresAt.setDate(expiresAt.getDate() + 7);
+
+			// Revoke existing active tokens
+			await locals.supabase
+				.from('action_plan_install_tokens')
+				.update({ revoked_at: new Date().toISOString() })
+				.eq('action_plan_id', params.id)
+				.is('revoked_at', null);
+
+			// Create new token
+			await locals.supabase.from('action_plan_install_tokens').insert({
+				action_plan_id: params.id,
+				revision_id: revision.id,
+				token,
+				purpose: 'update',
+				expires_at: expiresAt.toISOString()
+			});
+
+			redirect(303, `/provider/plans/${params.id}?revised=true`);
 		} catch (err) {
-			console.error('Error updating action plan:', err);
+			console.error('Error creating revision:', err);
 			return fail(500, { error: 'An unexpected error occurred' });
 		}
-	},
-
-	regenerateToken: async ({ params, locals }) => {
-		if (!locals.user) {
-			return fail(401, { error: 'Authentication required' });
-		}
-
-		// Get provider profile
-		const { data: provider } = await locals.supabase
-			.from('provider_profiles')
-			.select('id, organization_id')
-			.eq('id', locals.user.id)
-			.single();
-
-		if (!provider?.organization_id) {
-			return fail(403, { error: 'You must be associated with an organization' });
-		}
-
-		// Fetch the plan with latest revision
-		const { data: plan } = await locals.supabase
-			.from('action_plans')
-			.select(
-				`
-				id,
-				organization_id,
-				action_plan_revisions (
-					id,
-					version
-				)
-			`
-			)
-			.eq('id', params.id)
-			.single();
-
-		if (!plan || plan.organization_id !== provider.organization_id) {
-			return fail(403, { error: 'You can only generate tokens for plans from your organization' });
-		}
-
-		const revisions = plan.action_plan_revisions || [];
-		const latestRevision = revisions.sort(
-			(a: { version: number }, b: { version: number }) => b.version - a.version
-		)[0];
-
-		if (!latestRevision) {
-			return fail(400, { error: 'No revision found for this plan' });
-		}
-
-		// Revoke existing active tokens
-		await locals.supabase
-			.from('action_plan_install_tokens')
-			.update({ revoked_at: new Date().toISOString() })
-			.eq('action_plan_id', params.id)
-			.is('revoked_at', null);
-
-		// Generate new token
-		const token = createInstallToken();
-
-		// Token expires in 7 days
-		const expiresAt = new Date();
-		expiresAt.setDate(expiresAt.getDate() + 7);
-
-		// Create new token
-		const { error: tokenError } = await locals.supabase.from('action_plan_install_tokens').insert({
-			action_plan_id: params.id,
-			revision_id: latestRevision.id,
-			token,
-			purpose: 'install',
-			expires_at: expiresAt.toISOString()
-		});
-
-		if (tokenError) {
-			console.error('Error creating token:', tokenError);
-			return fail(500, { error: 'Failed to generate new token' });
-		}
-
-		return { success: true, token, expiresAt: expiresAt.toISOString() };
-	},
-
-	archive: async ({ params, locals }) => {
-		if (!locals.user) {
-			return fail(401, { error: 'Authentication required' });
-		}
-
-		const { data: provider } = await locals.supabase
-			.from('provider_profiles')
-			.select('id, organization_id')
-			.eq('id', locals.user.id)
-			.single();
-
-		if (!provider?.organization_id) {
-			return fail(403, { error: 'You must be associated with an organization' });
-		}
-
-		const { data: plan } = await locals.supabase
-			.from('action_plans')
-			.select('organization_id')
-			.eq('id', params.id)
-			.single();
-
-		if (!plan || plan.organization_id !== provider.organization_id) {
-			return fail(403, { error: 'You can only archive plans from your organization' });
-		}
-
-		const { error: updateError } = await locals.supabase
-			.from('action_plans')
-			.update({ archived_at: new Date().toISOString() })
-			.eq('id', params.id);
-
-		if (updateError) {
-			return fail(500, { error: 'Failed to archive action plan' });
-		}
-
-		redirect(303, `/provider/plans/${params.id}`);
-	},
-
-	unarchive: async ({ params, locals }) => {
-		if (!locals.user) {
-			return fail(401, { error: 'Authentication required' });
-		}
-
-		const { data: provider } = await locals.supabase
-			.from('provider_profiles')
-			.select('id, organization_id')
-			.eq('id', locals.user.id)
-			.single();
-
-		if (!provider?.organization_id) {
-			return fail(403, { error: 'You must be associated with an organization' });
-		}
-
-		const { data: plan } = await locals.supabase
-			.from('action_plans')
-			.select('organization_id')
-			.eq('id', params.id)
-			.single();
-
-		if (!plan || plan.organization_id !== provider.organization_id) {
-			return fail(403, { error: 'You can only unarchive plans from your organization' });
-		}
-
-		const { error: updateError } = await locals.supabase
-			.from('action_plans')
-			.update({ archived_at: null })
-			.eq('id', params.id);
-
-		if (updateError) {
-			return fail(500, { error: 'Failed to unarchive action plan' });
-		}
-
-		return { success: true };
 	}
 };

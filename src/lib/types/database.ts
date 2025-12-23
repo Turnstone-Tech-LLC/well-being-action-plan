@@ -283,6 +283,52 @@ export type ActionPlanHelpMethodInsert = Omit<ActionPlanHelpMethod, 'id' | 'crea
 };
 
 /**
+ * Revision type indicating how/why a revision was created.
+ */
+export type RevisionType = 'initial' | 'edit' | 'revision';
+
+/**
+ * Summary of check-in data imported from patient PDF export during revision.
+ */
+export interface CheckInSummary {
+	dateRange: { start: string; end: string };
+	totalCheckIns: number;
+	zoneDistribution: { green: number; yellow: number; red: number };
+	topCopingSkills: Array<{ id: string; title: string; count: number }>;
+	feelingNotes: Array<{ zone: string; date: string; note: string }>;
+	adultsContacted: Array<{ name: string; count: number }>;
+	importedAt: string;
+}
+
+/**
+ * Database row for action_plan_revisions table.
+ */
+export interface ActionPlanRevision {
+	id: string;
+	action_plan_id: string;
+	version: number;
+	plan_payload: Record<string, unknown>;
+	revision_type: RevisionType;
+	revision_notes: string | null;
+	what_worked_notes: string | null;
+	what_didnt_work_notes: string | null;
+	check_in_summary: CheckInSummary | null;
+	created_by: string | null;
+	created_at: string;
+}
+
+export type ActionPlanRevisionInsert = Omit<ActionPlanRevision, 'id' | 'created_at'> & {
+	id?: string;
+	revision_type?: RevisionType;
+	revision_notes?: string | null;
+	what_worked_notes?: string | null;
+	what_didnt_work_notes?: string | null;
+	check_in_summary?: CheckInSummary | null;
+	created_by?: string | null;
+	created_at?: string;
+};
+
+/**
  * Update types (for updating existing records).
  * All fields are optional.
  */

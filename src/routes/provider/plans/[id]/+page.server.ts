@@ -13,6 +13,7 @@ export interface PlanDetailData {
 	latestRevision: ActionPlanRevision | null;
 	planPayload: PlanPayload | null;
 	activeToken: InstallToken | null;
+	revisionCount: number;
 }
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
@@ -38,6 +39,12 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				action_plan_id,
 				version,
 				plan_payload,
+				revision_type,
+				revision_notes,
+				what_worked_notes,
+				what_didnt_work_notes,
+				check_in_summary,
+				created_by,
 				created_at
 			)
 		`
@@ -83,11 +90,18 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 					action_plan_id: latestRevision.action_plan_id,
 					version: latestRevision.version,
 					plan_payload: latestRevision.plan_payload as PlanPayload,
+					revision_type: latestRevision.revision_type || 'edit',
+					revision_notes: latestRevision.revision_notes || null,
+					what_worked_notes: latestRevision.what_worked_notes || null,
+					what_didnt_work_notes: latestRevision.what_didnt_work_notes || null,
+					check_in_summary: latestRevision.check_in_summary || null,
+					created_by: latestRevision.created_by || null,
 					created_at: latestRevision.created_at
 				}
 			: null,
 		planPayload,
-		activeToken: (activeToken as InstallToken) || null
+		activeToken: (activeToken as InstallToken) || null,
+		revisionCount: revisions.length
 	};
 
 	return {

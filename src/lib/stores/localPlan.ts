@@ -12,6 +12,35 @@ import {
 import { browser } from '$app/environment';
 
 /**
+ * Response from version check API.
+ */
+interface PlanVersionResponse {
+	latestVersion: number;
+	updatedAt: string;
+	revisionNotes: string | null;
+}
+
+/**
+ * Response from plan update API.
+ */
+interface PlanUpdateResponse {
+	success: boolean;
+	planPayload: PlanPayload;
+	revisionId: string;
+	revisionVersion: number;
+	revisionNotes: string | null;
+}
+
+/**
+ * Update availability info.
+ */
+export interface UpdateInfo {
+	available: boolean;
+	latestVersion: number;
+	revisionNotes: string | null;
+}
+
+/**
  * Store state for local plan management.
  */
 interface LocalPlanState {
@@ -23,6 +52,8 @@ interface LocalPlanState {
 	available: boolean;
 	/** Any error that occurred during operations */
 	error: string | null;
+	/** Info about available update, if any */
+	updateInfo: UpdateInfo | null;
 }
 
 /**
@@ -33,7 +64,8 @@ function createInitialState(): LocalPlanState {
 		plan: null,
 		loading: false,
 		available: browser ? isIndexedDBAvailable() : false,
-		error: null
+		error: null,
+		updateInfo: null
 	};
 }
 
@@ -213,6 +245,125 @@ function createLocalPlanStore() {
 		 */
 		reset(): void {
 			set(createInitialState());
+		},
+
+		/**
+		 * Check if an update is available for the current plan.
+		 * Compares local version with server version.
+		 */
+		async checkForUpdates(): Promise<UpdateInfo | null> {
+			if (!browser) return null;
+
+			// Get current state
+			let currentPlan: LocalActionPlan | null = null;
+			const unsubscribe = subscribe((state) => {
+				currentPlan = state.plan;
+			});
+			unsubscribe();
+
+			if (!currentPlan) return null;
+
+			const { actionPlanId, accessCode, revisionVersion } = currentPlan;
+
+			try {
+				const response = await fetch(
+					`/api/plan-version/${actionPlanId}?token=${encodeURIComponent(accessCode)}`
+				);
+
+				if (!response.ok) {
+					console.error('Failed to check for updates:', response.statusText);
+					return null;
+				}
+
+				const data: PlanVersionResponse = await response.json();
+
+				const updateInfo: UpdateInfo = {
+					available: data.latestVersion > revisionVersion,
+					latestVersion: data.latestVersion,
+					revisionNotes: data.revisionNotes
+				};
+
+				update((state) => ({ ...state, updateInfo }));
+
+				return updateInfo;
+			} catch (err) {
+				console.error('Error checking for updates:', err);
+				return null;
+			}
+		},
+
+		/**
+		 * Apply an available update by fetching the new plan and saving it.
+		 */
+		async applyUpdate(): Promise<boolean> {
+			if (!browser) return false;
+
+			// Get current state
+			let currentPlan: LocalActionPlan | null = null;
+			const unsubscribe = subscribe((state) => {
+				currentPlan = state.plan;
+			});
+			unsubscribe();
+
+			if (!currentPlan) return false;
+
+			const { actionPlanId, accessCode, deviceInstallId } = currentPlan;
+
+			update((state) => ({ ...state, loading: true, error: null }));
+
+			try {
+				const response = await fetch(`/api/plan-version/${actionPlanId}`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ token: accessCode })
+				});
+
+				if (!response.ok) {
+					const message = `Failed to fetch update: ${response.statusText}`;
+					update((state) => ({ ...state, loading: false, error: message }));
+					return false;
+				}
+
+				const data: PlanUpdateResponse = await response.json();
+
+				// Save the updated plan to IndexedDB
+				await saveLocalPlan({
+					actionPlanId,
+					accessCode,
+					deviceInstallId,
+					planPayload: data.planPayload,
+					revisionId: data.revisionId,
+					revisionVersion: data.revisionVersion
+				});
+
+				// Reload the plan from IndexedDB
+				const plan = await getLocalPlan();
+
+				update((state) => ({
+					...state,
+					plan,
+					loading: false,
+					error: null,
+					updateInfo: null // Clear update info after applying
+				}));
+
+				return true;
+			} catch (err) {
+				const message = err instanceof Error ? err.message : 'Failed to apply update';
+				update((state) => ({
+					...state,
+					loading: false,
+					error: message
+				}));
+				return false;
+			}
+		},
+
+		/**
+		 * Dismiss the update notification without applying.
+		 */
+		dismissUpdate(): void {
+			update((state) => ({ ...state, updateInfo: null }));
 		}
 	};
 }
@@ -266,3 +417,19 @@ export const localPlanError: Readable<string | null> = derived(
  * Derived store that indicates if a plan is currently loaded.
  */
 export const hasPlan: Readable<boolean> = derived(localPlanStore, ($store) => $store.plan !== null);
+
+/**
+ * Derived store for update info.
+ */
+export const updateInfo: Readable<UpdateInfo | null> = derived(
+	localPlanStore,
+	($store) => $store.updateInfo
+);
+
+/**
+ * Derived store that indicates if an update is available.
+ */
+export const hasUpdate: Readable<boolean> = derived(
+	localPlanStore,
+	($store) => $store.updateInfo?.available ?? false
+);

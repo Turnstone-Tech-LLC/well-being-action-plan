@@ -3,9 +3,11 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { localPlanStore, hasPlan, localPlan } from '$lib/stores/localPlan';
+	import { localPlanStore, hasPlan, localPlan, hasUpdate, updateInfo } from '$lib/stores/localPlan';
 	import { patientProfileStore, onboardingComplete } from '$lib/stores/patientProfile';
 	import { PatientNav } from '$lib/components/app';
+	import { UpdateBanner } from '$lib/components/update';
+	import UpdateModal from '$lib/components/update/UpdateModal.svelte';
 	import { getNextAppointmentDate } from '$lib/db/profile';
 	import { checkAndShowAppointmentReminder } from '$lib/notifications';
 	import type { Snippet } from 'svelte';
@@ -18,6 +20,8 @@
 
 	let initialized = $state(false);
 	let checking = $state(true);
+	let showUpdateModal = $state(false);
+	let isUpdating = $state(false);
 
 	// Non-reactive guard to prevent multiple navigations
 	// Using a plain variable instead of $state to avoid triggering effects
@@ -43,6 +47,11 @@
 
 		// Check for appointment reminders after routing is done
 		await checkAppointmentReminder();
+
+		// Check for plan updates (if onboarding is complete)
+		if ($onboardingComplete && $hasPlan) {
+			await localPlanStore.checkForUpdates();
+		}
 	});
 
 	/**
@@ -102,6 +111,27 @@
 
 		checking = false;
 	}
+
+	function handleViewUpdate() {
+		showUpdateModal = true;
+	}
+
+	function handleDismissUpdate() {
+		localPlanStore.dismissUpdate();
+	}
+
+	async function handleConfirmUpdate() {
+		isUpdating = true;
+		const success = await localPlanStore.applyUpdate();
+		isUpdating = false;
+		if (success) {
+			showUpdateModal = false;
+		}
+	}
+
+	function handleCancelUpdate() {
+		showUpdateModal = false;
+	}
 </script>
 
 {#if checking && !isOnboardingRoute}
@@ -110,13 +140,30 @@
 		<p>Loading...</p>
 	</div>
 {:else}
-	<div class="app-layout" class:has-nav={showNav}>
+	<div class="app-layout" class:has-nav={showNav} class:has-update={$hasUpdate && showNav}>
 		{#if showNav}
 			<PatientNav />
 		{/if}
 		<main class="app-content">
 			{@render children()}
 		</main>
+
+		{#if $hasUpdate && showNav && $updateInfo}
+			<UpdateBanner
+				revisionNotes={$updateInfo.revisionNotes}
+				onUpdate={handleViewUpdate}
+				onDismiss={handleDismissUpdate}
+			/>
+		{/if}
+
+		{#if showUpdateModal && $updateInfo}
+			<UpdateModal
+				revisionNotes={$updateInfo.revisionNotes}
+				{isUpdating}
+				onConfirm={handleConfirmUpdate}
+				onCancel={handleCancelUpdate}
+			/>
+		{/if}
 	</div>
 {/if}
 
@@ -130,6 +177,11 @@
 	/* Mobile: nav is fixed at bottom, so add padding */
 	.app-layout.has-nav {
 		padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+	}
+
+	/* Extra padding when update banner is visible (banner is 60px + nav is 60px) */
+	.app-layout.has-nav.has-update {
+		padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 	}
 
 	.app-content {
