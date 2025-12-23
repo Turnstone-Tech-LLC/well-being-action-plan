@@ -65,6 +65,10 @@ export interface LocalActionPlan {
 	installedAt: Date;
 	/** Last time the plan was accessed/viewed */
 	lastAccessedAt: Date;
+	/** Latest available version from server (for update detection) */
+	latestAvailableVersion?: number;
+	/** When an update was detected as available */
+	updateAvailableAt?: Date;
 }
 
 /**
@@ -141,6 +145,8 @@ export interface CheckIn {
 	contactedAdultId?: string;
 	/** Denormalized name of contacted adult for display */
 	contactedAdultName?: string;
+	/** Plan version at the time of check-in (for historical context) */
+	planVersion?: number;
 	/** When this check-in was created */
 	createdAt: Date;
 }
@@ -209,6 +215,29 @@ class WellBeingDB extends Dexie {
 					.modify((profile) => {
 						profile.nextAppointmentDate = undefined;
 						profile.lastProviderReportDate = undefined;
+					});
+			});
+
+		// Version 6: Add planVersion index to check-ins for version tracking
+		this.version(6)
+			.stores({
+				localPlans: '++id, &actionPlanId, accessCode, installedAt',
+				patientProfiles: '++id, &actionPlanId, onboardingComplete, createdAt',
+				checkIns: '++id, actionPlanId, zone, planVersion, createdAt'
+			})
+			.upgrade(async (tx) => {
+				// Get the current plan version to set on existing check-ins
+				const plans = await tx.table('localPlans').toArray();
+				const currentVersion = plans.length > 0 ? plans[0].revisionVersion : 1;
+
+				// Tag existing check-ins with the current plan version
+				return tx
+					.table('checkIns')
+					.toCollection()
+					.modify((checkIn) => {
+						if (!checkIn.planVersion) {
+							checkIn.planVersion = currentVersion;
+						}
 					});
 			});
 	}

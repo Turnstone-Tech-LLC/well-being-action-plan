@@ -216,6 +216,7 @@ export const actions: Actions = {
 					action_plan_id: actionPlanId,
 					version: 1,
 					plan_payload: planPayload,
+					revision_type: 'initial',
 					created_by: userId
 				})
 				.select('id')
