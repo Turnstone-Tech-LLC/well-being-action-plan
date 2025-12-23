@@ -440,13 +440,43 @@
 			<div class="progress-fill" style="width: {(currentStep / REVISION_TOTAL_STEPS) * 100}%"></div>
 		</div>
 		<div class="step-indicators">
-			{#each stepTitles as title, index}
+			{#each stepTitles as title, index (index)}
+				{@const stepNum = index + 1}
+				{@const isCompleted = currentStep > stepNum}
+				{@const isCurrent = currentStep === stepNum}
+				{@const isClickable = isCompleted}
 				<div
 					class="step-indicator"
-					class:active={currentStep === index + 1}
-					class:completed={currentStep > index + 1}
+					class:active={isCurrent}
+					class:completed={isCompleted}
+					class:clickable={isClickable}
+					role={isClickable ? 'button' : undefined}
+					tabindex={isClickable ? 0 : undefined}
+					onclick={() => isClickable && (currentStep = stepNum)}
+					onkeydown={(e) => {
+						if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+							e.preventDefault();
+							currentStep = stepNum;
+						}
+					}}
 				>
-					<span class="step-number">{index + 1}</span>
+					<span class="step-number">
+						{#if isCompleted}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="2.5"
+								stroke="currentColor"
+								class="check-icon"
+								aria-hidden="true"
+							>
+								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+							</svg>
+						{:else}
+							{stepNum}
+						{/if}
+					</span>
 					<span class="step-title">{title}</span>
 				</div>
 			{/each}
@@ -1450,6 +1480,10 @@
 		color: var(--color-text-muted);
 		font-size: var(--font-size-xs);
 		font-weight: 600;
+		transition:
+			background-color 0.15s ease,
+			transform 0.15s ease,
+			box-shadow 0.15s ease;
 	}
 
 	.step-indicator.active .step-number {
@@ -1460,6 +1494,34 @@
 	.step-indicator.completed .step-number {
 		background-color: var(--color-primary);
 		color: var(--color-white);
+	}
+
+	.step-number .check-icon {
+		width: 14px;
+		height: 14px;
+	}
+
+	/* Clickable steps (completed steps) */
+	.step-indicator.clickable {
+		cursor: pointer;
+	}
+
+	.step-indicator.clickable:hover .step-number {
+		transform: scale(1.1);
+		box-shadow: 0 0 0 3px rgba(0, 89, 76, 0.2);
+	}
+
+	.step-indicator.clickable:hover .step-title {
+		color: var(--color-primary);
+		text-decoration: underline;
+	}
+
+	.step-indicator.clickable:focus-visible {
+		outline: none;
+	}
+
+	.step-indicator.clickable:focus-visible .step-number {
+		box-shadow: 0 0 0 3px var(--color-accent);
 	}
 
 	.step-title {

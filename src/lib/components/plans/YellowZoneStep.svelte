@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HelpMethod, CrisisResource } from '$lib/types/database';
 	import type { SelectedHelpMethod, CustomHelpMethod } from '$lib/stores/actionPlanDraft';
-	import HelpMethodSelector from './HelpMethodSelector.svelte';
+	import HelpMethodDisplay from './HelpMethodDisplay.svelte';
 	import CustomHelpMethodAdd from './CustomHelpMethodAdd.svelte';
 	import RedZonePreview from './RedZonePreview.svelte';
 
@@ -12,7 +12,6 @@
 		crisisResources: CrisisResource[];
 		onBack: () => void;
 		onContinue: () => void;
-		onToggleHelpMethod: (helpMethodId: string) => void;
 		onSetAdditionalInfo: (helpMethodId: string, additionalInfo: string) => void;
 		onAddCustomHelpMethod: (title: string) => void;
 		onUpdateCustomHelpMethod: (
@@ -29,19 +28,13 @@
 		crisisResources,
 		onBack,
 		onContinue,
-		onToggleHelpMethod,
 		onSetAdditionalInfo,
 		onAddCustomHelpMethod,
 		onUpdateCustomHelpMethod,
 		onRemoveCustomHelpMethod
 	}: Props = $props();
 
-	// Check if a help method is selected
-	function isSelected(helpMethodId: string): boolean {
-		return selectedHelpMethods.some((h) => h.helpMethodId === helpMethodId);
-	}
-
-	// Get additional info for a help method
+	// Get additional info for a help method (from selected methods or empty)
 	function getAdditionalInfo(helpMethodId: string): string {
 		return selectedHelpMethods.find((h) => h.helpMethodId === helpMethodId)?.additionalInfo || '';
 	}
@@ -51,13 +44,8 @@
 		onUpdateCustomHelpMethod(customId, { additionalInfo });
 	}
 
-	// Check if no methods are selected
-	const hasNoSelection = $derived(
-		selectedHelpMethods.length === 0 && customHelpMethods.length === 0
-	);
-
-	// Count total selections
-	const totalSelected = $derived(selectedHelpMethods.length + customHelpMethods.length);
+	// Count of help methods (all standard + custom)
+	const totalMethods = $derived(helpMethods.length + customHelpMethods.length);
 </script>
 
 <div class="yellow-zone-step">
@@ -68,8 +56,8 @@
 		</div>
 		<h2>Help Methods</h2>
 		<p class="step-description">
-			My coping skills are not helping enough. When I feel this way, I will check in with my
-			supportive adult and ask for...
+			When in the Yellow Zone, these are the types of help available. All items are included by
+			default.
 		</p>
 	</div>
 
@@ -105,22 +93,18 @@
 	<div class="methods-content">
 		<div class="methods-grid">
 			{#each helpMethods as method (method.id)}
-				<HelpMethodSelector
+				<HelpMethodDisplay
 					helpMethod={method}
-					isSelected={isSelected(method.id)}
 					additionalInfo={getAdditionalInfo(method.id)}
-					onToggle={() => onToggleHelpMethod(method.id)}
 					onAdditionalInfoChange={(value) => onSetAdditionalInfo(method.id, value)}
 				/>
 			{/each}
 
 			{#each customHelpMethods as customMethod (customMethod.id)}
-				<HelpMethodSelector
+				<HelpMethodDisplay
 					helpMethod={customMethod}
-					isSelected={true}
 					additionalInfo={customMethod.additionalInfo || ''}
 					isCustom={true}
-					onToggle={() => onRemoveCustomHelpMethod(customMethod.id)}
 					onAdditionalInfoChange={(value) =>
 						handleCustomAdditionalInfoChange(customMethod.id, value)}
 					onRemoveCustom={() => onRemoveCustomHelpMethod(customMethod.id)}
@@ -131,49 +115,26 @@
 		<CustomHelpMethodAdd onAdd={onAddCustomHelpMethod} />
 	</div>
 
-	{#if hasNoSelection}
-		<div class="warning-message" role="status">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				fill="none"
-				viewBox="0 0 24 24"
-				stroke-width="1.5"
-				stroke="currentColor"
-				class="warning-icon"
-				aria-hidden="true"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
-				/>
-			</svg>
-			<p>
-				Consider selecting at least one type of help to ask for when coping skills aren't enough.
-			</p>
-		</div>
-	{:else}
-		<div class="selection-summary" role="status">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				fill="none"
-				viewBox="0 0 24 24"
-				stroke-width="1.5"
-				stroke="currentColor"
-				class="check-icon"
-				aria-hidden="true"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-				/>
-			</svg>
-			<p>
-				{totalSelected} type{totalSelected === 1 ? '' : 's'} of help selected
-			</p>
-		</div>
-	{/if}
+	<div class="selection-summary" role="status">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="check-icon"
+			aria-hidden="true"
+		>
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+			/>
+		</svg>
+		<p>
+			{totalMethods} type{totalMethods === 1 ? '' : 's'} of help included
+		</p>
+	</div>
 
 	<div class="red-zone-section">
 		<RedZonePreview {crisisResources} />
@@ -336,7 +297,6 @@
 		gap: var(--space-3);
 	}
 
-	.warning-message,
 	.selection-summary {
 		display: flex;
 		align-items: center;
@@ -344,21 +304,6 @@
 		padding: var(--space-3) var(--space-4);
 		border-radius: var(--radius-md);
 		font-size: var(--font-size-sm);
-	}
-
-	.warning-message {
-		background-color: rgba(251, 191, 36, 0.1);
-		color: #92400e;
-	}
-
-	.warning-icon {
-		width: 1.25rem;
-		height: 1.25rem;
-		flex-shrink: 0;
-		color: #f59e0b;
-	}
-
-	.selection-summary {
 		background-color: rgba(253, 224, 71, 0.2);
 		color: #92400e;
 	}
@@ -370,7 +315,6 @@
 		color: #ca8a04;
 	}
 
-	.warning-message p,
 	.selection-summary p {
 		margin: 0;
 	}
