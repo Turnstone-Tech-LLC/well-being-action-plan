@@ -7,9 +7,24 @@
 	interface Props {
 		currentStep: number;
 		steps: Step[];
+		onStepClick?: (stepNumber: number) => void;
 	}
 
-	let { currentStep, steps }: Props = $props();
+	let { currentStep, steps, onStepClick }: Props = $props();
+
+	function handleStepClick(stepNumber: number) {
+		// Only allow clicking on completed steps
+		if (stepNumber < currentStep && onStepClick) {
+			onStepClick(stepNumber);
+		}
+	}
+
+	function handleKeyDown(event: KeyboardEvent, stepNumber: number) {
+		if ((event.key === 'Enter' || event.key === ' ') && stepNumber < currentStep && onStepClick) {
+			event.preventDefault();
+			onStepClick(stepNumber);
+		}
+	}
 </script>
 
 <nav class="step-indicator" aria-label="Form progress">
@@ -18,12 +33,18 @@
 			{@const isCompleted = step.number < currentStep}
 			{@const isCurrent = step.number === currentStep}
 			{@const isUpcoming = step.number > currentStep}
+			{@const isClickable = isCompleted && onStepClick}
 			<li
 				class="step"
 				class:completed={isCompleted}
 				class:current={isCurrent}
 				class:upcoming={isUpcoming}
+				class:clickable={isClickable}
 				aria-current={isCurrent ? 'step' : undefined}
+				role={isClickable ? 'button' : undefined}
+				tabindex={isClickable ? 0 : undefined}
+				onclick={() => handleStepClick(step.number)}
+				onkeydown={(e) => handleKeyDown(e, step.number)}
 			>
 				<span class="step-number">
 					{#if isCompleted}
@@ -44,6 +65,9 @@
 					{/if}
 				</span>
 				<span class="step-label">{step.label}</span>
+				{#if isClickable}
+					<span class="visually-hidden">(click to return to this step)</span>
+				{/if}
 			</li>
 		{/each}
 	</ol>
@@ -103,7 +127,9 @@
 		z-index: 1;
 		transition:
 			background-color 0.2s ease,
-			color 0.2s ease;
+			color 0.2s ease,
+			transform 0.15s ease,
+			box-shadow 0.15s ease;
 	}
 
 	.step.completed .step-number {
@@ -136,6 +162,29 @@
 
 	.step.completed .step-label {
 		color: var(--color-text);
+	}
+
+	/* Clickable steps (completed steps when onStepClick is provided) */
+	.step.clickable {
+		cursor: pointer;
+	}
+
+	.step.clickable:hover .step-number {
+		transform: scale(1.1);
+		box-shadow: 0 0 0 3px rgba(0, 89, 76, 0.2);
+	}
+
+	.step.clickable:hover .step-label {
+		color: var(--color-primary);
+		text-decoration: underline;
+	}
+
+	.step.clickable:focus-visible {
+		outline: none;
+	}
+
+	.step.clickable:focus-visible .step-number {
+		box-shadow: 0 0 0 3px var(--color-accent);
 	}
 
 	.visually-hidden {

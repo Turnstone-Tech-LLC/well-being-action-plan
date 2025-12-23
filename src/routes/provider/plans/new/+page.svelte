@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { actionPlanDraft, type ActionPlanDraft } from '$lib/stores/actionPlanDraft';
 	import type {
 		Skill,
@@ -46,6 +47,11 @@
 		customSupportiveAdults: [],
 		selectedHelpMethods: [],
 		customHelpMethods: []
+	});
+
+	// Reset the store on mount to ensure we start with a clean slate for new plans
+	onMount(() => {
+		actionPlanDraft.reset();
 	});
 
 	// Keep draft in sync with store
@@ -137,10 +143,6 @@
 	}
 
 	// Yellow zone (help methods) handlers
-	function handleToggleHelpMethod(helpMethodId: string) {
-		actionPlanDraft.toggleHelpMethod(helpMethodId);
-	}
-
 	function handleSetHelpMethodAdditionalInfo(helpMethodId: string, additionalInfo: string) {
 		actionPlanDraft.setHelpMethodAdditionalInfo(helpMethodId, additionalInfo);
 	}
@@ -163,6 +165,11 @@
 	// Review step handlers
 	function handleEditStep(step: number) {
 		actionPlanDraft.setStep(step);
+	}
+
+	// Step indicator click handler
+	function handleStepClick(stepNumber: number) {
+		actionPlanDraft.setStep(stepNumber);
 	}
 
 	// Create action plan handler
@@ -245,7 +252,7 @@
 				/>
 			</div>
 		{:else}
-			<StepIndicator currentStep={draft.currentStep} {steps} />
+			<StepIndicator currentStep={draft.currentStep} {steps} onStepClick={handleStepClick} />
 
 			<div class="wizard-content">
 				{#if submitError}
@@ -331,7 +338,6 @@
 						crisisResources={data.crisisResources}
 						onBack={handlePrevStep}
 						onContinue={handleNextStep}
-						onToggleHelpMethod={handleToggleHelpMethod}
 						onSetAdditionalInfo={handleSetHelpMethodAdditionalInfo}
 						onAddCustomHelpMethod={handleAddCustomHelpMethod}
 						onUpdateCustomHelpMethod={handleUpdateCustomHelpMethod}

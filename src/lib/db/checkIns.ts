@@ -12,10 +12,14 @@ export interface CreateCheckInInput {
 	notes?: string;
 	/** Open-ended "why" context for yellow/red zone check-ins */
 	feelingNotes?: string;
-	/** ID of supportive adult contacted during red zone check-in */
+	/** Custom help request for this specific check-in (yellow zone) */
+	customHelpRequest?: string;
+	/** ID of supportive adult contacted during yellow/red zone check-in */
 	contactedAdultId?: string;
 	/** Denormalized name of contacted adult for display */
 	contactedAdultName?: string;
+	/** Which green skills were displayed during the check-in (for context) */
+	greenSkillsShown?: string[];
 }
 
 /**
@@ -92,8 +96,10 @@ export async function saveCheckIn(input: CreateCheckInInput): Promise<number | u
 		helpMethodsSelected: [...(input.helpMethodsSelected ?? [])],
 		notes: input.notes,
 		feelingNotes: input.feelingNotes,
+		customHelpRequest: input.customHelpRequest,
 		contactedAdultId: input.contactedAdultId,
 		contactedAdultName: input.contactedAdultName,
+		greenSkillsShown: input.greenSkillsShown ? [...input.greenSkillsShown] : undefined,
 		createdAt: new Date()
 	};
 
@@ -263,8 +269,10 @@ export interface RestoreCheckInInput {
 	helpMethodsSelected: string[];
 	notes?: string;
 	feelingNotes?: string;
+	customHelpRequest?: string;
 	contactedAdultId?: string;
 	contactedAdultName?: string;
+	greenSkillsShown?: string[];
 	createdAt: Date;
 }
 
@@ -294,8 +302,10 @@ export async function restoreCheckIns(
 			helpMethodsSelected: [...checkIn.helpMethodsSelected],
 			notes: checkIn.notes,
 			feelingNotes: checkIn.feelingNotes,
+			customHelpRequest: checkIn.customHelpRequest,
 			contactedAdultId: checkIn.contactedAdultId,
 			contactedAdultName: checkIn.contactedAdultName,
+			greenSkillsShown: checkIn.greenSkillsShown ? [...checkIn.greenSkillsShown] : undefined,
 			createdAt: new Date(checkIn.createdAt)
 		}));
 

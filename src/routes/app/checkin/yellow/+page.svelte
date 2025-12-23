@@ -22,7 +22,11 @@
 	async function handleComplete(
 		selectedAdultIds: string[],
 		selectedMethodIds: string[],
-		feelingNotes?: string
+		feelingNotes?: string,
+		customHelpRequest?: string,
+		contactedAdultId?: string,
+		contactedAdultName?: string,
+		greenSkillsShown?: string[]
 	) {
 		if (saving) return;
 
@@ -41,7 +45,11 @@
 				strategiesUsed: [],
 				supportiveAdultsContacted: selectedAdultIds,
 				helpMethodsSelected: selectedMethodIds,
-				feelingNotes
+				feelingNotes,
+				customHelpRequest,
+				contactedAdultId,
+				contactedAdultName,
+				greenSkillsShown
 			});
 
 			showSuccess = true;
@@ -74,6 +82,7 @@
 	<YellowZoneStep
 		adults={$planPayload?.supportiveAdults ?? []}
 		helpMethods={$planPayload?.helpMethods ?? []}
+		skills={$planPayload?.skills ?? []}
 		onComplete={handleComplete}
 	/>
 {/if}

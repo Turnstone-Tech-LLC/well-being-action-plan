@@ -196,10 +196,6 @@
 	}
 
 	// Yellow zone (help methods) handlers
-	function handleToggleHelpMethod(helpMethodId: string) {
-		actionPlanDraft.toggleHelpMethod(helpMethodId);
-	}
-
 	function handleSetHelpMethodAdditionalInfo(helpMethodId: string, additionalInfo: string) {
 		actionPlanDraft.setHelpMethodAdditionalInfo(helpMethodId, additionalInfo);
 	}
@@ -222,6 +218,11 @@
 	// Review step handlers
 	function handleEditStep(step: number) {
 		actionPlanDraft.setStep(step);
+	}
+
+	// Step indicator click handler
+	function handleStepClick(stepNumber: number) {
+		actionPlanDraft.setStep(stepNumber);
 	}
 
 	// Update action plan handler
@@ -538,7 +539,7 @@
 				</div>
 			{/if}
 
-			<StepIndicator currentStep={draft.currentStep} {steps} />
+			<StepIndicator currentStep={draft.currentStep} {steps} onStepClick={handleStepClick} />
 
 			<div class="wizard-content">
 				{#if submitError}
@@ -624,7 +625,6 @@
 						crisisResources={data.crisisResources}
 						onBack={handlePrevStep}
 						onContinue={handleNextStep}
-						onToggleHelpMethod={handleToggleHelpMethod}
 						onSetAdditionalInfo={handleSetHelpMethodAdditionalInfo}
 						onAddCustomHelpMethod={handleAddCustomHelpMethod}
 						onUpdateCustomHelpMethod={handleUpdateCustomHelpMethod}

@@ -141,10 +141,14 @@ export interface CheckIn {
 	notes?: string;
 	/** Open-ended "why" context for yellow/red zone check-ins */
 	feelingNotes?: string;
-	/** ID of supportive adult contacted during red zone check-in */
+	/** Custom help request for this specific check-in (yellow zone) */
+	customHelpRequest?: string;
+	/** ID of supportive adult contacted during yellow/red zone check-in */
 	contactedAdultId?: string;
 	/** Denormalized name of contacted adult for display */
 	contactedAdultName?: string;
+	/** Which green skills were displayed during the check-in (for context) */
+	greenSkillsShown?: string[];
 	/** Plan version at the time of check-in (for historical context) */
 	planVersion?: number;
 	/** When this check-in was created */
