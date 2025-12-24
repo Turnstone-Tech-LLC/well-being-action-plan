@@ -62,6 +62,11 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
+	// Skip non-GET requests (forms, POST, etc.)
+	if (event.request.method !== 'GET') {
+		return;
+	}
+
 	// For navigation requests, try network first, then cache
 	if (event.request.mode === 'navigate') {
 		event.respondWith(

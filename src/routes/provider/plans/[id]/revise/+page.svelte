@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { enhance } from '$app/forms';
+	import { enhance, applyAction } from '$app/forms';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { REVISION_TOTAL_STEPS } from '$lib/stores/revisionDraft';
 	import type { CheckInSummary } from '$lib/server/types';
@@ -1371,6 +1371,9 @@
 							if (result.type === 'failure') {
 								const data = result.data as { error?: string } | undefined;
 								errorMessage = data?.error || 'Failed to create revision';
+							} else if (result.type === 'redirect') {
+								// Handle redirect - applyAction will navigate
+								await applyAction(result);
 							}
 						};
 					}}
