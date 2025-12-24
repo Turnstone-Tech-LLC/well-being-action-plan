@@ -1,8 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getAuthErrorMessage, isExpiredTokenError } from '$lib/auth';
+import { getAuthRedirect, clearAuthRedirect } from '$lib/guards/cookies.server';
 
-export const GET: RequestHandler = async ({ url, locals }) => {
+export const GET: RequestHandler = async ({ url, locals, cookies }) => {
 	const code = url.searchParams.get('code');
 	const error = url.searchParams.get('error');
 	const errorDescription = url.searchParams.get('error_description');
@@ -35,6 +36,14 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		redirect(303, '/auth?error=Unable%20to%20sign%20in.%20Please%20try%20again.');
 	}
 
-	// Successfully authenticated - redirect to provider dashboard
-	redirect(303, '/provider');
+	// Successfully authenticated - check for saved redirect URL
+	const savedRedirect = getAuthRedirect(cookies);
+	clearAuthRedirect(cookies);
+
+	// Validate redirect is internal to prevent open redirect
+	// Must start with / but NOT // (protocol-relative URLs like //evil.com)
+	const isValidRedirect = savedRedirect?.startsWith('/') && !savedRedirect?.startsWith('//');
+	const safeRedirect = isValidRedirect ? savedRedirect : '/provider';
+
+	redirect(303, safeRedirect);
 };

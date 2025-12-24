@@ -1,4 +1,5 @@
 import { getDB, type LocalActionPlan, type PlanPayload } from './index';
+import { setPlanCookie, clearPlanCookie } from '$lib/guards/cookies';
 
 /**
  * Check if a local plan exists in IndexedDB.
@@ -136,6 +137,9 @@ export async function saveLocalPlan(input: SaveLocalPlanInput): Promise<void> {
 			lastAccessedAt: now
 		});
 	}
+
+	// Sync cookie with IndexedDB state
+	setPlanCookie();
 }
 
 /**
@@ -149,6 +153,9 @@ export async function clearLocalPlan(): Promise<void> {
 	}
 
 	await db.localPlans.clear();
+
+	// Sync cookie with IndexedDB state
+	clearPlanCookie();
 }
 
 /**
@@ -162,6 +169,12 @@ export async function deleteLocalPlan(actionPlanId: string): Promise<void> {
 	}
 
 	await db.localPlans.where('actionPlanId').equals(actionPlanId).delete();
+
+	// Check if any plans remain, clear cookie if not
+	const remaining = await db.localPlans.count();
+	if (remaining === 0) {
+		clearPlanCookie();
+	}
 }
 
 /**
