@@ -64,8 +64,17 @@ export async function requestPermission(): Promise<boolean> {
 /**
  * Register the service worker for push notifications.
  * Returns the registration if successful, null otherwise.
+ *
+ * Note: Service workers are skipped in development mode because SvelteKit's
+ * $service-worker virtual module doesn't work properly with Vite's dev server.
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+	// Skip service worker in development - it doesn't work properly with SvelteKit's dev server
+	if (import.meta.env.DEV) {
+		console.log('Service worker registration skipped in development mode');
+		return null;
+	}
+
 	if (!isServiceWorkerSupported()) {
 		console.warn('Service workers not supported in this browser');
 		return null;

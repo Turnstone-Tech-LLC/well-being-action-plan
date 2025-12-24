@@ -42,7 +42,8 @@ export const GET: RequestHandler = async ({ url, locals, cookies }) => {
 
 	// Validate redirect is internal to prevent open redirect
 	// Must start with / but NOT // (protocol-relative URLs like //evil.com)
-	const isValidRedirect = savedRedirect?.startsWith('/') && !savedRedirect?.startsWith('//');
+	const isValidRedirect =
+		savedRedirect !== null && savedRedirect.startsWith('/') && !savedRedirect.startsWith('//');
 	const safeRedirect = isValidRedirect ? savedRedirect : '/provider';
 
 	redirect(303, safeRedirect);
