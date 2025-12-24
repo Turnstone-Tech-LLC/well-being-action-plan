@@ -7,8 +7,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	// If already logged in, redirect to saved destination or provider dashboard
 	if (locals.session) {
 		const redirectTo = url.searchParams.get('redirect');
-		// Validate redirect is internal (starts with /)
-		const safeRedirect = redirectTo?.startsWith('/') ? redirectTo : '/provider';
+		// Validate redirect is internal to prevent open redirect
+		// Must start with / but NOT // (protocol-relative URLs like //evil.com)
+		const isValidRedirect = redirectTo?.startsWith('/') && !redirectTo?.startsWith('//');
+		const safeRedirect = isValidRedirect ? redirectTo : '/provider';
 		redirect(303, safeRedirect);
 	}
 

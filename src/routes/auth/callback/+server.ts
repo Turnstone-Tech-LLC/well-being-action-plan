@@ -40,8 +40,10 @@ export const GET: RequestHandler = async ({ url, locals, cookies }) => {
 	const savedRedirect = getAuthRedirect(cookies);
 	clearAuthRedirect(cookies);
 
-	// Validate redirect is internal (starts with /) to prevent open redirect
-	const safeRedirect = savedRedirect?.startsWith('/') ? savedRedirect : '/provider';
+	// Validate redirect is internal to prevent open redirect
+	// Must start with / but NOT // (protocol-relative URLs like //evil.com)
+	const isValidRedirect = savedRedirect?.startsWith('/') && !savedRedirect?.startsWith('//');
+	const safeRedirect = isValidRedirect ? savedRedirect : '/provider';
 
 	redirect(303, safeRedirect);
 };
