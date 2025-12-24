@@ -51,8 +51,12 @@ test.describe('Patient Check-In Flow', () => {
 	test.describe('Zone Selection', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/checkin');
-			await page.waitForLoadState('networkidle');
+			// Navigate through dashboard (the intended user flow)
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			// Click the Check In button
+			await page.getByRole('link', { name: /check in/i }).click();
+			await page.waitForURL(/\/app\/checkin/);
 		});
 
 		test('displays check-in page heading', async ({ page }) => {
