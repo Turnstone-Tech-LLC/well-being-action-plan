@@ -6,9 +6,10 @@
 	import Footer from '$lib/components/layout/Footer.svelte';
 	import ClearDataModal from '$lib/components/modals/ClearDataModal.svelte';
 	import { registerServiceWorker } from '$lib/notifications';
+	import { initAuthSync } from '$lib/auth';
 	import './layout.css';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	// Stubbed user state - will be replaced with actual auth/IndexedDB check
 	let userState: 'unauthenticated' | 'provider' | 'patient' = $state('unauthenticated');
@@ -21,29 +22,42 @@
 	);
 
 	// Register service worker on mount and initialize test helpers if in test mode
-	onMount(async () => {
-		if (browser) {
-			registerServiceWorker().catch((err) => {
-				console.warn('Service worker registration failed:', err);
-			});
+	onMount(() => {
+		if (!browser) return;
 
-			// Initialize test helpers for E2E testing
-			// Enabled in dev mode OR when URL contains ?__test_mode=true
-			// This exposes __testDb, __testStores, and __testHelpers on the window object
-			const urlParams = new URLSearchParams(window.location.search);
-			const testModeFromUrl = urlParams.get('__test_mode') === 'true';
-			const testModeFromStorage = sessionStorage.getItem('__test_mode') === 'true';
+		let authUnsubscribe: (() => void) | undefined;
 
-			if (import.meta.env.DEV || testModeFromUrl || testModeFromStorage) {
-				// Persist test mode in session storage so it survives navigation
-				if (testModeFromUrl) {
-					sessionStorage.setItem('__test_mode', 'true');
-				}
+		registerServiceWorker().catch((err) => {
+			console.warn('Service worker registration failed:', err);
+		});
 
-				const { initTestHelpers } = await import('$lib/test-helpers');
-				initTestHelpers();
-			}
+		// Initialize auth state sync for multi-tab support
+		if (data.supabase) {
+			authUnsubscribe = initAuthSync(data.supabase);
 		}
+
+		// Initialize test helpers for E2E testing
+		// Enabled in dev mode OR when URL contains ?__test_mode=true
+		// This exposes __testDb, __testStores, and __testHelpers on the window object
+		const urlParams = new URLSearchParams(window.location.search);
+		const testModeFromUrl = urlParams.get('__test_mode') === 'true';
+		const testModeFromStorage = sessionStorage.getItem('__test_mode') === 'true';
+
+		if (import.meta.env.DEV || testModeFromUrl || testModeFromStorage) {
+			// Persist test mode in session storage so it survives navigation
+			if (testModeFromUrl) {
+				sessionStorage.setItem('__test_mode', 'true');
+			}
+
+			import('$lib/test-helpers').then(({ initTestHelpers }) => {
+				initTestHelpers();
+			});
+		}
+
+		// Cleanup function
+		return () => {
+			authUnsubscribe?.();
+		};
 	});
 
 	function handleClearData() {

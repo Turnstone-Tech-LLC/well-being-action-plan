@@ -26,7 +26,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals, url, cookies }) => {
+	logout: async ({ locals }) => {
+		await locals.supabase.auth.signOut({ scope: 'local' });
+		redirect(303, '/');
+	},
+
+	login: async ({ request, locals, url, cookies }) => {
 		const formData = await request.formData();
 		const email = formData.get('email') as string;
 
