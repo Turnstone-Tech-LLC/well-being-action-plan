@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { clearPlanCookie, setPlanCookie } from '$lib/guards/cookies';
 
 /**
  * Represents the immutable plan payload snapshot sent to the patient.
@@ -314,15 +315,20 @@ export async function saveLocalPlan(plan: Omit<LocalActionPlan, 'id'>): Promise<
 		.equals(plan.actionPlanId)
 		.first();
 
+	let id: number;
 	if (existing?.id) {
 		// Update existing plan
 		await database.localPlans.update(existing.id, plan);
-		return existing.id;
+		id = existing.id;
+	} else {
+		// Add new plan
+		id = (await database.localPlans.add(plan as LocalActionPlan))!;
 	}
 
-	// Add new plan
-	const id = await database.localPlans.add(plan as LocalActionPlan);
-	return id!;
+	// Sync cookie with IndexedDB state
+	setPlanCookie();
+
+	return id;
 }
 
 /**
@@ -349,6 +355,9 @@ export async function clearLocalData(): Promise<void> {
 	}
 
 	await database.localPlans.clear();
+
+	// Sync cookie with IndexedDB state
+	clearPlanCookie();
 }
 
 /**
@@ -366,6 +375,9 @@ export async function clearAllData(): Promise<void> {
 		database.patientProfiles.clear(),
 		database.checkIns.clear()
 	]);
+
+	// Sync cookie with IndexedDB state
+	clearPlanCookie();
 }
 
 /**

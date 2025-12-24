@@ -1,5 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
+import { providerGuard } from '$lib/guards/providerGuard.server';
 
 export interface ProviderProfile {
 	id: string;
@@ -25,13 +26,18 @@ export interface ActionPlanSummary {
 	latest_version: number;
 }
 
-export const load: LayoutServerLoad = async ({ locals }) => {
-	// Require authentication for all /provider/* routes
-	if (!locals.session || !locals.user) {
-		redirect(303, '/auth');
-	}
+export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
+	// Guard: Redirects unauthenticated users to /auth (with redirect param)
+	// or patients (with plan cookie) to /app
+	providerGuard({
+		session: locals.session,
+		user: locals.user,
+		url,
+		cookies
+	});
 
-	const userId = locals.user.id;
+	// After guard, user is guaranteed to exist (guard throws redirect if not)
+	const userId = locals.user!.id;
 
 	// Load provider profile
 	const { data: profile, error: profileError } = await locals.supabase

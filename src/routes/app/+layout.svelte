@@ -5,6 +5,7 @@
 	import { browser } from '$app/environment';
 	import { localPlanStore, hasPlan, localPlan, hasUpdate, updateInfo } from '$lib/stores/localPlan';
 	import { patientProfileStore, onboardingComplete } from '$lib/stores/patientProfile';
+	import { clearPlanCookie, setPlanCookie } from '$lib/guards/cookies';
 	import { PatientNav } from '$lib/components/app';
 	import { UpdateBanner } from '$lib/components/update';
 	import UpdateModal from '$lib/components/update/UpdateModal.svelte';
@@ -79,6 +80,8 @@
 
 		if (initialized && browser && !hasLocalPlan && !hasNavigated) {
 			hasNavigated = true;
+			// Clear potentially stale cookie before redirect
+			clearPlanCookie();
 			goto('/');
 		}
 	});
@@ -88,11 +91,15 @@
 
 		// Check if user has a plan
 		if (!$hasPlan) {
-			// No plan installed - redirect to home
+			// No plan installed - clear stale cookie and redirect to home
+			clearPlanCookie();
 			await goto('/');
 			checking = false;
 			return;
 		}
+
+		// Plan exists - refresh cookie (self-healing for expired/missing cookies)
+		setPlanCookie();
 
 		// If not on onboarding route, check if onboarding is complete
 		if (!isOnboardingRoute && !$onboardingComplete) {
