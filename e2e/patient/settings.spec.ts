@@ -41,7 +41,11 @@ test.describe('Patient Settings', () => {
 		test('settings page accessible with local plan', async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
 
-			await page.goto('/app/settings');
+			// Navigate through dashboard
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 
 			await expect(page.getByRole('heading', { name: /settings/i })).toBeVisible();
 		});
@@ -50,7 +54,12 @@ test.describe('Patient Settings', () => {
 	test.describe('Viewing & Editing Profile', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/settings');
+			// Navigate through dashboard (the intended user flow)
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			// Click the Settings link
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 		});
 
 		test('displays settings page heading', async ({ page }) => {
@@ -98,7 +107,10 @@ test.describe('Patient Settings', () => {
 	test.describe('Notification Settings', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/settings');
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 		});
 
 		test('displays notification settings section', async ({ page }) => {
@@ -114,7 +126,10 @@ test.describe('Patient Settings', () => {
 	test.describe('Export Data', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/settings');
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 		});
 
 		test('has export data section', async ({ page }) => {
@@ -153,7 +168,12 @@ test.describe('Patient Settings', () => {
 	test.describe('Delete Data', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/settings');
+			// Navigate through dashboard (the intended user flow)
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			// Click the Settings link
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 		});
 
 		test('has clear data option', async ({ page }) => {
@@ -208,7 +228,12 @@ test.describe('Patient Settings', () => {
 	test.describe('About Section', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/settings');
+			// Navigate through dashboard (the intended user flow)
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			// Click the Settings link
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 		});
 
 		test('displays about section heading', async ({ page }) => {
@@ -229,7 +254,12 @@ test.describe('Patient Settings', () => {
 	test.describe('Navigation', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/settings');
+			// Navigate through dashboard (the intended user flow)
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			// Click the Settings link
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 		});
 
 		test('has back to dashboard link', async ({ page }) => {

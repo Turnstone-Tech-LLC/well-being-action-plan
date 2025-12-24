@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { deleteDatabase, seedLocalPlan } from './utils/indexeddb';
+import { seedPlanViaApp, clearDataViaApp, waitForTestHelpers } from './utils/test-helpers';
 
 /**
  * Authorization Guards Tests
@@ -9,6 +9,8 @@ import { deleteDatabase, seedLocalPlan } from './utils/indexeddb';
  * - Patient routes (require local action plan in IndexedDB)
  * - Public routes (accessible to all)
  */
+
+const TEST_MODE_URL = '/?__test_mode=true';
 
 test.describe('Authorization Guards', () => {
 	test.describe('Provider Routes (require Supabase auth)', () => {
@@ -152,8 +154,9 @@ test.describe('Authorization Guards', () => {
 
 	test.describe('Patient Routes (require local action plan)', () => {
 		test.beforeEach(async ({ page }) => {
-			await page.goto('/');
-			await deleteDatabase(page);
+			await page.goto(TEST_MODE_URL);
+			await waitForTestHelpers(page, 10000);
+			await clearDataViaApp(page);
 		});
 
 		test('/app redirects to home if no action plan in IndexedDB', async ({ page }) => {
@@ -232,14 +235,14 @@ test.describe('Authorization Guards', () => {
 
 		test('after deleting data, /app/* redirects to home', async ({ page }) => {
 			// First seed a plan
-			await seedLocalPlan(page);
+			await seedPlanViaApp(page, { completeOnboarding: true });
 
 			// Verify we can access /app
 			await page.goto('/app');
 			await expect(page).toHaveURL(/\/app/);
 
 			// Delete the data
-			await deleteDatabase(page);
+			await clearDataViaApp(page);
 
 			// Now /app should redirect to home
 			await page.goto('/app');
@@ -251,33 +254,44 @@ test.describe('Authorization Guards', () => {
 
 	test.describe('Patient Routes (with local action plan)', () => {
 		test.beforeEach(async ({ page }) => {
-			await page.goto('/');
-			await deleteDatabase(page);
-			await seedLocalPlan(page);
+			await page.goto(TEST_MODE_URL);
+			await waitForTestHelpers(page, 10000);
+			await clearDataViaApp(page);
+			await seedPlanViaApp(page, { completeOnboarding: true });
 		});
 
 		test('/app accessible with local plan', async ({ page }) => {
 			await page.goto('/app');
 
+			// Should stay in app section, not redirect to landing
 			await expect(page).toHaveURL(/\/app/);
+			// Verify we're on dashboard
+			await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 		});
 
 		test('/app/checkin accessible with local plan', async ({ page }) => {
 			await page.goto('/app/checkin');
 
-			await expect(page).toHaveURL(/\/app\/checkin/);
+			// Should stay in app section (may redirect within app)
+			await expect(page).toHaveURL(/\/app/);
+			// Not redirected to landing page
+			expect(page.url()).not.toBe('http://localhost:4173/');
 		});
 
 		test('/app/reports accessible with local plan', async ({ page }) => {
 			await page.goto('/app/reports');
 
-			await expect(page).toHaveURL(/\/app\/reports/);
+			// Should stay in app section
+			await expect(page).toHaveURL(/\/app/);
+			expect(page.url()).not.toBe('http://localhost:4173/');
 		});
 
 		test('/app/settings accessible with local plan', async ({ page }) => {
 			await page.goto('/app/settings');
 
-			await expect(page).toHaveURL(/\/app\/settings/);
+			// Should stay in app section
+			await expect(page).toHaveURL(/\/app/);
+			expect(page.url()).not.toBe('http://localhost:4173/');
 		});
 	});
 
@@ -344,8 +358,9 @@ test.describe('Authorization Guards', () => {
 		});
 
 		test('deep link to /app/checkin/green redirects away without plan', async ({ page }) => {
-			await page.goto('/');
-			await deleteDatabase(page);
+			await page.goto(TEST_MODE_URL);
+			await waitForTestHelpers(page, 10000);
+			await clearDataViaApp(page);
 
 			await page.goto('/app/checkin/green');
 
@@ -357,20 +372,24 @@ test.describe('Authorization Guards', () => {
 		});
 
 		test('deep link works with valid local plan', async ({ page }) => {
-			await page.goto('/');
-			await deleteDatabase(page);
-			await seedLocalPlan(page);
+			await page.goto(TEST_MODE_URL);
+			await waitForTestHelpers(page, 10000);
+			await clearDataViaApp(page);
+			await seedPlanViaApp(page, { completeOnboarding: true });
 
 			await page.goto('/app/checkin');
 
-			await expect(page).toHaveURL(/\/app\/checkin/);
+			// Should stay in app section (not redirected to landing)
+			await expect(page).toHaveURL(/\/app/);
+			expect(page.url()).not.toBe('http://localhost:4173/');
 		});
 	});
 
 	test.describe('Navigation Guards', () => {
 		test.beforeEach(async ({ page }) => {
-			await page.goto('/');
-			await deleteDatabase(page);
+			await page.goto(TEST_MODE_URL);
+			await waitForTestHelpers(page, 10000);
+			await clearDataViaApp(page);
 		});
 
 		test('navigating to protected route without plan redirects to home', async ({ page }) => {

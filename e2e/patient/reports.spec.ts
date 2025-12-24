@@ -39,7 +39,11 @@ test.describe('Patient Reports', () => {
 		test('reports page accessible with local plan', async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
 
-			await page.goto('/app/reports');
+			// Navigate through dashboard to reports
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /reports/i }).click();
+			await page.waitForURL(/\/app\/reports/);
 
 			await expect(page).toHaveURL(/\/app\/reports/);
 		});
@@ -48,7 +52,11 @@ test.describe('Patient Reports', () => {
 	test.describe('Page Structure', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/reports');
+			// Navigate through dashboard to reports
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /reports/i }).click();
+			await page.waitForURL(/\/app\/reports/);
 		});
 
 		test('displays reports page heading', async ({ page }) => {
@@ -69,7 +77,11 @@ test.describe('Patient Reports', () => {
 	test.describe('Empty State', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/reports');
+			// Navigate through dashboard to reports
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /reports/i }).click();
+			await page.waitForURL(/\/app\/reports/);
 		});
 
 		test('shows empty state when no check-ins in summary view', async ({ page }) => {
@@ -92,7 +104,11 @@ test.describe('Patient Reports', () => {
 				{ zone: 'green', createdAt: new Date(now - 72 * 60 * 60 * 1000) },
 				{ zone: 'red', createdAt: new Date(now - 96 * 60 * 60 * 1000) }
 			]);
-			await page.goto('/app/reports');
+			// Navigate through dashboard to reports
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /reports/i }).click();
+			await page.waitForURL(/\/app\/reports/);
 		});
 
 		test('displays reports page heading', async ({ page }) => {
@@ -115,7 +131,11 @@ test.describe('Patient Reports', () => {
 				{ zone: 'green', createdAt: new Date(now) },
 				{ zone: 'yellow', createdAt: new Date(now - 24 * 60 * 60 * 1000) }
 			]);
-			await page.goto('/app/reports');
+			// Navigate through dashboard to reports
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /reports/i }).click();
+			await page.waitForURL(/\/app\/reports/);
 		});
 
 		test('journey tab is default active', async ({ page }) => {
@@ -139,7 +159,11 @@ test.describe('Patient Reports', () => {
 	test.describe('Navigation', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
-			await page.goto('/app/reports');
+			// Navigate through dashboard to reports
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /reports/i }).click();
+			await page.waitForURL(/\/app\/reports/);
 		});
 
 		test('breadcrumb links to dashboard', async ({ page }) => {
@@ -154,7 +178,11 @@ test.describe('Patient Reports', () => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
 			const now = Date.now();
 			await seedCheckInsViaApp(page, [{ zone: 'green', createdAt: new Date(now) }]);
-			await page.goto('/app/reports');
+			// Navigate through dashboard to reports
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /reports/i }).click();
+			await page.waitForURL(/\/app\/reports/);
 		});
 
 		test('shows share with provider section', async ({ page }) => {

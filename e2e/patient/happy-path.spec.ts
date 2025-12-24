@@ -90,8 +90,11 @@ test.describe('Happy Path', () => {
 		// Setup: Seed a plan with completed onboarding
 		await seedPlanViaApp(page, { completeOnboarding: true });
 
-		// Navigate to check-in
-		await page.goto('/app/checkin');
+		// Navigate through dashboard to check-in
+		await page.goto('/app');
+		await page.waitForTimeout(300);
+		await page.getByRole('link', { name: /check in/i }).click();
+		await page.waitForURL(/\/app\/checkin/);
 
 		// Select yellow zone
 		await page.getByText(/struggling/i).click();
@@ -121,8 +124,11 @@ test.describe('Happy Path', () => {
 		// Setup: Seed a plan with completed onboarding
 		await seedPlanViaApp(page, { completeOnboarding: true });
 
-		// Navigate to check-in
-		await page.goto('/app/checkin');
+		// Navigate through dashboard to check-in
+		await page.goto('/app');
+		await page.waitForTimeout(300);
+		await page.getByRole('link', { name: /check in/i }).click();
+		await page.waitForURL(/\/app\/checkin/);
 
 		// Select red zone
 		await page.getByText(/need help/i).click();
@@ -173,8 +179,13 @@ test.describe('Happy Path', () => {
 		const initialCount = await getCheckInCountViaApp(page);
 		expect(initialCount).toBe(0);
 
-		// Do first check-in
-		await page.goto('/app/checkin/green');
+		// Do first check-in - navigate through dashboard to green zone
+		await page.goto('/app');
+		await page.waitForTimeout(300);
+		await page.getByRole('link', { name: /check in/i }).click();
+		await page.waitForURL(/\/app\/checkin/);
+		await page.getByText(/feeling good/i).click();
+		await page.waitForURL(/\/app\/checkin\/green/);
 		await page.getByRole('button', { name: /done/i }).click();
 		await page.waitForURL(/\/app/, { timeout: 5000 });
 
@@ -182,8 +193,11 @@ test.describe('Happy Path', () => {
 		const countAfterFirst = await getCheckInCountViaApp(page);
 		expect(countAfterFirst).toBe(1);
 
-		// Do second check-in
-		await page.goto('/app/checkin/green');
+		// Do second check-in - navigate through dashboard to green zone
+		await page.getByRole('link', { name: /check in/i }).click();
+		await page.waitForURL(/\/app\/checkin/);
+		await page.getByText(/feeling good/i).click();
+		await page.waitForURL(/\/app\/checkin\/green/);
 		await page.getByRole('button', { name: /done/i }).click();
 		await page.waitForURL(/\/app/, { timeout: 5000 });
 
