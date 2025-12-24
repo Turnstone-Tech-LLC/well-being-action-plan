@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { deleteDatabase, seedLocalPlan, clearLocalPlan } from '../utils/indexeddb';
-import { seedLocalPlanWithoutOnboarding } from '../fixtures/patient';
+import { seedPlanViaApp, clearDataViaApp, waitForTestHelpers } from '../utils/test-helpers';
 
 /**
  * Patient Access Tests
@@ -11,13 +10,9 @@ import { seedLocalPlanWithoutOnboarding } from '../fixtures/patient';
  * 3. Local data bypass (plan already in IndexedDB)
  */
 
-test.describe('Patient - Loading Action Plan', () => {
-	test.beforeEach(async ({ page }) => {
-		// Navigate first to establish the origin for IndexedDB
-		await page.goto('/');
-		await deleteDatabase(page);
-	});
+const TEST_MODE_URL = '/?__test_mode=true';
 
+test.describe('Patient - Loading Action Plan', () => {
 	test.describe('Method 1: File Upload with Passphrase', () => {
 		// These tests are covered in restore.test.ts
 		// Here we focus on the integration with the patient flow
@@ -59,7 +54,9 @@ test.describe('Patient - Loading Action Plan', () => {
 
 	test.describe('Method 2: Token/QR Code Access', () => {
 		test.beforeEach(async ({ page }) => {
-			await clearLocalPlan(page);
+			await page.goto(TEST_MODE_URL);
+			await waitForTestHelpers(page, 10000);
+			await clearDataViaApp(page);
 		});
 
 		test('patient navigates to /access/[valid-token]', async ({ page }) => {
@@ -185,9 +182,15 @@ test.describe('Patient - Loading Action Plan', () => {
 	});
 
 	test.describe('Local Data Bypass', () => {
+		test.beforeEach(async ({ page }) => {
+			await page.goto(TEST_MODE_URL);
+			await waitForTestHelpers(page, 10000);
+			await clearDataViaApp(page);
+		});
+
 		test('existing plan bypasses token validation', async ({ page }) => {
 			// Seed a plan in IndexedDB
-			await seedLocalPlan(page);
+			await seedPlanViaApp(page, { completeOnboarding: true });
 
 			// Navigate to access page with any token
 			await page.goto('/access/ANY-TOKEN-VALUE');
@@ -197,7 +200,7 @@ test.describe('Patient - Loading Action Plan', () => {
 		});
 
 		test('bypasses even with invalid token when plan exists', async ({ page }) => {
-			await seedLocalPlan(page);
+			await seedPlanViaApp(page, { completeOnboarding: true });
 
 			// Use clearly invalid token
 			await page.goto('/access/INVALID-TOKEN');
@@ -207,7 +210,7 @@ test.describe('Patient - Loading Action Plan', () => {
 		});
 
 		test('shows brief "Plan found" message', async ({ page }) => {
-			await seedLocalPlan(page);
+			await seedPlanViaApp(page, { completeOnboarding: true });
 
 			await page.goto('/access/ANY-TOKEN');
 
@@ -223,7 +226,7 @@ test.describe('Patient - Loading Action Plan', () => {
 
 		test('redirects to onboarding if onboarding not complete', async ({ page }) => {
 			// Seed plan with incomplete onboarding
-			await seedLocalPlanWithoutOnboarding(page);
+			await seedPlanViaApp(page, { completeOnboarding: false });
 
 			await page.goto('/access/ANY-TOKEN');
 
@@ -231,15 +234,16 @@ test.describe('Patient - Loading Action Plan', () => {
 			await expect(page).toHaveURL(/\/app\/onboarding/, { timeout: 5000 });
 		});
 
-		// Skip - Dexie stores don't recognize raw IndexedDB data
-		test.skip('redirects to dashboard if onboarding complete', async ({ page }) => {
+		test('redirects to dashboard if onboarding complete', async ({ page }) => {
 			// Seed plan with completed onboarding
-			await seedLocalPlan(page, { withCompletedOnboarding: true });
+			await seedPlanViaApp(page, { completeOnboarding: true });
 
 			await page.goto('/access/ANY-TOKEN');
 
 			// Should redirect to main app dashboard
-			await expect(page).toHaveURL(/\/app$/, { timeout: 5000 });
+			await expect(page).toHaveURL(/\/app/, { timeout: 5000 });
+			// Verify we're not on onboarding
+			expect(page.url()).not.toContain('/onboarding');
 		});
 	});
 });
