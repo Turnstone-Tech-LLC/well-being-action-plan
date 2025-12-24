@@ -300,7 +300,8 @@ test.describe('Patient Check-In Flow', () => {
 		});
 
 		test('has clear messaging about getting help', async ({ page }) => {
-			await expect(page.getByText(/help now|reach out|not alone/i)).toBeVisible();
+			// Use heading role to avoid matching multiple elements with similar text
+			await expect(page.getByRole('heading', { name: /not alone/i })).toBeVisible();
 		});
 
 		test('can complete red zone check-in', async ({ page }) => {

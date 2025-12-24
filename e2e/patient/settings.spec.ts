@@ -41,7 +41,11 @@ test.describe('Patient Settings', () => {
 		test('settings page accessible with local plan', async ({ page }) => {
 			await seedPlanViaApp(page, { completeOnboarding: true });
 
-			await page.goto('/app/settings');
+			// Navigate through dashboard
+			await page.goto('/app');
+			await page.waitForTimeout(300);
+			await page.getByRole('link', { name: /settings/i }).click();
+			await page.waitForURL(/\/app\/settings/);
 
 			await expect(page.getByRole('heading', { name: /settings/i })).toBeVisible();
 		});
