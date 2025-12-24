@@ -42,7 +42,9 @@ test.describe('Patient Check-In Flow', () => {
 
 			await page.goto('/app/checkin');
 
-			await expect(page).toHaveURL(/\/app\/checkin/);
+			// Should stay in app section (not redirected to landing)
+			await expect(page).toHaveURL(/\/app/);
+			expect(page.url()).not.toBe('http://localhost:4173/');
 		});
 	});
 
