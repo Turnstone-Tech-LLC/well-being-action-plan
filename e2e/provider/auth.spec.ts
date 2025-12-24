@@ -293,18 +293,17 @@ test.describe('Provider Authentication', () => {
 });
 
 test.describe('Logout Flow', () => {
-	test('logout endpoint redirects to login page', async ({ page }) => {
+	test('logout endpoint redirects to home page on GET', async ({ page }) => {
 		await page.goto('/auth/logout');
 
-		// Should redirect to login page or show logout page
-		const url = page.url();
-		expect(url.includes('/auth')).toBe(true);
+		// GET request should redirect to home page after signing out
+		await expect(page).toHaveURL('/');
 	});
 
-	test('logout page is accessible', async ({ page }) => {
+	test('logout endpoint is accessible via GET', async ({ page }) => {
 		const response = await page.goto('/auth/logout');
 
-		// Should not error
+		// Should not error (will be a redirect)
 		expect(response?.status()).toBeLessThan(500);
 	});
 });

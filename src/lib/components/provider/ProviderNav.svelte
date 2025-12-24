@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
+	import { goto, invalidateAll } from '$app/navigation';
 
 	interface Props {
 		providerName: string | null;
@@ -78,11 +79,18 @@
 				</div>
 				<form
 					method="POST"
-					action="/auth/logout"
+					action="/auth?/logout"
 					use:enhance={() => {
 						isLoggingOut = true;
-						return async ({ update }) => {
-							await update();
+						return async ({ result, update }) => {
+							if (result.type === 'redirect') {
+								// Invalidate all cached data before following redirect
+								await invalidateAll();
+								// Follow the redirect
+								await goto(result.location, { invalidateAll: true });
+							} else {
+								await update();
+							}
 							isLoggingOut = false;
 						};
 					}}

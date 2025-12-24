@@ -23,6 +23,7 @@
 
 		<form
 			method="POST"
+			action="?/login"
 			class="auth-form"
 			aria-label="Provider login"
 			use:enhance={() => {

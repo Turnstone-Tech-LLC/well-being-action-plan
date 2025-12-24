@@ -39,7 +39,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	return resolve(event, {
 		filterSerializedResponseHeaders(name) {
-			// Allow Supabase auth cookies to be set
+			// Allow Supabase auth cookies and API headers to be set
 			return name === 'content-range' || name === 'x-supabase-api-version';
 		}
 	});
