@@ -1,4 +1,4 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import type {
 	Skill,
@@ -548,6 +548,10 @@ export const actions: Actions = {
 
 			redirect(303, `/provider/plans/${params.id}?revised=true`);
 		} catch (err) {
+			// Re-throw redirects - they're not errors
+			if (isRedirect(err)) {
+				throw err;
+			}
 			console.error('Error creating revision:', err);
 			return fail(500, { error: 'An unexpected error occurred' });
 		}

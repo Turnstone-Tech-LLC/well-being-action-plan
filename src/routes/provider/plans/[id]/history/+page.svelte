@@ -6,6 +6,7 @@
 
 	let selectedRevisions = $state<string[]>([]);
 	let compareMode = $state(false);
+	let viewingRevision = $state<RevisionHistoryItem | null>(null);
 
 	function formatDate(dateString: string): string {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -60,6 +61,14 @@
 		selectedRevisions = [];
 	}
 
+	function viewRevision(revision: RevisionHistoryItem): void {
+		viewingRevision = revision;
+	}
+
+	function exitView(): void {
+		viewingRevision = null;
+	}
+
 	function getRevisionById(id: string): RevisionHistoryItem | undefined {
 		return data.revisions.find((r) => r.id === id);
 	}
@@ -106,7 +115,7 @@
 				</p>
 			</div>
 
-			{#if !compareMode && data.revisions.length > 1}
+			{#if !compareMode && !viewingRevision && data.revisions.length > 1}
 				<div class="header-actions">
 					{#if selectedRevisions.length === 2}
 						<button type="button" class="btn btn-primary" onclick={startCompare}>
@@ -125,10 +134,184 @@
 					</button>
 				</div>
 			{/if}
+
+			{#if viewingRevision}
+				<div class="header-actions">
+					<button type="button" class="btn btn-outline" onclick={exitView}>
+						Back to Timeline
+					</button>
+				</div>
+			{/if}
 		</div>
 	</header>
 
-	{#if compareMode && revision1 && revision2}
+	{#if viewingRevision}
+		<div class="view-revision">
+			<div class="view-header">
+				<h2>Version {viewingRevision.version}</h2>
+				<span class="revision-type {getRevisionTypeClass(viewingRevision.revision_type)}">
+					{getRevisionTypeLabel(viewingRevision.revision_type)}
+				</span>
+			</div>
+			<p class="view-meta">
+				{formatDate(viewingRevision.created_at)}
+				{#if viewingRevision.created_by_name}
+					<span class="separator">&bull;</span>
+					by {viewingRevision.created_by_name}
+				{/if}
+			</p>
+
+			{#if viewingRevision.revision_notes}
+				<div class="view-section">
+					<h3>Revision Notes</h3>
+					<p>{viewingRevision.revision_notes}</p>
+				</div>
+			{/if}
+
+			{#if viewingRevision.revision_type === 'revision'}
+				{#if viewingRevision.what_worked_notes}
+					<div class="view-section">
+						<h3>What Worked Well</h3>
+						<p>{viewingRevision.what_worked_notes}</p>
+					</div>
+				{/if}
+
+				{#if viewingRevision.what_didnt_work_notes}
+					<div class="view-section">
+						<h3>What to Improve</h3>
+						<p>{viewingRevision.what_didnt_work_notes}</p>
+					</div>
+				{/if}
+
+				{#if viewingRevision.check_in_summary}
+					<div class="view-section check-in-detail">
+						<h3>Check-In Summary</h3>
+						<div class="check-in-grid">
+							<div class="check-in-stat">
+								<span class="stat-value">{viewingRevision.check_in_summary.totalCheckIns}</span>
+								<span class="stat-label">Total Check-ins</span>
+							</div>
+							<div class="check-in-stat">
+								<span class="stat-value"
+									>{viewingRevision.check_in_summary.dateRange.start} - {viewingRevision
+										.check_in_summary.dateRange.end}</span
+								>
+								<span class="stat-label">Date Range</span>
+							</div>
+						</div>
+
+						<div class="zone-distribution">
+							<h4>Zone Distribution</h4>
+							<div class="zone-bars">
+								<div class="zone-bar zone-green">
+									<span class="zone-count"
+										>{viewingRevision.check_in_summary.zoneDistribution.green}</span
+									>
+									<span class="zone-label">Green</span>
+								</div>
+								<div class="zone-bar zone-yellow">
+									<span class="zone-count"
+										>{viewingRevision.check_in_summary.zoneDistribution.yellow}</span
+									>
+									<span class="zone-label">Yellow</span>
+								</div>
+								<div class="zone-bar zone-red">
+									<span class="zone-count"
+										>{viewingRevision.check_in_summary.zoneDistribution.red}</span
+									>
+									<span class="zone-label">Red</span>
+								</div>
+							</div>
+						</div>
+
+						{#if viewingRevision.check_in_summary.topCopingSkills?.length}
+							<div class="coping-skills-used">
+								<h4>Top Coping Skills Used</h4>
+								<ul>
+									{#each viewingRevision.check_in_summary.topCopingSkills as skill (skill.id)}
+										<li>
+											<span class="skill-title">{skill.title}</span>
+											<span class="skill-count">Used {skill.count} times</span>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+
+						{#if viewingRevision.check_in_summary.adultsContacted?.length}
+							<div class="adults-contacted">
+								<h4>Supportive Adults Contacted</h4>
+								<ul>
+									{#each viewingRevision.check_in_summary.adultsContacted as adult (adult.name)}
+										<li>
+											<span class="adult-name">{adult.name}</span>
+											<span class="adult-count">Contacted {adult.count} times</span>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+
+						{#if viewingRevision.check_in_summary.feelingNotes?.length}
+							<div class="feeling-notes">
+								<h4>Feeling Notes</h4>
+								<ul>
+									{#each viewingRevision.check_in_summary.feelingNotes as note (note.date)}
+										<li>
+											<span class="note-zone zone-{note.zone.toLowerCase()}">{note.zone}</span>
+											<span class="note-date">{note.date}</span>
+											<p class="note-text">{note.note}</p>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+					</div>
+				{/if}
+			{/if}
+
+			<div class="view-section">
+				<h3>Coping Skills ({viewingRevision.plan_payload.skills.length})</h3>
+				<ul class="content-list">
+					{#each viewingRevision.plan_payload.skills as skill (skill.id)}
+						<li>
+							<span class="item-title">{skill.title}</span>
+							<span class="item-category">{skill.category}</span>
+						</li>
+					{/each}
+				</ul>
+			</div>
+
+			<div class="view-section">
+				<h3>Supportive Adults ({viewingRevision.plan_payload.supportiveAdults.length})</h3>
+				<ul class="content-list">
+					{#each viewingRevision.plan_payload.supportiveAdults as adult (adult.id)}
+						<li>
+							<span class="item-title">{adult.name}</span>
+							<span class="item-category">{adult.type}</span>
+							{#if adult.isPrimary}
+								<span class="primary-badge">Primary</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			</div>
+
+			<div class="view-section">
+				<h3>Help Methods ({viewingRevision.plan_payload.helpMethods.length})</h3>
+				<ul class="content-list">
+					{#each viewingRevision.plan_payload.helpMethods as method (method.id)}
+						<li>
+							<span class="item-title">{method.title}</span>
+							{#if method.additionalInfo}
+								<span class="item-info">{method.additionalInfo}</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			</div>
+		</div>
+	{:else if compareMode && revision1 && revision2}
 		<div class="compare-view">
 			<div class="compare-header">
 				<h2>Comparing Versions</h2>
@@ -226,18 +409,27 @@
 									{getRevisionTypeLabel(revision.revision_type)}
 								</span>
 							</div>
-							{#if data.revisions.length > 1}
-								<label class="compare-checkbox">
-									<input
-										type="checkbox"
-										checked={selectedRevisions.includes(revision.id)}
-										disabled={!selectedRevisions.includes(revision.id) &&
-											selectedRevisions.length >= 2}
-										onchange={() => toggleRevisionSelection(revision.id)}
-									/>
-									<span class="checkbox-label">Select</span>
-								</label>
-							{/if}
+							<div class="revision-actions">
+								<button
+									type="button"
+									class="btn btn-sm btn-outline"
+									onclick={() => viewRevision(revision)}
+								>
+									View
+								</button>
+								{#if data.revisions.length > 1}
+									<label class="compare-checkbox">
+										<input
+											type="checkbox"
+											checked={selectedRevisions.includes(revision.id)}
+											disabled={!selectedRevisions.includes(revision.id) &&
+												selectedRevisions.length >= 2}
+											onchange={() => toggleRevisionSelection(revision.id)}
+										/>
+										<span class="checkbox-label">Select</span>
+									</label>
+								{/if}
+							</div>
 						</div>
 
 						<p class="revision-meta">
@@ -677,6 +869,273 @@
 	.compare-section li {
 		font-size: var(--font-size-sm);
 		margin-bottom: var(--space-1);
+	}
+
+	/* View revision styles */
+	.view-revision {
+		background-color: var(--color-white);
+		border: 1px solid var(--color-gray-200);
+		border-radius: var(--radius-xl);
+		padding: var(--space-6);
+	}
+
+	.view-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		margin-bottom: var(--space-2);
+	}
+
+	.view-header h2 {
+		margin: 0;
+		font-size: var(--font-size-xl);
+	}
+
+	.view-meta {
+		color: var(--color-text-muted);
+		font-size: var(--font-size-sm);
+		margin: 0 0 var(--space-4);
+	}
+
+	.view-section {
+		padding: var(--space-4);
+		background-color: var(--color-gray-50);
+		border-radius: var(--radius-lg);
+		margin-bottom: var(--space-4);
+	}
+
+	.view-section h3 {
+		margin: 0 0 var(--space-3);
+		font-size: var(--font-size-lg);
+		color: var(--color-text);
+	}
+
+	.view-section h4 {
+		margin: var(--space-3) 0 var(--space-2);
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+		font-weight: 600;
+	}
+
+	.view-section p {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		line-height: 1.6;
+	}
+
+	.content-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.content-list li {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) 0;
+		border-bottom: 1px solid var(--color-gray-200);
+		flex-wrap: wrap;
+	}
+
+	.content-list li:last-child {
+		border-bottom: none;
+	}
+
+	.item-title {
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.item-category,
+	.item-info {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+		background-color: var(--color-gray-100);
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+	}
+
+	.primary-badge {
+		font-size: var(--font-size-xs);
+		color: var(--color-primary);
+		background-color: rgba(0, 89, 76, 0.1);
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-weight: 500;
+	}
+
+	/* Check-in detail styles */
+	.check-in-detail {
+		background-color: var(--color-white);
+		border: 1px solid var(--color-gray-200);
+	}
+
+	.check-in-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+		gap: var(--space-4);
+		margin-bottom: var(--space-4);
+	}
+
+	.check-in-stat {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.stat-value {
+		font-size: var(--font-size-lg);
+		font-weight: 600;
+		color: var(--color-text);
+	}
+
+	.stat-label {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+	}
+
+	.zone-distribution {
+		margin: var(--space-4) 0;
+	}
+
+	.zone-bars {
+		display: flex;
+		gap: var(--space-3);
+	}
+
+	.zone-bar {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		min-width: 80px;
+	}
+
+	.zone-bar.zone-green {
+		background-color: #dcfce7;
+	}
+
+	.zone-bar.zone-yellow {
+		background-color: #fef9c3;
+	}
+
+	.zone-bar.zone-red {
+		background-color: #fee2e2;
+	}
+
+	.zone-count {
+		font-size: var(--font-size-xl);
+		font-weight: 600;
+	}
+
+	.zone-bar.zone-green .zone-count {
+		color: #166534;
+	}
+
+	.zone-bar.zone-yellow .zone-count {
+		color: #854d0e;
+	}
+
+	.zone-bar.zone-red .zone-count {
+		color: #991b1b;
+	}
+
+	.zone-label {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+	}
+
+	.coping-skills-used ul,
+	.adults-contacted ul,
+	.feeling-notes ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.coping-skills-used li,
+	.adults-contacted li {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: var(--space-2) 0;
+		border-bottom: 1px solid var(--color-gray-100);
+	}
+
+	.coping-skills-used li:last-child,
+	.adults-contacted li:last-child {
+		border-bottom: none;
+	}
+
+	.skill-title,
+	.adult-name {
+		font-weight: 500;
+	}
+
+	.skill-count,
+	.adult-count {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+	}
+
+	.feeling-notes li {
+		padding: var(--space-3);
+		background-color: var(--color-gray-50);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-2);
+	}
+
+	.feeling-notes li:last-child {
+		margin-bottom: 0;
+	}
+
+	.note-zone {
+		display: inline-block;
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		margin-right: var(--space-2);
+	}
+
+	.note-zone.zone-green {
+		background-color: #dcfce7;
+		color: #166534;
+	}
+
+	.note-zone.zone-yellow {
+		background-color: #fef9c3;
+		color: #854d0e;
+	}
+
+	.note-zone.zone-red {
+		background-color: #fee2e2;
+		color: #991b1b;
+	}
+
+	.note-date {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+	}
+
+	.note-text {
+		margin: var(--space-2) 0 0;
+		font-size: var(--font-size-sm);
+		line-height: 1.6;
+	}
+
+	/* Revision actions */
+	.revision-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.btn-sm {
+		padding: var(--space-1) var(--space-3);
+		font-size: var(--font-size-xs);
 	}
 
 	@media (max-width: 768px) {

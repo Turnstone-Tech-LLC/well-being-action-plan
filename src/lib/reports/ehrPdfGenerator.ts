@@ -3,6 +3,12 @@ import autoTable from 'jspdf-autotable';
 import type { CheckIn, PlanPayload, PatientProfile } from '$lib/db/index';
 import { formatDate, formatDateRange, type DateRange } from './pdfGenerator';
 import { calculateZoneDistribution, calculateSkillFrequency } from './aggregations';
+import {
+	type PdfCheckInMetadata,
+	CURRENT_METADATA_VERSION,
+	METADATA_TYPE,
+	encodeMetadata
+} from './pdfMetadata';
 
 /**
  * Options for EHR PDF generation.
@@ -391,6 +397,72 @@ export async function generateEhrPdf(options: EhrPdfOptions): Promise<Blob> {
 		doc.setFontSize(6);
 		doc.text(`Report ID: ${timestamp} | v1.0`, margin, pageHeight - 9);
 	}
+
+	// === EMBED METADATA FOR EXTRACTION ===
+	// Build adultsContacted summary from check-ins
+	const adultContactCounts: Record<string, { name: string; count: number }> = {};
+	for (const checkIn of checkIns) {
+		// Handle both old and new formats: contactedAdultName (old) and supportiveAdultsContacted (new)
+		if (checkIn.contactedAdultName) {
+			const name = checkIn.contactedAdultName;
+			if (!adultContactCounts[name]) {
+				adultContactCounts[name] = { name, count: 0 };
+			}
+			adultContactCounts[name].count++;
+		}
+		// Also check supportiveAdultsContacted for IDs and resolve names
+		if (checkIn.supportiveAdultsContacted?.length > 0) {
+			for (const adultId of checkIn.supportiveAdultsContacted) {
+				const adult = planPayload.supportiveAdults.find((a) => a.id === adultId);
+				const name = adult?.name || adultId;
+				if (!adultContactCounts[name]) {
+					adultContactCounts[name] = { name, count: 0 };
+				}
+				adultContactCounts[name].count++;
+			}
+		}
+	}
+	const adultsContacted = Object.values(adultContactCounts).sort((a, b) => b.count - a.count);
+
+	// Build feeling notes from Yellow/Red zone check-ins (limit to 10)
+	const feelingNotes = checkIns
+		.filter((c) => c.feelingNotes && (c.zone === 'yellow' || c.zone === 'red'))
+		.slice(0, 10)
+		.map((c) => ({
+			zone: c.zone,
+			date: new Date(c.createdAt).toISOString(),
+			note: c.feelingNotes || ''
+		}));
+
+	// Create metadata for extraction
+	const metadata: PdfCheckInMetadata = {
+		version: CURRENT_METADATA_VERSION,
+		type: METADATA_TYPE,
+		data: {
+			dateRange: {
+				start: dateRange.start.toISOString(),
+				end: dateRange.end.toISOString()
+			},
+			totalCheckIns: total,
+			zoneDistribution: {
+				green: zoneDistribution.green.count,
+				yellow: zoneDistribution.yellow.count,
+				red: zoneDistribution.red.count
+			},
+			topCopingSkills: topSkills,
+			feelingNotes,
+			adultsContacted,
+			generatedAt: new Date().toISOString()
+		}
+	};
+
+	// Embed metadata in PDF properties
+	doc.setProperties({
+		title: 'Well-Being Action Plan - EHR Report',
+		author: 'WBAP App',
+		subject: `Check-In Summary for ${profile.displayName}`,
+		keywords: encodeMetadata(metadata)
+	});
 
 	return doc.output('blob');
 }

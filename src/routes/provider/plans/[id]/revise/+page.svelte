@@ -1,10 +1,15 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { enhance } from '$app/forms';
+	import { enhance, applyAction } from '$app/forms';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { REVISION_TOTAL_STEPS } from '$lib/stores/revisionDraft';
 	import type { CheckInSummary } from '$lib/server/types';
 	import type { SkillCategory } from '$lib/types/database';
+	import {
+		CheckInImport,
+		CheckInSummaryPreview,
+		CheckInManualEntry
+	} from '$lib/components/revision';
 
 	let { data }: { data: PageData } = $props();
 
@@ -14,9 +19,29 @@
 
 	// Form state
 	let checkInSummary = $state<CheckInSummary | null>(null);
+	let showManualEntry = $state(false);
 	let whatWorkedNotes = $state('');
 	let whatDidntWorkNotes = $state('');
 	let revisionNotes = $state('');
+
+	// Check-in import handlers
+	function handleCheckInImport(summary: CheckInSummary) {
+		checkInSummary = summary;
+		showManualEntry = false;
+	}
+
+	function handleManualEntry() {
+		showManualEntry = true;
+	}
+
+	function handleCancelManualEntry() {
+		showManualEntry = false;
+	}
+
+	function handleClearCheckInSummary() {
+		checkInSummary = null;
+		showManualEntry = false;
+	}
 
 	// Track skills to keep/remove - using SvelteSet for proper reactivity
 	// Initialize with all existing skills as "to keep"
@@ -500,26 +525,25 @@
 				</p>
 
 				<div class="import-section">
-					<div class="import-placeholder">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="1.5"
-							stroke="currentColor"
-							class="import-icon"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-							/>
-						</svg>
-						<p>PDF import will be available in a future update.</p>
-						<p class="import-hint">
-							For now, you can review the printed report with the patient and proceed.
-						</p>
-					</div>
+					{#if showManualEntry}
+						<CheckInManualEntry
+							onSubmit={handleCheckInImport}
+							onCancel={handleCancelManualEntry}
+							existingSummary={checkInSummary}
+						/>
+					{:else if checkInSummary}
+						<CheckInSummaryPreview
+							summary={checkInSummary}
+							onEdit={handleCheckInImport}
+							onClear={handleClearCheckInSummary}
+						/>
+					{:else}
+						<CheckInImport
+							onImport={handleCheckInImport}
+							existingSummary={checkInSummary}
+							onManualEntry={handleManualEntry}
+						/>
+					{/if}
 				</div>
 
 				<div class="step-actions">
@@ -1347,6 +1371,9 @@
 							if (result.type === 'failure') {
 								const data = result.data as { error?: string } | undefined;
 								errorMessage = data?.error || 'Failed to create revision';
+							} else if (result.type === 'redirect') {
+								// Handle redirect - applyAction will navigate
+								await applyAction(result);
 							}
 						};
 					}}
@@ -1557,35 +1584,6 @@
 	/* Import section */
 	.import-section {
 		margin-bottom: var(--space-6);
-	}
-
-	.import-placeholder {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: var(--space-8);
-		background-color: var(--color-gray-50);
-		border: 2px dashed var(--color-gray-300);
-		border-radius: var(--radius-lg);
-		text-align: center;
-	}
-
-	.import-icon {
-		width: 3rem;
-		height: 3rem;
-		color: var(--color-text-muted);
-		margin-bottom: var(--space-4);
-	}
-
-	.import-placeholder p {
-		margin: 0;
-		color: var(--color-text-muted);
-	}
-
-	.import-hint {
-		font-size: var(--font-size-sm);
-		margin-top: var(--space-2) !important;
 	}
 
 	/* Skills review */
